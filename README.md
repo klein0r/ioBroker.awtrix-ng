@@ -12,7 +12,7 @@
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/klein0r/iobroker.awtrix-ng?logo=github&style=flat-square)
 ![GitHub last commit](https://img.shields.io/github/last-commit/klein0r/iobroker.awtrix-ng?logo=github&style=flat-square)
 ![GitHub issues](https://img.shields.io/github/issues/klein0r/iobroker.awtrix-ng?logo=github&style=flat-square)
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/klein0r/iobroker.awtrix-ng/test-and-release.yml?branch=master&logo=github&style=flat-square)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/klein0r/iobroker.awtrix-ng/test-and-release.yml?branch=main&logo=github&style=flat-square)
 
 ## Versions
 

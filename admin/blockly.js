@@ -199,7 +199,7 @@ Blockly.Words['awtrix-ng_tooltip'] = {
     uk: 'Надіслати повідомлення на Awtrix',
     'zh-cn': '向Awtrix发出通知',
 };
-Blockly.Words['awtrix-ng_help'] = { en: 'https://github.com/klein0r/ioBroker.awtrix-ng/blob/master/docs/en/README.md', de: 'https://github.com/klein0r/ioBroker.awtrix-ng/blob/master/docs/de/README.md' };
+Blockly.Words['awtrix-ng_help'] = { en: 'https://github.com/klein0r/ioBroker.awtrix-ng/blob/main/docs/en/README.md', de: 'https://github.com/klein0r/ioBroker.awtrix-ng/blob/main/docs/de/README.md' };
 
 Blockly.Sendto.blocks['awtrix-ng'] =
     '<block type="awtrix-ng">' +

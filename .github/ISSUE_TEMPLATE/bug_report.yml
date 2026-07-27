@@ -12,7 +12,7 @@ body:
         **Thank you for wanting to report a bug in this adapter!**
 
         If this is the first time you are doing this, please take a few moments to read
-        through the [README](https://github.com/klein0r/ioBroker.awtrix-ng/blob/master/README.md).
+        through the [README](https://github.com/klein0r/ioBroker.awtrix-ng/blob/main/README.md).
 
         You are about to report a bug in **Awtrix Light Adapter**. Do not proceed if your issue
         occurs with ioBroker core, any other adapters, unofficial or outdated

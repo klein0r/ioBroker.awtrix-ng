@@ -28,7 +28,7 @@
     "authorEmail": "info@haus-automatisierung.com",
     "gitRemoteProtocol": "SSH",
     "gitCommit": "yes",
-    "defaultBranch": "master",
+    "defaultBranch": "main",
     "license": "MIT License",
     "dependabot": "yes",
     "creatorVersion": "2.5.0"
