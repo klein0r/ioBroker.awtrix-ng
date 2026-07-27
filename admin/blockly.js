@@ -16,7 +16,7 @@ Blockly.Translate =
         }
     };
 
-/// --- SendTo Awtrix Light --------------------------------------------------
+/// --- SendTo Awtrix NG --------------------------------------------------
 Blockly.Words['awtrix-ng_notification'] = {
     en: 'Awtrix-ng notification',
     de: 'Awtrix-ng Benachrichtigung',

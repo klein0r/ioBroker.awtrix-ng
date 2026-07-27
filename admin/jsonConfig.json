@@ -27,7 +27,7 @@
                     "md": 6,
                     "lg": 6,
                     "xl": 6,
-                    "help": "IP address of your Awtrix Light device",
+                    "help": "IP address of your Awtrix NG device",
                     "validator": "String(data.awtrixIp).length > 0 && !String(data.awtrixIp).startsWith('http')",
                     "validatorErrorText": "Invalid IP address",
                     "validatorNoSaveOnError": true

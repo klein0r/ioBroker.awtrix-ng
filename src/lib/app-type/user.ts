@@ -1,4 +1,4 @@
-import type { AwtrixLight } from '../../main';
+import type { AwtrixNg } from '../../main';
 import type { DefaultApp } from '../adapter-config';
 import type { AwtrixApi } from '../api';
 import { AppType as AbstractAppType } from './abstract';
@@ -11,7 +11,7 @@ export namespace AppType {
         protected ignoreNewValueForAppInTimeRange: number;
         protected isVisible: boolean;
 
-        public constructor(apiClient: AwtrixApi.Client, adapter: AwtrixLight, definition: DefaultApp) {
+        public constructor(apiClient: AwtrixApi.Client, adapter: AwtrixNg, definition: DefaultApp) {
             super(apiClient, adapter, definition.name);
 
             this.definition = definition;

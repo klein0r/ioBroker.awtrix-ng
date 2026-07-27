@@ -1,6 +1,6 @@
 import type { AxiosInstance, AxiosResponse } from 'axios';
 import axios from 'axios';
-import type { AwtrixLight } from '../main';
+import type { AwtrixNg } from '../main';
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace AwtrixApi {
@@ -54,13 +54,13 @@ export namespace AwtrixApi {
     };
 
     export class Client {
-        private adapter: AwtrixLight;
+        private adapter: AwtrixNg;
         private axiosInstance: AxiosInstance | undefined = undefined;
         private apiConnected: boolean = false;
         private lastErrorCode: number = -1;
 
         public constructor(
-            adapter: AwtrixLight,
+            adapter: AwtrixNg,
             ipAddress: string,
             port: number,
             httpTimeout: number,
@@ -80,7 +80,7 @@ export namespace AwtrixApi {
             }
 
             this.axiosInstance = axios.create({
-                baseURL: `http://${ipAddress}:${port}/api/`,
+                baseURL: `http://${ipAddress}:${port}/api/v1/`,
                 timeout: httpTimeout * 1000 || 3000,
                 auth: httpAuth,
                 validateStatus: status => {

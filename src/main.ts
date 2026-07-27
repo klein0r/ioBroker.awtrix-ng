@@ -71,7 +71,7 @@ namespace NotificationManager {
     }
 }
 
-export class AwtrixLight extends utils.Adapter {
+export class AwtrixNg extends utils.Adapter {
     private _isMainInstance: boolean;
 
     private currentVersion: string | undefined;
@@ -96,7 +96,7 @@ export class AwtrixLight extends utils.Adapter {
         this._isMainInstance = true;
 
         this.currentVersion = undefined;
-        this.supportedVersion = '0.98';
+        this.supportedVersion = '1.0.4';
         this.displayedVersionWarning = false;
 
         this.apiClient = null;
@@ -671,7 +671,7 @@ export class AwtrixLight extends utils.Adapter {
                     );
 
                     this.log.warn(
-                        `You should update your Awtrix Light - supported version of this adapter is ${this.supportedVersion} (or later). Your current version is ${this.currentVersion}`,
+                        `You should update your Awtrix NG - supported version of this adapter is ${this.supportedVersion} (or later). Your current version is ${this.currentVersion}`,
                     );
                     this.displayedVersionWarning = true; // Just show once
                 }
@@ -1074,8 +1074,8 @@ export class AwtrixLight extends utils.Adapter {
 
 if (require.main !== module) {
     // Export the constructor in compact mode
-    module.exports = (options: Partial<utils.AdapterOptions> | undefined) => new AwtrixLight(options);
+    module.exports = (options: Partial<utils.AdapterOptions> | undefined) => new AwtrixNg(options);
 } else {
     // otherwise start the instance directly
-    (() => new AwtrixLight())();
+    (() => new AwtrixNg())();
 }

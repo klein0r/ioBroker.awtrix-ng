@@ -1,4 +1,4 @@
-import type { AwtrixLight } from '../../../main';
+import type { AwtrixNg } from '../../../main';
 import type { HistoryApp } from '../../adapter-config';
 import type { AwtrixApi } from '../../api';
 import { AppType as UserAppType } from '../user';
@@ -23,7 +23,7 @@ export namespace AppType {
         private isValidObjId: boolean;
         private refreshTimeout: ioBroker.Timeout | undefined;
 
-        public constructor(apiClient: AwtrixApi.Client, adapter: AwtrixLight, definition: HistoryApp) {
+        public constructor(apiClient: AwtrixApi.Client, adapter: AwtrixNg, definition: HistoryApp) {
             super(apiClient, adapter, definition);
 
             this.appDefinition = definition;

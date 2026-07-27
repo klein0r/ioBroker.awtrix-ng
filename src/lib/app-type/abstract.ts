@@ -1,4 +1,4 @@
-import type { AwtrixLight } from '../../main';
+import type { AwtrixNg } from '../../main';
 import type { AwtrixApi } from '../api';
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -7,11 +7,11 @@ export namespace AppType {
         private name: string;
 
         protected apiClient: AwtrixApi.Client;
-        protected adapter: AwtrixLight;
+        protected adapter: AwtrixNg;
 
         protected objPrefix: string;
 
-        public constructor(apiClient: AwtrixApi.Client, adapter: AwtrixLight, name: string) {
+        public constructor(apiClient: AwtrixApi.Client, adapter: AwtrixNg, name: string) {
             this.name = name;
 
             this.apiClient = apiClient;
