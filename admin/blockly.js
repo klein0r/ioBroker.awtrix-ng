@@ -18,30 +18,30 @@ Blockly.Translate =
 
 /// --- SendTo Awtrix NG --------------------------------------------------
 Blockly.Words['awtrix-ng_notification'] = {
-    en: 'Awtrix-ng notification',
-    de: 'Awtrix-ng Benachrichtigung',
-    ru: 'Awtrix-ng уведомление',
-    pt: 'Awtrix-ng Notificação',
-    nl: 'Awtrix-ng Vertaling',
-    fr: 'Awtrix-ng Notification',
-    it: 'Awtrix-ng Notifica',
-    es: 'Awtrix-ng Alerta',
-    pl: 'Awtrix-ng notification',
-    uk: 'Awtrix-ng повідомлення',
-    'zh-cn': 'Awtrix-ng 发出通知',
+    en: 'Awtrix-NG notification',
+    de: 'Awtrix-NG Benachrichtigung',
+    ru: 'Awtrix-NG уведомление',
+    pt: 'Awtrix-NG Notificação',
+    nl: 'Awtrix-NG Vertaling',
+    fr: 'Awtrix-NG Notification',
+    it: 'Awtrix-NG Notifica',
+    es: 'Awtrix-NG Alerta',
+    pl: 'Awtrix-NG notification',
+    uk: 'Awtrix-NG повідомлення',
+    'zh-cn': 'Awtrix-NG 发出通知',
 };
 Blockly.Words['awtrix-ng_playsound'] = {
-    en: 'Awtrix-ng Play sound',
-    de: 'Awtrix-ng Sound spielen',
-    ru: 'Awtrix-ng Играть звук',
-    pt: 'Awtrix-ng Tocar som',
-    nl: 'Awtrix-ng Speel',
-    fr: 'Awtrix-ng Play sound',
-    it: 'Awtrix-ng Suoni suono',
-    es: 'Awtrix-ng Jugar sonido',
-    pl: 'Awtrix-ng Dźwięk',
-    uk: 'Awtrix-ng Грати звук',
-    'zh-cn': 'Awtrix-ng 声音',
+    en: 'Awtrix-NG Play sound',
+    de: 'Awtrix-NG Sound spielen',
+    ru: 'Awtrix-NG Играть звук',
+    pt: 'Awtrix-NG Tocar som',
+    nl: 'Awtrix-NG Speel',
+    fr: 'Awtrix-NG Play sound',
+    it: 'Awtrix-NG Suoni suono',
+    es: 'Awtrix-NG Jugar sonido',
+    pl: 'Awtrix-NG Dźwięk',
+    uk: 'Awtrix-NG Грати звук',
+    'zh-cn': 'Awtrix-NG 声音',
 };
 Blockly.Words['awtrix-ng_message'] = {
     en: 'Message',
@@ -267,11 +267,11 @@ Blockly.Blocks['awtrix-ng'] = {
 
 Blockly.JavaScript['awtrix-ng'] = function (block) {
     const message = Blockly.JavaScript.valueToCode(block, 'MESSAGE', Blockly.JavaScript.ORDER_ATOMIC);
-    const color = Blockly.JavaScript.valueToCode(block, 'COLOR', Blockly.JavaScript.ORDER_ATOMIC);
+    const textColor = Blockly.JavaScript.valueToCode(block, 'COLOR', Blockly.JavaScript.ORDER_ATOMIC);
     const sound = Blockly.JavaScript.valueToCode(block, 'SOUND', Blockly.JavaScript.ORDER_ATOMIC);
     const icon = Blockly.JavaScript.valueToCode(block, 'ICON', Blockly.JavaScript.ORDER_ATOMIC);
     const repeat = Blockly.JavaScript.valueToCode(block, 'REPEAT', Blockly.JavaScript.ORDER_ATOMIC);
-    const duration = Blockly.JavaScript.valueToCode(block, 'DURATION', Blockly.JavaScript.ORDER_ATOMIC);
+    const durationMs = Blockly.JavaScript.valueToCode(block, 'DURATION', Blockly.JavaScript.ORDER_ATOMIC);
 
     let stack = block.getFieldValue('STACK');
     stack = stack === 'TRUE' || stack === 'true' || stack === true;
@@ -284,11 +284,11 @@ Blockly.JavaScript['awtrix-ng'] = function (block) {
 
     const objText = [];
     message && objText.push('text: ' + message);
-    color && objText.push('color: String(' + color + ').toUpperCase()');
+    textColor && objText.push('textColor: String(' + textColor + ').toUpperCase()');
     sound && objText.push('sound: ' + sound);
     icon && objText.push('icon: ' + icon);
     repeat && objText.push('repeat: parseInt(' + repeat + ')');
-    duration && objText.push('duration: parseInt(' + duration + ')');
+    durationMs && objText.push('durationMs: parseInt(' + duration + ')');
     objText.push('stack: ' + stack);
     objText.push('wakeup: ' + wakeup);
     objText.push('hold: ' + hold);
@@ -345,7 +345,7 @@ Blockly.JavaScript['awtrix-ng_playsound'] = function (block) {
     const sound = Blockly.JavaScript.valueToCode(block, 'SOUND', Blockly.JavaScript.ORDER_ATOMIC);
 
     const objText = [];
-    sound && objText.push('sound: ' + sound);
+    sound && objText.push('name: ' + sound);
 
     return `sendTo('awtrix-ng${block.getFieldValue('INSTANCE')}', 'sound', { ${objText.join(', ')} });`;
 };
