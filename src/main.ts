@@ -138,7 +138,6 @@ export class AwtrixNg extends utils.Adapter {
     private async onReady(): Promise<void> {
         await this.setApiConnected(false);
 
-        await this.upgradeFromPreviousVersion();
         await this.subscribeStatesAsync('*');
 
         if (!this.config.awtrixIp) {
@@ -195,34 +194,6 @@ export class AwtrixNg extends utils.Adapter {
         }
 
         this.refreshState();
-    }
-
-    private async upgradeFromPreviousVersion(): Promise<void> {
-        this.log.debug(`Upgrading objects from previous version`);
-
-        await this.extendObject('settings.calendarHeaderColor', {
-            common: {
-                type: 'string',
-                role: 'level.color.rgb',
-                def: '#FF0000',
-            },
-        });
-
-        await this.extendObject('settings.calendarBodyColor', {
-            common: {
-                type: 'string',
-                role: 'level.color.rgb',
-                def: '#FFFFFF',
-            },
-        });
-
-        await this.extendObject('settings.calendarTextColor', {
-            common: {
-                type: 'string',
-                role: 'level.color.rgb',
-                def: '#000000',
-            },
-        });
     }
 
     private async importForeignSettings(): Promise<void> {
