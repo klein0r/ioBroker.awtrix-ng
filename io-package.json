@@ -178,7 +178,6 @@
     "removeAppsOnStop": true,
     "httpTimeout": 3,
     "numberFormat": "system",
-    "customPositions": false,
     "expertApps": []
   },
   "objects": [],
@@ -249,7 +248,7 @@
       "native": {}
     },
     {
-      "_id": "settings.appDisplayTime",
+      "_id": "settings.appDurationMs",
       "type": "state",
       "common": {
         "name": {
@@ -267,13 +266,13 @@
         },
         "type": "number",
         "role": "value",
-        "unit": "sec",
+        "unit": "ms",
         "read": true,
         "write": true,
-        "def": 7
+        "def": 7000
       },
       "native": {
-        "settingsKey": "ATIME"
+        "settingsKey": "appDurationMs"
       }
     },
     {
@@ -327,7 +326,7 @@
         "write": true
       },
       "native": {
-        "settingsKey": "TCOL"
+        "settingsKey": "textColor"
       }
     },
     {
@@ -434,7 +433,7 @@
         "max": 255
       },
       "native": {
-        "settingsKey": "BRI"
+        "settingsKey": "brightness"
       }
     },
     {
@@ -460,11 +459,11 @@
         "write": true
       },
       "native": {
-        "settingsKey": "ABRI"
+        "settingsKey": "autoBrightness"
       }
     },
     {
-      "_id": "settings.appSwitchAuto",
+      "_id": "settings.appAutoTransition",
       "type": "state",
       "common": {
         "name": {
@@ -486,11 +485,11 @@
         "write": true
       },
       "native": {
-        "settingsKey": "ATRANS"
+        "settingsKey": "autoTransition"
       }
     },
     {
-      "_id": "settings.appTransitionEffect",
+      "_id": "settings.transitionEffect",
       "type": "state",
       "common": {
         "name": {
@@ -506,14 +505,14 @@
           "uk": "Ефект переходу додатку",
           "zh-cn": "过渡效果"
         },
-        "type": "number",
-        "role": "value",
+        "type": "string",
+        "role": "state",
         "read": true,
         "write": true,
         "def": 0
       },
       "native": {
-        "settingsKey": "TEFF"
+        "settingsKey": "transitionEffect"
       }
     },
     {
@@ -567,7 +566,7 @@
         "def": "#FF0000"
       },
       "native": {
-        "settingsKey": "CHCOL"
+        "settingsKey": "calendarHeaderColor"
       }
     },
     {
@@ -594,7 +593,7 @@
         "def": "#FFFFFF"
       },
       "native": {
-        "settingsKey": "CBCOL"
+        "settingsKey": "calendarBodyColor"
       }
     },
     {
@@ -621,7 +620,7 @@
         "def": "#000000"
       },
       "native": {
-        "settingsKey": "CTCOL"
+        "settingsKey": "calendarTextColor"
       }
     },
     {
@@ -674,33 +673,6 @@
       },
       "native": {
         "settingsKey": "DFORMAT"
-      }
-    },
-    {
-      "_id": "settings.weekStartMonday",
-      "type": "state",
-      "common": {
-        "name": {
-          "en": "Week starts with monday",
-          "de": "Woche beginnt mit Montag",
-          "ru": "Неделя начинается с понедельника",
-          "pt": "A semana começa com a segunda-feira",
-          "nl": "Week begint met maandag",
-          "fr": "La semaine commence avec le lundi",
-          "it": "La settimana inizia con lunedì",
-          "es": "La semana comienza con el lunes",
-          "pl": "Tydzień zaczyna się od monday'u",
-          "uk": "Тиждень починається з понеділка",
-          "zh-cn": "每周开始开会"
-        },
-        "type": "boolean",
-        "role": "state",
-        "read": true,
-        "write": true,
-        "def": true
-      },
-      "native": {
-        "settingsKey": "SOM"
       }
     },
     {
@@ -1260,7 +1232,8 @@
         "role": "value",
         "read": false,
         "write": true,
-        "unit": "sec"
+        "unit": "ms",
+        "def": 0
       },
       "native": {}
     },

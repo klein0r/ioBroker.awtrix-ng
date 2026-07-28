@@ -249,7 +249,7 @@
                             "xl": 4,
                             "default": "",
                             "help": "Must be uploaded manually",
-                            "helpLink": "https://blueforcer.github.io/awtrix3/#/icons"
+                            "helpLink": "https://ang.blueforcer.de/guides/icons/"
                         },
                         {
                             "type": "number",
@@ -442,7 +442,7 @@
                             "default": "BrickBreaker",
                             "label": "Background effect",
                             "help": "See all effects",
-                            "helpLink": "https://blueforcer.github.io/awtrix3/#/effects"
+                            "helpLink": "https://ang.blueforcer.de/guides/effects/"
                         },
                         {
                             "hidden": "data.objId.length == 0",
@@ -602,33 +602,6 @@
                             "validator": "data.thresholdGtIcon || data.thresholdGtTextColor || data.thresholdGtBackgroundColor",
                             "validatorErrorText": "Set icon, text color or background color override",
                             "validatorNoSaveOnError": true
-                        },
-                        {
-                            "hidden": "!globalData.customPositions",
-                            "newLine": true,
-                            "type": "header",
-                            "attr": "_expertOptionsHeader",
-                            "text": "Expert options",
-                            "size": 3,
-                            "xs": 12,
-                            "sm": 12,
-                            "md": 12,
-                            "lg": 12,
-                            "xl": 12
-                        },
-                        {
-                            "hidden": "!globalData.customPositions",
-                            "type": "number",
-                            "attr": "position",
-                            "label": "Position",
-                            "xs": 12,
-                            "sm": 12,
-                            "md": 4,
-                            "lg": 4,
-                            "xl": 4,
-                            "default": 0,
-                            "min": 0,
-                            "step": 1
                         }
                     ]
                 },
@@ -694,7 +667,7 @@
                             "xl": 4,
                             "default": "",
                             "help": "Must be uploaded manually",
-                            "helpLink": "https://blueforcer.github.io/awtrix3/#/icons"
+                            "helpLink": "https://ang.blueforcer.de/guides/icons/"
                         },
                         {
                             "type": "number",
@@ -859,33 +832,6 @@
                             "default": 3600,
                             "min": 1,
                             "help": "seconds"
-                        },
-                        {
-                            "hidden": "!globalData.customPositions",
-                            "newLine": true,
-                            "type": "header",
-                            "attr": "_expertOptionsHeader",
-                            "text": "Expert options",
-                            "size": 3,
-                            "xs": 12,
-                            "sm": 12,
-                            "md": 12,
-                            "lg": 12,
-                            "xl": 12
-                        },
-                        {
-                            "hidden": "!globalData.customPositions",
-                            "type": "number",
-                            "attr": "position",
-                            "label": "Position",
-                            "xs": 12,
-                            "sm": 12,
-                            "md": 4,
-                            "lg": 4,
-                            "xl": 4,
-                            "default": 0,
-                            "min": 0,
-                            "step": 1
                         }
                     ]
                 },
@@ -983,17 +929,6 @@
                     "default": "system",
                     "label": "Number format"
                 },
-                "customPositions": {
-                    "hidden": "!!data.foreignSettingsInstance",
-                    "newLine": true,
-                    "type": "checkbox",
-                    "label": "Own position for each app",
-                    "xs": 12,
-                    "sm": 12,
-                    "md": 4,
-                    "lg": 4,
-                    "xl": 4
-                },
                 "_headerExpertApps": {
                     "hidden": "!!data.foreignSettingsInstance",
                     "newLine": true,
@@ -1031,33 +966,6 @@
                             "validator": "/^([a-z]{1,})$/.test(data.name) && !['time', 'date', 'temperature', 'humidity', 'battery'].includes(data.name) && [...globalData.customApps, ...globalData.historyApps, ...globalData.expertApps].filter(app => app.name === data.name).length === 1",
                             "validatorErrorText": "Just lower case letters (a-z)",
                             "validatorNoSaveOnError": true
-                        },
-                        {
-                            "hidden": "!globalData.customPositions",
-                            "newLine": true,
-                            "type": "header",
-                            "attr": "_expertOptionsHeader",
-                            "text": "Expert options",
-                            "size": 3,
-                            "xs": 12,
-                            "sm": 12,
-                            "md": 12,
-                            "lg": 12,
-                            "xl": 12
-                        },
-                        {
-                            "hidden": "!globalData.customPositions",
-                            "type": "number",
-                            "attr": "position",
-                            "label": "Position",
-                            "xs": 12,
-                            "sm": 12,
-                            "md": 4,
-                            "lg": 4,
-                            "xl": 4,
-                            "default": 0,
-                            "min": 0,
-                            "step": 1
                         }
                     ]
                 }

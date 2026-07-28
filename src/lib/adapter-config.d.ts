@@ -2,7 +2,6 @@
 
 export type DefaultApp = {
     name: string;
-    position: number;
 };
 
 export type CustomApp = DefaultApp & {
@@ -72,11 +71,11 @@ declare global {
             removeAppsOnStop: boolean;
             httpTimeout: number;
             numberFormat: string;
-            customPositions: boolean;
             expertApps: Array<ExpertApp>;
         }
     }
 }
 
 // this is required so the above AdapterConfig is found by TypeScript / type checking
-export {};
+export { };
+

@@ -172,9 +172,6 @@ export class AwtrixNg extends utils.Adapter {
 
         for (const customApp of this.config.customApps) {
             if (!this.findAppWithName(customApp.name)) {
-                if (!this.config.customPositions) {
-                    customApp.position = pos++;
-                }
                 this.apps.push(new AppTypeCustom.Custom(this.apiClient, this, customApp));
             } else {
                 this.log.warn(`App with name ${customApp.name} already exists. Skipping custom app!`);
@@ -183,9 +180,6 @@ export class AwtrixNg extends utils.Adapter {
 
         for (const historyApp of this.config.historyApps) {
             if (!this.findAppWithName(historyApp.name)) {
-                if (!this.config.customPositions) {
-                    historyApp.position = pos++;
-                }
                 this.apps.push(new AppTypeHistory.History(this.apiClient, this, historyApp));
             } else {
                 this.log.warn(`App with name ${historyApp.name} already exists. Skipping history app!`);
@@ -194,9 +188,6 @@ export class AwtrixNg extends utils.Adapter {
 
         for (const expertApp of this.config.expertApps) {
             if (!this.findAppWithName(expertApp.name)) {
-                if (!this.config.customPositions) {
-                    expertApp.position = pos++;
-                }
                 this.apps.push(new AppTypeExpert.Expert(this.apiClient, this, expertApp));
             } else {
                 this.log.warn(`App with name ${expertApp.name} already exists. Skipping expert app!`);
@@ -208,8 +199,6 @@ export class AwtrixNg extends utils.Adapter {
 
     private async upgradeFromPreviousVersion(): Promise<void> {
         this.log.debug(`Upgrading objects from previous version`);
-
-        await this.delObjectAsync('apps.eyes', { recursive: true }); // eyes app was removed in firmware 0.71
 
         await this.extendObject('settings.calendarHeaderColor', {
             common: {
@@ -253,7 +242,6 @@ export class AwtrixNg extends utils.Adapter {
                     this.config.autoDeleteForeignApps = instanceObj.native.autoDeleteForeignApps;
                     this.config.removeAppsOnStop = instanceObj.native.removeAppsOnStop;
                     this.config.expertApps = instanceObj.native.expertApps;
-                    this.config.customPositions = instanceObj.native.customPositions;
 
                     this.log.debug(
                         `[importForeignSettings] Copied settings from foreign instance "system.adapter.${this.config.foreignSettingsInstance}"`,
