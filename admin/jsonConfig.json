@@ -344,17 +344,6 @@
                         },
                         {
                             "newLine": true,
-                            "type": "checkbox",
-                            "attr": "rainbow",
-                            "label": "Text in rainbow colors",
-                            "xs": 12,
-                            "sm": 12,
-                            "md": 4,
-                            "lg": 4,
-                            "xl": 4
-                        },
-                        {
-                            "hidden": "!!data.rainbow",
                             "type": "color",
                             "attr": "textColor",
                             "label": "Text color",

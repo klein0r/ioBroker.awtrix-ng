@@ -148,7 +148,7 @@ export namespace AppType {
 
                     // Duration
                     if (this.appDefinition.duration > 0) {
-                        moreOptions.duration = this.appDefinition.duration;
+                        moreOptions.durationMs = this.appDefinition.duration;
                     }
 
                     // Repeat
@@ -158,19 +158,18 @@ export namespace AppType {
 
                     // Bar or line graph
                     if (this.appDefinition.display == 'bar') {
-                        moreOptions.bar = graphData;
+                        moreOptions.barChart = graphData;
                     } else {
-                        moreOptions.line = graphData;
+                        moreOptions.lineChart = graphData;
                     }
 
                     await this.apiClient
                         .appRequestAsync(this.appDefinition.name, {
-                            color: this.appDefinition.lineColor || '#FF0000',
-                            background: this.appDefinition.backgroundColor || '#000000',
-                            autoscale: true,
+                            chartColor: this.appDefinition.lineColor || '#FF0000',
+                            backgroundColor: this.appDefinition.backgroundColor || '#000000',
+                            chartAutoscale: true,
                             icon: this.appDefinition.icon,
-                            lifetime: this.adapter.config.historyAppsRefreshInterval + 60, // Remove app if there is no update in configured interval (+ buffer)
-                            pos: this.appDefinition.position,
+                            lifetimeMs: (this.adapter.config.historyAppsRefreshInterval + 60) * 1000, // Remove app if there is no update in configured interval (+ buffer)
                             ...moreOptions,
                         })
                         .catch(error => {

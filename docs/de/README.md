@@ -176,11 +176,7 @@ Danach werden alle steuerbaren Zustände der App `test` unter `awtrix-ng.0.apps.
 
 #### Basisobjekte
 
-*Benötigt Adapter-Version 2.0.0 (und neuer)*
-
 Das Basisobjekt ist eine grundlegende Definition für eine Awtrix-App, um alle existierenden Optionen setzen zu können. *Das Basisobjekt wird mit allen anderen Attributen der Experten-App erweitert.*
-
-Beispiel: Du möchtest den Regenbogen-Effekt auf der Experten-App nutzen, aber es existiert kein vordefiniter Datenpunkt, um diese Funktion direkt zu nutzen. In diesem Fall kann das Attribut im Basis-Objekt definiert werden (als JSON): `{ "rainbow": true }`.
 
 Siehe [Dokumentation](https://blueforcer.github.io/awtrix3/#/api?id=custom-apps-and-notifications) für alle verfügbaren Attribute.
 

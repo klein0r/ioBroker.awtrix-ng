@@ -103,9 +103,7 @@ export namespace AppType {
         }
 
         private createAppRequestObj(text: string, val?: ioBroker.StateValue): AwtrixApi.App {
-            const app: AwtrixApi.App = {
-                pos: this.appDefinition.position,
-            };
+            const app: AwtrixApi.App = {};
 
             if (text !== '') {
                 app.text = text;
@@ -119,20 +117,18 @@ export namespace AppType {
                 app.backgroundColor = this.appDefinition.backgroundColor;
             }
 
-            // Set rainbow colors OR text color
-            if (this.appDefinition.rainbow) {
-                app.rainbow = true;
-            } else if (this.appDefinition.textColor) {
+            // Set text color
+            if (this.appDefinition.textColor) {
                 app.textColor = this.appDefinition.textColor;
             }
 
             // Set noScroll OR scroll speed
             if (this.appDefinition.noScroll) {
-                app.noScroll = true;
+                app.scroll = { mode: 'static' };
             } else {
                 // Scroll speed
                 if (this.appDefinition.scrollSpeed > 0) {
-                    app.scrollSpeed = this.appDefinition.scrollSpeed;
+                    app.scroll = { speed: this.appDefinition.scrollSpeed };
                 }
 
                 // Repeat
@@ -163,10 +159,9 @@ export namespace AppType {
                     }
                     if (this.appDefinition.thresholdLtTextColor) {
                         app.textColor = this.appDefinition.thresholdLtTextColor;
-                        app.rainbow = false; // disable rainbow
                     }
                     if (this.appDefinition.thresholdLtBackgroundColor) {
-                        app.background = this.appDefinition.thresholdLtBackgroundColor;
+                        app.backgroundColor = this.appDefinition.thresholdLtBackgroundColor;
 
                         if (this.appDefinition.useBackgroundEffect) {
                             delete app.effect;
@@ -182,10 +177,9 @@ export namespace AppType {
                     }
                     if (this.appDefinition.thresholdGtTextColor) {
                         app.textColor = this.appDefinition.thresholdGtTextColor;
-                        app.rainbow = false; // disable rainbow
                     }
                     if (this.appDefinition.thresholdGtBackgroundColor) {
-                        app.background = this.appDefinition.thresholdGtBackgroundColor;
+                        app.backgroundColor = this.appDefinition.thresholdGtBackgroundColor;
 
                         if (this.appDefinition.useBackgroundEffect) {
                             delete app.effect;

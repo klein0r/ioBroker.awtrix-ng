@@ -81,13 +81,12 @@ export namespace AppType {
                 const app: AwtrixApi.App = {
                     ...this.baseObject,
                     text: typeof this.appStates.text === 'string' ? this.appStates.text : '',
-                    textCase: 2, // show as sent
-                    color: typeof this.appStates.color === 'string' ? this.appStates.color : '#FFFFFF',
-                    background: typeof this.appStates.background === 'string' ? this.appStates.background : '#000000',
+                    textCase: 'asTyped', // show as sent
+                    textColor: typeof this.appStates.color === 'string' ? this.appStates.color : '#FFFFFF',
+                    backgroundColor: typeof this.appStates.background === 'string' ? this.appStates.background : '#000000',
                     icon: typeof this.appStates.icon === 'string' ? this.appStates.icon : '',
-                    duration: typeof this.appStates.duration === 'number' ? this.appStates.duration : 0,
-                    scrollSpeed: typeof this.appStates.scrollSpeed === 'number' ? this.appStates.scrollSpeed : 100,
-                    pos: this.appDefinition.position,
+                    durationMs: typeof this.appStates.duration === 'number' ? this.appStates.duration : 0,
+                    scroll: { speed: typeof this.appStates.scrollSpeed === 'number' ? this.appStates.scrollSpeed : 100 },
                 };
 
                 if (this.appStates.progress && typeof this.appStates.progress === 'number') {
@@ -95,9 +94,9 @@ export namespace AppType {
                         app.progress = this.appStates.progress;
 
                         // colors
-                        app.progressC =
+                        app.progressColor =
                             typeof this.appStates.progressC === 'string' ? this.appStates.progressC : '#00FF00';
-                        app.progressBC =
+                        app.progressTrackColor =
                             typeof this.appStates.progressBC === 'string' ? this.appStates.progressBC : '#FFFFFF';
                     }
                 }

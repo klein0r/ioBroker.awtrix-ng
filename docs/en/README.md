@@ -176,11 +176,7 @@ After that, all controllable states for the app name `test` will be created in `
 
 #### Base Object
 
-*Requires adapter version 2.0.0 (or newer)*
-
 The base object is a basic defition of an awtrix app to allow all possible attributes. *The base object will be extended with other attributes of the expert app.*
-
-Example: If you want to use the rainbow effect, but there is no state to set this feature directly, you can define this in the base object (as JSON): `{ "rainbow": true }`.
 
 See [documentation](https://blueforcer.github.io/awtrix3/#/api?id=custom-apps-and-notifications) for available attributes.
 

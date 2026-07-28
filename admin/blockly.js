@@ -121,19 +121,6 @@ Blockly.Words['awtrix-ng_duration'] = {
     uk: 'Тривалість',
     'zh-cn': '期间',
 };
-Blockly.Words['awtrix-ng_rainbow'] = {
-    en: 'Rainbow text',
-    de: 'Regenbogentext',
-    ru: 'Текст радуга',
-    pt: 'Texto do arco-íris',
-    nl: 'Vertaling:',
-    fr: 'Texte arc-en-ciel',
-    it: `Testo dell'arcobaleno`,
-    es: 'Texto del arco iris',
-    pl: 'Rainbow text',
-    uk: 'Веселий текст',
-    'zh-cn': '文 件',
-};
 Blockly.Words['awtrix-ng_stack'] = {
     en: 'Stack',
     de: 'Stapeln',
@@ -204,7 +191,6 @@ Blockly.Words['awtrix-ng_help'] = { en: 'https://github.com/klein0r/ioBroker.awt
 Blockly.Sendto.blocks['awtrix-ng'] =
     '<block type="awtrix-ng">' +
     '  <field name="INSTANCE"></field>' +
-    '  <field name="RAINBOW">FALSE</field>' +
     '  <field name="STACK">TRUE</field>' +
     '  <field name="WAKEUP">TRUE</field>' +
     '  <field name="HOLD">FALSE</field>' +
@@ -265,7 +251,6 @@ Blockly.Blocks['awtrix-ng'] = {
         this.appendValueInput('ICON').appendField(Blockly.Translate('awtrix-ng_icon'));
         this.appendValueInput('REPEAT').appendField(Blockly.Translate('awtrix-ng_repeat'));
         this.appendValueInput('DURATION').appendField(Blockly.Translate('awtrix-ng_duration'));
-        this.appendDummyInput('RAINBOW').appendField(Blockly.Translate('awtrix-ng_rainbow')).appendField(new Blockly.FieldCheckbox('FALSE'), 'RAINBOW');
         this.appendDummyInput('STACK_INPUT').appendField(Blockly.Translate('awtrix-ng_stack')).appendField(new Blockly.FieldCheckbox('TRUE'), 'STACK');
         this.appendDummyInput('WAKEUP_INPUT').appendField(Blockly.Translate('awtrix-ng_wakeup')).appendField(new Blockly.FieldCheckbox('TRUE'), 'WAKEUP');
         this.appendDummyInput('HOLD_INPUT').appendField(Blockly.Translate('awtrix-ng_hold')).appendField(new Blockly.FieldCheckbox('FALSE'), 'HOLD');
@@ -288,9 +273,6 @@ Blockly.JavaScript['awtrix-ng'] = function (block) {
     const repeat = Blockly.JavaScript.valueToCode(block, 'REPEAT', Blockly.JavaScript.ORDER_ATOMIC);
     const duration = Blockly.JavaScript.valueToCode(block, 'DURATION', Blockly.JavaScript.ORDER_ATOMIC);
 
-    let rainbow = block.getFieldValue('RAINBOW');
-    rainbow = rainbow === 'TRUE' || rainbow === 'true' || rainbow === true;
-
     let stack = block.getFieldValue('STACK');
     stack = stack === 'TRUE' || stack === 'true' || stack === true;
 
@@ -302,12 +284,11 @@ Blockly.JavaScript['awtrix-ng'] = function (block) {
 
     const objText = [];
     message && objText.push('text: ' + message);
-    color && !rainbow && objText.push('color: String(' + color + ').toUpperCase()');
+    color && objText.push('color: String(' + color + ').toUpperCase()');
     sound && objText.push('sound: ' + sound);
     icon && objText.push('icon: ' + icon);
     repeat && objText.push('repeat: parseInt(' + repeat + ')');
     duration && objText.push('duration: parseInt(' + duration + ')');
-    objText.push('rainbow: ' + rainbow);
     objText.push('stack: ' + stack);
     objText.push('wakeup: ' + wakeup);
     objText.push('hold: ' + hold);

@@ -12,7 +12,6 @@ export type CustomApp = DefaultApp & {
     objId: string;
     decimals: number;
     dynamicRound: boolean;
-    rainbow: boolean;
     textColor: string;
     noScroll: boolean;
     scrollSpeed: number;
