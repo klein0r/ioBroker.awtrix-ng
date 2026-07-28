@@ -98,11 +98,18 @@ export namespace AppType {
                         `${this.hasOwnActivateState() ? this.adapter.namespace : this.objPrefix}.apps.${appName}.activate`
                     ) {
                         if (state.val) {
-                            this.apiClient.requestAsync('switch', 'POST', { name: appName }).catch(error => {
-                                this.adapter.log.warn(
-                                    `[onStateChange] ${appName}: (switch) Unable to execute action: ${error}`,
-                                );
-                            });
+                            this.apiClient.requestAsync('apps/active', 'PUT', { name: appName })
+                                .then(async response => {
+                                    if (response.status === 200 && response.data.ok === true) {
+                                        const idOwnNamespace = this.getObjIdOwnNamespace(id);
+                                        await this.adapter.setState(idOwnNamespace, { val: state.val, ack: true });
+                                    }
+                                })
+                                .catch(error => {
+                                    this.adapter.log.warn(
+                                        `[onStateChange] ${appName}: (apps/activate) Unable to execute action: ${error}`,
+                                    );
+                                });
                         } else {
                             this.adapter.log.warn(`[onStateChange] ${appName}: Received invalid value for state ${id}`);
                         }

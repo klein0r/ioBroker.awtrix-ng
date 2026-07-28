@@ -447,7 +447,7 @@ export class AwtrixNg extends utils.Adapter {
                     const msgFiltered = Object.fromEntries(Object.entries(obj.message).filter(([_, v]) => v !== null));
 
                     this.apiClient
-                        .requestAsync('sound', 'POST', msgFiltered)
+                        .requestAsync('sounds/play', 'POST', msgFiltered)
                         .then(response => {
                             this.sendTo(obj.from, obj.command, { error: null, data: response.data }, obj.callback);
                         })

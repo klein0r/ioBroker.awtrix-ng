@@ -141,9 +141,9 @@ export namespace AwtrixApi {
         public async removeAppAsync(name: string): Promise<boolean> {
             return new Promise<boolean>((resolve, reject) => {
                 if (this.apiConnected) {
-                    this.appRequestAsync(name)
+                    this.appDeleteAsync(name)
                         .then(response => {
-                            if (response.status === 200 && response.data === 'OK') {
+                            if (response.status === 200 && response.data.ok === true) {
                                 this.adapter.log.debug(`[removeApp] Removed customApp app "${name}"`);
                                 resolve(true);
                             } else {
@@ -171,6 +171,10 @@ export namespace AwtrixApi {
 
         public async appRequestAsync(name: string, data?: AwtrixApi.App): Promise<AxiosResponse> {
             return this.requestAsync(`apps/pushed/${name}`, 'PUT', data);
+        }
+
+        public async appDeleteAsync(name: string): Promise<AxiosResponse> {
+            return this.requestAsync(`apps/${name}`, 'DELETE');
         }
 
         public async requestAsync(url: string, method?: string, data?: object | string): Promise<AxiosResponse> {
