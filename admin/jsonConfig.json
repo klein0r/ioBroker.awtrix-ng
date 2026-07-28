@@ -234,7 +234,7 @@
                             "xl": 4,
                             "default": "custom",
                             "help": "Just lower case letters (a-z)",
-                            "validator": "/^([a-z]{1,})$/.test(data.name) && !['time', 'date', 'temperature', 'humidity', 'battery'].includes(data.name) && [...globalData.customApps, ...globalData.historyApps, ...globalData.expertApps].filter(app => app.name === data.name).length === 1",
+                            "validator": "/^([a-z]{1,32})$/.test(data.name) && !['time', 'date', 'temperature', 'humidity', 'battery'].includes(data.name) && [...globalData.customApps, ...globalData.historyApps, ...globalData.expertApps].filter(app => app.name === data.name).length === 1",
                             "validatorErrorText": "Just lower case letters (a-z)",
                             "validatorNoSaveOnError": true
                         },
@@ -641,7 +641,7 @@
                             "xl": 4,
                             "default": "history",
                             "help": "Just lower case letters (a-z)",
-                            "validator": "/^([a-z]{1,})$/.test(data.name) && !['time', 'date', 'temperature', 'humidity', 'battery'].includes(data.name) && [...globalData.customApps, ...globalData.historyApps, ...globalData.expertApps].filter(app => app.name === data.name).length === 1",
+                            "validator": "/^([a-z]{1,32})$/.test(data.name) && !['time', 'date', 'temperature', 'humidity', 'battery'].includes(data.name) && [...globalData.customApps, ...globalData.historyApps, ...globalData.expertApps].filter(app => app.name === data.name).length === 1",
                             "validatorErrorText": "Just lower case letters (a-z)",
                             "validatorNoSaveOnError": true
                         },
@@ -952,7 +952,7 @@
                             "xl": 4,
                             "default": "expert",
                             "help": "Just lower case letters (a-z)",
-                            "validator": "/^([a-z]{1,})$/.test(data.name) && !['time', 'date', 'temperature', 'humidity', 'battery'].includes(data.name) && [...globalData.customApps, ...globalData.historyApps, ...globalData.expertApps].filter(app => app.name === data.name).length === 1",
+                            "validator": "/^([a-z]{1,32})$/.test(data.name) && !['time', 'date', 'temperature', 'humidity', 'battery'].includes(data.name) && [...globalData.customApps, ...globalData.historyApps, ...globalData.expertApps].filter(app => app.name === data.name).length === 1",
                             "validatorErrorText": "Just lower case letters (a-z)",
                             "validatorNoSaveOnError": true
                         }
