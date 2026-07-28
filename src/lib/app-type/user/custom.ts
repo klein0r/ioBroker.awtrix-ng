@@ -109,21 +109,21 @@ export namespace AppType {
 
             if (text !== '') {
                 app.text = text;
-                app.textCase = 2; // show as sent
+                app.textCase = 'asTyped'; // show as sent
             }
 
             // Background
             if (this.appDefinition.useBackgroundEffect) {
                 app.effect = this.appDefinition.backgroundEffect;
             } else if (this.appDefinition.backgroundColor) {
-                app.background = this.appDefinition.backgroundColor;
+                app.backgroundColor = this.appDefinition.backgroundColor;
             }
 
             // Set rainbow colors OR text color
             if (this.appDefinition.rainbow) {
                 app.rainbow = true;
             } else if (this.appDefinition.textColor) {
-                app.color = this.appDefinition.textColor;
+                app.textColor = this.appDefinition.textColor;
             }
 
             // Set noScroll OR scroll speed
@@ -148,7 +148,7 @@ export namespace AppType {
 
             // Duration
             if (this.appDefinition.duration > 0) {
-                app.duration = this.appDefinition.duration;
+                app.durationMs = this.appDefinition.duration;
             }
 
             // Thresholds
@@ -162,7 +162,7 @@ export namespace AppType {
                         app.icon = this.appDefinition.thresholdLtIcon;
                     }
                     if (this.appDefinition.thresholdLtTextColor) {
-                        app.color = this.appDefinition.thresholdLtTextColor;
+                        app.textColor = this.appDefinition.thresholdLtTextColor;
                         app.rainbow = false; // disable rainbow
                     }
                     if (this.appDefinition.thresholdLtBackgroundColor) {
@@ -181,7 +181,7 @@ export namespace AppType {
                         app.icon = this.appDefinition.thresholdGtIcon;
                     }
                     if (this.appDefinition.thresholdGtTextColor) {
-                        app.color = this.appDefinition.thresholdGtTextColor;
+                        app.textColor = this.appDefinition.thresholdGtTextColor;
                         app.rainbow = false; // disable rainbow
                     }
                     if (this.appDefinition.thresholdGtBackgroundColor) {

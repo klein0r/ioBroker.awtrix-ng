@@ -107,25 +107,25 @@ export class AwtrixNg extends utils.Adapter {
 
         this.apps = [];
         this.backgroundEffects = [
-            'Fade',
-            'MovingLine',
             'BrickBreaker',
-            'PingPong',
-            'Radar',
             'Checkerboard',
+            'ColorWaves',
+            'Fade',
             'Fireworks',
+            'LookingEyes',
+            'Matrix',
+            'MovingLine',
+            'Pacifica',
+            'PingPong',
+            'Plasma',
             'PlasmaCloud',
+            'Radar',
             'Ripple',
             'Snake',
-            'Pacifica',
-            'TheaterChase',
-            'Plasma',
-            'Matrix',
             'SwirlIn',
             'SwirlOut',
-            'LookingEyes',
-            'TwinklingStars',
-            'ColorWaves',
+            'TheaterChase',
+            'TwinklingStar',
         ];
 
         this.on('ready', this.onReady.bind(this));
@@ -306,9 +306,9 @@ export class AwtrixNg extends utils.Adapter {
                 } else if (idNoNamespace === 'display.power') {
                     this.log.debug(`changing display power to ${state.val}`);
 
-                    this.apiClient!.requestAsync('power', 'POST', { power: state.val })
+                    this.apiClient!.requestAsync('display', 'PATCH', { power: state.val })
                         .then(async response => {
-                            if (response.status === 200 && response.data === 'OK') {
+                            if (response.status === 200 && response.data.ok === true) {
                                 await this.setState(idNoNamespace, { val: state.val, ack: true });
                             }
                         })
@@ -318,20 +318,20 @@ export class AwtrixNg extends utils.Adapter {
                 } else if (idNoNamespace === 'device.sleep') {
                     this.log.debug(`enable sleep mode of device for ${state.val} seconds`);
 
-                    this.apiClient!.requestAsync('sleep', 'POST', { sleep: state.val })
+                    this.apiClient!.requestAsync('device/sleep', 'POST', { durationMs: state.val })
                         .then(async response => {
-                            if (response.status === 200 && response.data === 'OK') {
+                            if (response.status === 200 && response.data.ok === true) {
                                 await this.setState(idNoNamespace, { val: state.val, ack: true });
                                 await this.setApiConnected(false);
                             }
                         })
                         .catch(error => {
-                            this.log.warn(`(sleep) Unable to execute action: ${error}`);
+                            this.log.warn(`(device/sleep) Unable to execute action: ${error}`);
                         });
                 } else if (idNoNamespace.startsWith('display.moodlight.')) {
                     this.updateMoodlightByStates()
                         .then(async response => {
-                            if (response.status === 200 && response.data === 'OK') {
+                            if (response.status === 200 && response.data.ok === true) {
                                 await this.setState(idNoNamespace, { val: state.val, ack: true });
                             }
                         })
@@ -341,51 +341,67 @@ export class AwtrixNg extends utils.Adapter {
                 } else if (idNoNamespace === 'device.update') {
                     this.log.info('performing firmware update');
 
-                    this.apiClient!.requestAsync('doupdate', 'POST')
+                    this.apiClient!.requestAsync('update', 'POST')
                         .then(async response => {
-                            if (response.status === 200 && response.data === 'OK') {
+                            if (response.status === 200 && response.data.ok === true) {
                                 this.log.info('started firmware update');
                                 await this.setApiConnected(false);
                             }
                         })
                         .catch(error => {
                             this.log.warn(
-                                `(doupdate) Unable to execute firmware update (maybe this is already the newest version): ${error}`,
+                                `(update) Unable to execute firmware update (maybe this is already the newest version): ${error}`,
                             );
                         });
                 } else if (idNoNamespace === 'device.reboot') {
-                    this.apiClient!.requestAsync('reboot', 'POST')
+                    this.apiClient!.requestAsync('device/reboot', 'POST')
                         .then(async response => {
-                            if (response.status === 200 && response.data === 'OK') {
+                            if (response.status === 200 && response.data.ok === true) {
                                 this.log.info('rebooting device');
+
+                                await this.setState(idNoNamespace, { val: state.val, ack: true });
                                 await this.setApiConnected(false);
                             }
                         })
                         .catch(error => {
-                            this.log.warn(`(reboot) Unable to execute action: ${error}`);
+                            this.log.warn(`(device/reboot) Unable to execute action: ${error}`);
                         });
                 } else if (idNoNamespace === 'notification.dismiss') {
-                    this.apiClient!.requestAsync('notify/dismiss', 'POST')
-                        .then(response => {
-                            if (response.status === 200 && response.data === 'OK') {
+                    this.apiClient!.requestAsync('notifications/active', 'DELETE')
+                        .then(async response => {
+                            if (response.status === 200 && response.data.ok === true) {
                                 this.log.info('dismissed notifications');
+
+                                await this.setState(idNoNamespace, { val: state.val, ack: true });
                             }
                         })
                         .catch(error => {
-                            this.log.warn(`(notify/dismiss) Unable to execute action: ${error}`);
+                            this.log.warn(`(notifications/active) Unable to execute action: ${error}`);
                         });
                 } else if (idNoNamespace === 'apps.next') {
                     this.log.debug('switching to next app');
 
-                    this.apiClient!.requestAsync('nextapp', 'POST').catch(error => {
-                        this.log.warn(`(nextapp) Unable to execute action: ${error}`);
-                    });
+                    this.apiClient!.requestAsync('apps/next', 'POST')
+                        .then(async response => {
+                            if (response.status === 200 && response.data.ok === true) {
+                                await this.setState(idNoNamespace, { val: state.val, ack: true });
+                            }
+                        })
+                        .catch(error => {
+                            this.log.warn(`(apps/next) Unable to execute action: ${error}`);
+                        });
                 } else if (idNoNamespace === 'apps.prev') {
                     this.log.debug('switching to previous app');
 
-                    this.apiClient!.requestAsync('previousapp', 'POST').catch(error => {
-                        this.log.warn(`(previousapp) Unable to execute action: ${error}`);
-                    });
+                    this.apiClient!.requestAsync('apps/previous', 'POST')
+                        .then(async response => {
+                            if (response.status === 200 && response.data.ok === true) {
+                                await this.setState(idNoNamespace, { val: state.val, ack: true });
+                            }
+                        })
+                        .catch(error => {
+                            this.log.warn(`(apps/previous) Unable to execute action: ${error}`);
+                        });
                 } else if (idNoNamespace.match(/indicator\.[0-9]{1}\..*$/g)) {
                     const matches = idNoNamespace.match(/indicator\.([0-9]{1})\.(.*)$/);
                     const indicatorNo = matches ? parseInt(matches[1]) : undefined;
@@ -396,7 +412,7 @@ export class AwtrixNg extends utils.Adapter {
                     if (indicatorNo && indicatorNo >= 1) {
                         this.updateIndicatorByStates(indicatorNo)
                             .then(async response => {
-                                if (response.status === 200 && response.data === 'OK') {
+                                if (response.status === 200 && response.data.ok === true) {
                                     await this.setState(idNoNamespace, { val: state.val, ack: true });
                                 }
                             })
@@ -446,12 +462,12 @@ export class AwtrixNg extends utils.Adapter {
                     }
 
                     // Remove duration if <= 0
-                    if (msgFiltered.duration !== undefined && msgFiltered.duration <= 0) {
-                        delete msgFiltered.duration;
+                    if (msgFiltered.durationMs !== undefined && msgFiltered.durationMs <= 0) {
+                        delete msgFiltered.durationMs;
                     }
 
                     this.apiClient
-                        .requestAsync('notify', 'POST', msgFiltered)
+                        .requestAsync('notifications', 'POST', msgFiltered)
                         .then(response => {
                             this.sendTo(obj.from, obj.command, { error: null, data: response.data }, obj.callback);
                         })
@@ -521,7 +537,7 @@ export class AwtrixNg extends utils.Adapter {
                     };
 
                     this.apiClient
-                        .requestAsync('notify', 'POST', notificationApp)
+                        .requestAsync('notifications', 'POST', notificationApp)
                         .then(response => {
                             this.sendTo(obj.from, obj.command, { error: null, sent: true }, obj.callback);
                         })
@@ -559,14 +575,12 @@ export class AwtrixNg extends utils.Adapter {
 
                 try {
                     // welcome (ioBroker icon)
-                    this.apiClient!.requestAsync('notify', 'POST', {
-                        duration: 2,
+                    this.apiClient!.requestAsync('notifications', 'POST', {
+                        durationMs: 2000,
                         draw: [
-                            {
-                                dc: [16, 4, 3, '#164477'], // [x, y, r, cl] Draw a circle with center at (x, y), radius r, and color cl
-                                dl: [16, 3, 16, 8, '#3399cc'], // [x0, y0, x1, y1, cl] Draw a line from (x0, y0) to (x1, y1) with color cl
-                                dp: [16, 1, '#3399cc'], // [x, y, cl] Draw a pixel at position (x, y) with color cl
-                            },
+                            ['circle', 16, 4, 3, '#164477'], // [x, y, r, cl] Draw a circle with center at (x, y), radius r, and color cl
+                            ['line', 16, 3, 16, 8, '#3399cc'], // [x0, y0, x1, y1, cl] Draw a line from (x0, y0) to (x1, y1) with color cl
+                            ['pixel', 16, 1, '#3399cc'], // [x, y, cl] Draw a pixel at position (x, y) with color cl
                         ],
                     }).catch(error => {
                         this.log.warn(error);
@@ -603,12 +617,12 @@ export class AwtrixNg extends utils.Adapter {
 
                         this.downloadScreenContentInterval = this.setInterval(() => {
                             if (this.apiClient!.isConnected()) {
-                                this.apiClient!.requestAsync('screen', 'GET')
+                                this.apiClient!.requestAsync('display/screen', 'GET')
                                     .then(async response => {
                                         if (response.status === 200) {
                                             const pixelData = response.data;
-                                            const width = 640;
-                                            const height = 160;
+                                            const width = pixelData.width;
+                                            const height = pixelData.height;
                                             const scaleX = width / 32;
                                             const scaleY = height / 8;
 
@@ -628,7 +642,7 @@ export class AwtrixNg extends utils.Adapter {
                                         }
                                     })
                                     .catch(error => {
-                                        this.log.debug(`(screen) received error: ${JSON.stringify(error)}`);
+                                        this.log.debug(`(display/screen) received error: ${JSON.stringify(error)}`);
                                     });
                             }
                         }, this.config.downloadScreenContentInterval * 1000);
@@ -657,7 +671,7 @@ export class AwtrixNg extends utils.Adapter {
     private refreshState(): void {
         this.log.debug('refreshing device state');
 
-        this.apiClient!.getStatsAsync()
+        this.apiClient!.getDeviceAsync()
             .then(async content => {
                 await this.setApiConnected(true);
 
@@ -679,17 +693,17 @@ export class AwtrixNg extends utils.Adapter {
                 await this.setStateChangedAsync('meta.uid', { val: content.uid, ack: true });
                 await this.setStateChangedAsync('meta.version', { val: content.version, ack: true });
 
-                await this.setStateChangedAsync('sensor.lux', { val: parseInt(content.lux), ack: true });
-                await this.setStateChangedAsync('sensor.temp', { val: parseInt(content.temp), ack: true });
-                await this.setStateChangedAsync('sensor.humidity', { val: parseInt(content.hum), ack: true });
+                await this.setStateChangedAsync('sensor.lux', { val: content.lightLevel, ack: true });
+                await this.setStateChangedAsync('sensor.temp', { val: content.temperature, ack: true });
+                await this.setStateChangedAsync('sensor.humidity', { val: content.humidity, ack: true });
 
-                await this.setStateChangedAsync('display.brightness', { val: content.bri, ack: true });
+                await this.setStateChangedAsync('display.brightness', { val: content.brightness, ack: true });
 
-                await this.setStateChangedAsync('device.battery', { val: content.bat, ack: true });
-                await this.setStateChangedAsync('device.ipAddress', { val: content.ip_address, ack: true });
-                await this.setStateChangedAsync('device.wifiSignal', { val: content.wifi_signal, ack: true });
-                await this.setStateChangedAsync('device.freeRAM', { val: content.ram, ack: true });
-                await this.setStateChangedAsync('device.uptime', { val: parseInt(content.uptime), ack: true });
+                await this.setStateChangedAsync('device.battery', { val: content.batteryPercent, ack: true });
+                await this.setStateChangedAsync('device.ipAddress', { val: content.ipAddress, ack: true });
+                await this.setStateChangedAsync('device.wifiSignal', { val: content.wifiRssi, ack: true });
+                await this.setStateChangedAsync('device.freeRAM', { val: content.freeHeapBytes, ack: true });
+                await this.setStateChangedAsync('device.uptime', { val: content.uptimeSeconds, ack: true });
             })
             .catch(error => {
                 this.currentVersion = undefined;
@@ -781,14 +795,14 @@ export class AwtrixNg extends utils.Adapter {
 
     private async refreshBackgroundEffects(): Promise<boolean> {
         return new Promise<boolean>((resolve, reject) => {
-            this.apiClient!.requestAsync('effects')
+            this.apiClient!.requestAsync('capabilities')
                 .then(response => {
                     if (response.status === 200) {
                         this.log.debug(
                             `[refreshBackgroundEffects] Existing effects "${JSON.stringify(response.data)}"`,
                         );
 
-                        this.backgroundEffects = response.data;
+                        this.backgroundEffects = response.data.effects;
 
                         resolve(true);
                     } else {
@@ -801,14 +815,16 @@ export class AwtrixNg extends utils.Adapter {
 
     private async refreshTransitions(): Promise<void> {
         return new Promise((resolve, reject) => {
-            this.apiClient!.requestAsync('transitions')
+            this.apiClient!.requestAsync('capabilities')
                 .then(response => {
                     if (response.status === 200) {
-                        this.log.debug(`[refreshTransitions] Existing transitions "${JSON.stringify(response.data)}"`);
+                        const transitions = response.data.transitions;
+
+                        this.log.debug(`[refreshTransitions] Existing transitions "${JSON.stringify(transitions)}"`);
 
                         const states: { [key: string]: string } = {};
-                        for (let i = 0; i < response.data.length; i++) {
-                            states[i] = response.data[i];
+                        for (let i = 0; i < transitions.length; i++) {
+                            states[i] = transitions[i];
                         }
 
                         this.extendObject('settings.appTransitionEffect', {
@@ -955,24 +971,25 @@ export class AwtrixNg extends utils.Adapter {
             {},
         );
 
-        const postObj: AwtrixApi.Indicator = {
-            color: indicatorValues[`indicator.${index}.color`] as string,
-        };
+        if (indicatorValues[`indicator.${index}.active`]) {
+            const indicator: AwtrixApi.Indicator = {
+                color: indicatorValues[`indicator.${index}.color`] as string,
+            };
 
-        if (postObj.color !== '0') {
-            const blink = indicatorValues[`indicator.${index}.blink`] as number;
-            if (blink > 0) {
-                postObj.blink = blink;
-            } else {
-                const fade = indicatorValues[`indicator.${index}.fade`] as number;
-                postObj.fade = fade;
+            if (indicator.color !== '0') {
+                const blink = indicatorValues[`indicator.${index}.blink`] as number;
+                if (blink > 0) {
+                    indicator.blinkMs = blink;
+                } else {
+                    const fade = indicatorValues[`indicator.${index}.fade`] as number;
+                    indicator.fadeMs = fade;
+                }
             }
-        }
 
-        return this.apiClient!.indicatorRequestAsync(
-            index,
-            indicatorValues[`indicator.${index}.active`] ? postObj : undefined,
-        );
+            return this.apiClient!.indicatorRequestAsync(index, indicator);
+        } else {
+            return this.apiClient!.indicatorDeleteAsync(index);
+        }
     }
 
     private async updateMoodlightByStates(): Promise<AxiosResponse> {
@@ -987,16 +1004,16 @@ export class AwtrixNg extends utils.Adapter {
             {},
         );
 
-        const postObj: AwtrixApi.Moodlight = {
-            brightness: moodlightValues['display.moodlight.brightness'] as number,
-            color: String(moodlightValues['display.moodlight.color']).toUpperCase(),
-        };
+        if (moodlightValues['display.moodlight.active']) {
+            const moodlight: AwtrixApi.Moodlight = {
+                brightness: moodlightValues['display.moodlight.brightness'] as number,
+                color: String(moodlightValues['display.moodlight.color']).toUpperCase(),
+            };
 
-        return this.apiClient!.requestAsync(
-            'moodlight',
-            'POST',
-            moodlightValues['display.moodlight.active'] ? postObj : undefined,
-        );
+            return this.apiClient!.requestAsync('display/moodlight', 'PUT', moodlight);
+        } else {
+            return this.apiClient!.requestAsync('display/moodlight', 'DELETE');
+        }
     }
 
     public removeNamespace(id: string): string {

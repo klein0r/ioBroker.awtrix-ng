@@ -5,36 +5,62 @@ import type { AwtrixNg } from '../main';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace AwtrixApi {
     export type App = {
-        text?: string;
-        textCase?: number;
-        topText?: boolean;
-        textOffset?: number;
-        center?: boolean;
-        color?: string;
-        gradient?: string;
-        blinkText?: number;
-        fadeText?: number;
-        background?: string;
-        rainbow?: boolean;
+        // Text
+        text?: string | Array<AppTextColoredFragment>;
+        textCase?: 'inherit' | 'upper' | 'asTyped';
+        textColor?: string | 'palette';
+        textBlinkMs?: number;
+        textFadeMs?: number;
+        textCenter?: boolean;
+        scroll?: 'inherited' | AppTextScroll;
+        textOffsetX?: number;
+        textInFront?: boolean;
+        // Icon
         icon?: string;
-        pushIcon?: number;
+        iconMode?: 'fixed' | 'pushOnce' | 'push';
+        iconOffsetX?: number;
+        // Timing
+        durationMs?: number;
+        lifetimeMs?: number;
+        lifetimeExpiry?: 'remove' | 'mark';
         repeat?: number;
-        duration?: number;
-        bar?: Array<number>;
-        line?: Array<number>;
-        autoscale?: boolean;
+        // Background
+        backgroundColor?: string;
+        // Charts
+        barChart?: Array<number>;
+        lineChart?: Array<number>;
+        chartAutoscale?: boolean;
+        chartColor?: string;
+        // Progress bar
         progress?: number;
-        progressC?: string;
-        progressBC?: string;
-        pos?: number;
-        draw?: Array<object>;
-        lifetime?: number;
-        lifetimeMode?: number;
-        noScroll?: boolean;
-        scrollSpeed?: number;
+        progressColor?: string;
+        progressTrackColor?: string;
+        // Effects
         effect?: string;
-        effectSettings?: Array<object>;
-        save?: boolean;
+        effectSpeed?: number;
+        // Palette
+        palette?: string; // Cloud, Lava, Ocean, Forest, Stripe, Party, Heat, Rainbow
+        paletteBlend?: boolean;
+        paletteSpan?: number;
+        paletteSpeed?: number;
+        // Overlay
+        overlay?: string; // rain · snow · drizzle · storm · thunder · frost
+        // Draw commands
+        draw?: Array<object>;
+    };
+
+    export type AppTextColoredFragment = {
+        text: string;
+        color: any;
+    };
+
+    export type AppTextScroll = {
+        mode?: 'static' | 'wrap' | 'loop' | 'bounce';
+        direction?: 'left' | 'right';
+        entry?: 'inline' | 'offscreen';
+        whenFits?: 'static' | 'scroll';
+        speed?: number;
+        gap?: number;
     };
 
     export type Settings = {
@@ -44,8 +70,8 @@ export namespace AwtrixApi {
 
     export type Indicator = {
         color?: string;
-        blink?: number;
-        fade?: number;
+        blinkMs?: number;
+        fadeMs?: number;
     };
 
     export type Moodlight = {
@@ -94,9 +120,9 @@ export namespace AwtrixApi {
             return this.apiConnected;
         }
 
-        public async getStatsAsync(): Promise<any> {
+        public async getDeviceAsync(): Promise<any> {
             return new Promise<any>((resolve, reject) => {
-                this.requestAsync('stats', 'GET')
+                this.requestAsync('device', 'GET')
                     .then(response => {
                         if (response.status === 200) {
                             this.apiConnected = true;
@@ -136,11 +162,15 @@ export namespace AwtrixApi {
         }
 
         public async indicatorRequestAsync(index: number, data?: AwtrixApi.Indicator): Promise<AxiosResponse> {
-            return this.requestAsync(`indicator${index}`, 'POST', data);
+            return this.requestAsync(`indicators/${index}`, 'PUT', data);
+        }
+
+        public async indicatorDeleteAsync(index: number): Promise<AxiosResponse> {
+            return this.requestAsync(`indicators/${index}`, 'DELETE');
         }
 
         public async appRequestAsync(name: string, data?: AwtrixApi.App): Promise<AxiosResponse> {
-            return this.requestAsync(`custom?name=${name}`, 'POST', data);
+            return this.requestAsync(`apps/pushed/${name}`, 'PUT', data);
         }
 
         public async requestAsync(url: string, method?: string, data?: object | string): Promise<AxiosResponse> {
