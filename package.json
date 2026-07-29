@@ -1,7 +1,7 @@
 {
   "name": "iobroker.awtrix-ng",
   "version": "0.0.2",
-  "description": "Integrate your Awtrix NG device (e.g. Ulanzi TC001) via HTTP  ",
+  "description": "Integrate your Awtrix NG device (e.g. Ulanzi TC001) via HTTP",
   "author": {
     "name": "Matthias Kleine",
     "email": "info@haus-automatisierung.com"
