@@ -147,8 +147,8 @@ export namespace AppType {
                     const moreOptions: AwtrixApi.App = {};
 
                     // Duration
-                    if (this.appDefinition.duration > 0) {
-                        moreOptions.durationMs = this.appDefinition.duration;
+                    if (this.appDefinition.durationMs > 0) {
+                        moreOptions.durationMs = this.appDefinition.durationMs;
                     }
 
                     // Repeat

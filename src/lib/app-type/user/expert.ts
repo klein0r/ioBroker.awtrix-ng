@@ -86,7 +86,7 @@ export namespace AppType {
                     backgroundColor:
                         typeof this.appStates.background === 'string' ? this.appStates.background : '#000000',
                     icon: typeof this.appStates.icon === 'string' ? this.appStates.icon : '',
-                    durationMs: typeof this.appStates.duration === 'number' ? this.appStates.duration : 0,
+                    durationMs: typeof this.appStates.durationMs === 'number' ? this.appStates.durationMs : 0,
                     scroll: {
                         speed: typeof this.appStates.scrollSpeed === 'number' ? this.appStates.scrollSpeed : 100,
                     },
@@ -98,9 +98,9 @@ export namespace AppType {
 
                         // colors
                         app.progressColor =
-                            typeof this.appStates.progressC === 'string' ? this.appStates.progressC : '#00FF00';
+                            typeof this.appStates.progressColor === 'string' ? this.appStates.progressColor : '#00FF00';
                         app.progressTrackColor =
-                            typeof this.appStates.progressBC === 'string' ? this.appStates.progressBC : '#FFFFFF';
+                            typeof this.appStates.progressTrackColor === 'string' ? this.appStates.progressTrackColor : '#FFFFFF';
                     }
                 }
 
@@ -256,7 +256,7 @@ export namespace AppType {
                 },
             });
 
-            await this.adapter.extendObject(`apps.${appName}.duration`, {
+            await this.adapter.extendObject(`apps.${appName}.durationMs`, {
                 type: 'state',
                 common: {
                     name: {
@@ -277,10 +277,10 @@ export namespace AppType {
                     read: true,
                     write: this.isMainInstance(),
                     def: 0,
-                    unit: 'sec',
+                    unit: 'ms',
                 },
                 native: {
-                    attribute: 'duration',
+                    attribute: 'durationMs',
                 },
             });
 
@@ -386,11 +386,11 @@ export namespace AppType {
                     def: '#00FF00',
                 },
                 native: {
-                    attribute: 'progressC',
+                    attribute: 'progressColor',
                 },
             });
 
-            await this.adapter.extendObject(`apps.${appName}.progress.backgroundColor`, {
+            await this.adapter.extendObject(`apps.${appName}.progress.trackColor`, {
                 type: 'state',
                 common: {
                     name: {
@@ -413,7 +413,7 @@ export namespace AppType {
                     def: '#FFFFFF',
                 },
                 native: {
-                    attribute: 'progressBC',
+                    attribute: 'progressTrackColor',
                 },
             });
 
@@ -423,13 +423,11 @@ export namespace AppType {
                 await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.textColor`);
                 await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.backgroundColor`);
                 await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.icon`);
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.duration`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.durationMs`);
                 await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.scrollSpeed`);
                 await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.progress.percent`);
                 await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.progress.color`);
-                await this.adapter.subscribeForeignStatesAsync(
-                    `${this.objPrefix}.apps.${appName}.progress.backgroundColor`,
-                );
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.progress.trackColor`);
             }
         }
 

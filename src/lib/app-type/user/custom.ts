@@ -143,8 +143,8 @@ export namespace AppType {
             }
 
             // Duration
-            if (this.appDefinition.duration > 0) {
-                app.durationMs = this.appDefinition.duration;
+            if (this.appDefinition.durationMs > 0) {
+                app.durationMs = this.appDefinition.durationMs;
             }
 
             // Thresholds

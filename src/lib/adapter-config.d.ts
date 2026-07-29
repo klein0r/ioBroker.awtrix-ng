@@ -6,7 +6,7 @@ export type DefaultApp = {
 
 export type CustomApp = DefaultApp & {
     icon: string;
-    duration: number;
+    durationMs: number;
     repeat: number;
     text: string;
     objId: string;
@@ -34,7 +34,7 @@ export type CustomApp = DefaultApp & {
 
 export type HistoryApp = DefaultApp & {
     icon: string;
-    duration: number;
+    durationMs: number;
     repeat: number;
     sourceInstance: string;
     objId: string;
