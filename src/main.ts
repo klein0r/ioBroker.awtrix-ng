@@ -167,8 +167,6 @@ export class AwtrixNg extends utils.Adapter {
             }
         }
 
-        let pos = 0;
-
         for (const customApp of this.config.customApps) {
             if (!this.findAppWithName(customApp.name)) {
                 this.apps.push(new AppTypeCustom.Custom(this.apiClient, this, customApp));
@@ -947,9 +945,8 @@ export class AwtrixNg extends utils.Adapter {
             }
 
             return this.apiClient!.indicatorRequestAsync(index, indicator);
-        } else {
-            return this.apiClient!.indicatorDeleteAsync(index);
         }
+        return this.apiClient!.indicatorDeleteAsync(index);
     }
 
     private async updateMoodlightByStates(): Promise<AxiosResponse> {
@@ -971,9 +968,8 @@ export class AwtrixNg extends utils.Adapter {
             };
 
             return this.apiClient!.requestAsync('display/moodlight', 'PUT', moodlight);
-        } else {
-            return this.apiClient!.requestAsync('display/moodlight', 'DELETE');
         }
+        return this.apiClient!.requestAsync('display/moodlight', 'DELETE');
     }
 
     public removeNamespace(id: string): string {

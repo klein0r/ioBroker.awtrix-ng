@@ -8,7 +8,7 @@ export namespace AwtrixApi {
         // Text
         text?: string | Array<AppTextColoredFragment>;
         textCase?: 'inherit' | 'upper' | 'asTyped';
-        textColor?: string | 'palette';
+        textColor?: string;
         textBlinkMs?: number;
         textFadeMs?: number;
         textCenter?: boolean;

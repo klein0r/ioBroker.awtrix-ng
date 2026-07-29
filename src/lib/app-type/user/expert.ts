@@ -83,10 +83,13 @@ export namespace AppType {
                     text: typeof this.appStates.text === 'string' ? this.appStates.text : '',
                     textCase: 'asTyped', // show as sent
                     textColor: typeof this.appStates.color === 'string' ? this.appStates.color : '#FFFFFF',
-                    backgroundColor: typeof this.appStates.background === 'string' ? this.appStates.background : '#000000',
+                    backgroundColor:
+                        typeof this.appStates.background === 'string' ? this.appStates.background : '#000000',
                     icon: typeof this.appStates.icon === 'string' ? this.appStates.icon : '',
                     durationMs: typeof this.appStates.duration === 'number' ? this.appStates.duration : 0,
-                    scroll: { speed: typeof this.appStates.scrollSpeed === 'number' ? this.appStates.scrollSpeed : 100 },
+                    scroll: {
+                        speed: typeof this.appStates.scrollSpeed === 'number' ? this.appStates.scrollSpeed : 100,
+                    },
                 };
 
                 if (this.appStates.progress && typeof this.appStates.progress === 'number') {
