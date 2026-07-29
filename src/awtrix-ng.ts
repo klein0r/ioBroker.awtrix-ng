@@ -132,14 +132,7 @@ export class AwtrixNg extends utils.Adapter {
             'TheaterChase',
             'TwinklingStar',
         ];
-        this.weatherOverlays = [
-            'rain',
-            'snow',
-            'drizzle',
-            'storm',
-            'thunder',
-            'frost',
-        ];
+        this.weatherOverlays = ['rain', 'snow', 'drizzle', 'storm', 'thunder', 'frost'];
 
         this.on('ready', this.onReady.bind(this));
         this.on('stateChange', this.onStateChange.bind(this));

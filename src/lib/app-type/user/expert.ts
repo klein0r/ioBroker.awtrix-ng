@@ -92,7 +92,11 @@ export namespace AppType {
                     },
                 };
 
-                if (this.appStates.overlay && typeof this.appStates.overlay === 'string' && this.appStates.overlay !== 'none') {
+                if (
+                    this.appStates.overlay &&
+                    typeof this.appStates.overlay === 'string' &&
+                    this.appStates.overlay !== 'none'
+                ) {
                     if (this.adapter.getWeatherOverlays().includes(this.appStates.overlay)) {
                         app.overlay = this.appStates.overlay;
                     }
@@ -313,7 +317,9 @@ export namespace AppType {
                     read: true,
                     write: this.isMainInstance(),
                     def: 'none',
-                    states: ((overlays: Array<string>) => { return Object.fromEntries(overlays.map(item => [item, item])) })(this.adapter.getWeatherOverlays()),
+                    states: ((overlays: Array<string>) => {
+                        return Object.fromEntries(overlays.map(item => [item, item]));
+                    })(this.adapter.getWeatherOverlays()),
                 },
                 native: {
                     attribute: 'overlay',
