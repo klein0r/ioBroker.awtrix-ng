@@ -79,10 +79,10 @@ jobs:
           build: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-          sentry: true
-          sentry-token: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          sentry-project: "iobroker-awtrix-ng"
-          sentry-version-prefix: "iobroker.awtrix-ng"
-          sentry-sourcemap-paths: "build/"
+          # sentry: true
+          # sentry-token: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          # sentry-project: "iobroker-awtrix-ng"
+          # sentry-version-prefix: "iobroker.awtrix-ng"
+          # sentry-sourcemap-paths: "build/"
           # If your sentry project is linked to a GitHub repository, you can enable the following option
           # sentry-github-integration: true
