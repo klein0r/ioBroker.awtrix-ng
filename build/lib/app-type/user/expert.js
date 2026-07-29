@@ -85,20 +85,21 @@ var AppType;
         const app = {
           ...this.baseObject,
           text: typeof this.appStates.text === "string" ? this.appStates.text : "",
-          textCase: 2,
+          textCase: "asTyped",
           // show as sent
-          color: typeof this.appStates.color === "string" ? this.appStates.color : "#FFFFFF",
-          background: typeof this.appStates.background === "string" ? this.appStates.background : "#000000",
+          textColor: typeof this.appStates.color === "string" ? this.appStates.color : "#FFFFFF",
+          backgroundColor: typeof this.appStates.background === "string" ? this.appStates.background : "#000000",
           icon: typeof this.appStates.icon === "string" ? this.appStates.icon : "",
-          duration: typeof this.appStates.duration === "number" ? this.appStates.duration : 0,
-          scrollSpeed: typeof this.appStates.scrollSpeed === "number" ? this.appStates.scrollSpeed : 100,
-          pos: this.appDefinition.position
+          durationMs: typeof this.appStates.durationMs === "number" ? this.appStates.durationMs : 0,
+          scroll: {
+            speed: typeof this.appStates.scrollSpeed === "number" ? this.appStates.scrollSpeed : 100
+          }
         };
         if (this.appStates.progress && typeof this.appStates.progress === "number") {
           if (this.appStates.progress >= 0 && this.appStates.progress <= 100) {
             app.progress = this.appStates.progress;
-            app.progressC = typeof this.appStates.progressC === "string" ? this.appStates.progressC : "#00FF00";
-            app.progressBC = typeof this.appStates.progressBC === "string" ? this.appStates.progressBC : "#FFFFFF";
+            app.progressColor = typeof this.appStates.progressColor === "string" ? this.appStates.progressColor : "#00FF00";
+            app.progressTrackColor = typeof this.appStates.progressTrackColor === "string" ? this.appStates.progressTrackColor : "#FFFFFF";
           }
         }
         await this.apiClient.appRequestAsync(this.appDefinition.name, app).catch((error) => {
@@ -243,7 +244,7 @@ var AppType;
           attribute: "icon"
         }
       });
-      await this.adapter.extendObject(`apps.${appName}.duration`, {
+      await this.adapter.extendObject(`apps.${appName}.durationMs`, {
         type: "state",
         common: {
           name: {
@@ -264,10 +265,10 @@ var AppType;
           read: true,
           write: this.isMainInstance(),
           def: 0,
-          unit: "sec"
+          unit: "ms"
         },
         native: {
-          attribute: "duration"
+          attribute: "durationMs"
         }
       });
       await this.adapter.extendObject(`apps.${appName}.scrollSpeed`, {
@@ -369,10 +370,10 @@ var AppType;
           def: "#00FF00"
         },
         native: {
-          attribute: "progressC"
+          attribute: "progressColor"
         }
       });
-      await this.adapter.extendObject(`apps.${appName}.progress.backgroundColor`, {
+      await this.adapter.extendObject(`apps.${appName}.progress.trackColor`, {
         type: "state",
         common: {
           name: {
@@ -395,7 +396,7 @@ var AppType;
           def: "#FFFFFF"
         },
         native: {
-          attribute: "progressBC"
+          attribute: "progressTrackColor"
         }
       });
       if (!this.isMainInstance()) {
@@ -404,13 +405,11 @@ var AppType;
         await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.textColor`);
         await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.backgroundColor`);
         await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.icon`);
-        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.duration`);
+        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.durationMs`);
         await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.scrollSpeed`);
         await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.progress.percent`);
         await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.progress.color`);
-        await this.adapter.subscribeForeignStatesAsync(
-          `${this.objPrefix}.apps.${appName}.progress.backgroundColor`
-        );
+        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.progress.trackColor`);
       }
     }
     async stateChanged(id, state) {

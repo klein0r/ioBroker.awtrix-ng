@@ -91,13 +91,17 @@ var AppType;
     async onStateChange(id, state) {
       const appName = this.getName();
       if (id) {
-        this.adapter.log.debug(`[onStateChange] ${appName}: State change "${id}": ${JSON.stringify(state)}`);
         if (state && !state.ack) {
           if (id === `${this.hasOwnActivateState() ? this.adapter.namespace : this.objPrefix}.apps.${appName}.activate`) {
             if (state.val) {
-              this.apiClient.requestAsync("switch", "POST", { name: appName }).catch((error) => {
+              this.apiClient.requestAsync("apps/active", "PUT", { name: appName }).then(async (response) => {
+                if (response.status === 200 && response.data.ok === true) {
+                  const idOwnNamespace = this.getObjIdOwnNamespace(id);
+                  await this.adapter.setState(idOwnNamespace, { val: state.val, ack: true });
+                }
+              }).catch((error) => {
                 this.adapter.log.warn(
-                  `[onStateChange] ${appName}: (switch) Unable to execute action: ${error}`
+                  `[onStateChange] ${appName}: (apps/activate) Unable to execute action: ${error}`
                 );
               });
             } else {

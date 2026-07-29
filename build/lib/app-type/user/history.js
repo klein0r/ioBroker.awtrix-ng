@@ -128,25 +128,24 @@ var AppType;
         );
         if (graphData.length > 0) {
           const moreOptions = {};
-          if (this.appDefinition.duration > 0) {
-            moreOptions.duration = this.appDefinition.duration;
+          if (this.appDefinition.durationMs > 0) {
+            moreOptions.durationMs = this.appDefinition.durationMs;
           }
           if (this.appDefinition.repeat > 0) {
             moreOptions.repeat = this.appDefinition.repeat;
           }
           if (this.appDefinition.display == "bar") {
-            moreOptions.bar = graphData;
+            moreOptions.barChart = graphData;
           } else {
-            moreOptions.line = graphData;
+            moreOptions.lineChart = graphData;
           }
           await this.apiClient.appRequestAsync(this.appDefinition.name, {
-            color: this.appDefinition.lineColor || "#FF0000",
-            background: this.appDefinition.backgroundColor || "#000000",
-            autoscale: true,
+            chartColor: this.appDefinition.lineColor || "#FF0000",
+            backgroundColor: this.appDefinition.backgroundColor || "#000000",
+            chartAutoscale: true,
             icon: this.appDefinition.icon,
-            lifetime: this.adapter.config.historyAppsRefreshInterval + 60,
+            lifetimeMs: (this.adapter.config.historyAppsRefreshInterval + 60) * 1e3,
             // Remove app if there is no update in configured interval (+ buffer)
-            pos: this.appDefinition.position,
             ...moreOptions
           }).catch((error) => {
             this.adapter.log.warn(

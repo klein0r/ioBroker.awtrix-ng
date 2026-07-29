@@ -103,28 +103,24 @@ var AppType;
       return super.init();
     }
     createAppRequestObj(text, val) {
-      const app = {
-        pos: this.appDefinition.position
-      };
+      const app = {};
       if (text !== "") {
         app.text = text;
-        app.textCase = 2;
+        app.textCase = "asTyped";
       }
       if (this.appDefinition.useBackgroundEffect) {
         app.effect = this.appDefinition.backgroundEffect;
       } else if (this.appDefinition.backgroundColor) {
-        app.background = this.appDefinition.backgroundColor;
+        app.backgroundColor = this.appDefinition.backgroundColor;
       }
-      if (this.appDefinition.rainbow) {
-        app.rainbow = true;
-      } else if (this.appDefinition.textColor) {
-        app.color = this.appDefinition.textColor;
+      if (this.appDefinition.textColor) {
+        app.textColor = this.appDefinition.textColor;
       }
       if (this.appDefinition.noScroll) {
-        app.noScroll = true;
+        app.scroll = { mode: "static" };
       } else {
         if (this.appDefinition.scrollSpeed > 0) {
-          app.scrollSpeed = this.appDefinition.scrollSpeed;
+          app.scroll = { speed: this.appDefinition.scrollSpeed };
         }
         if (this.appDefinition.repeat > 0) {
           app.repeat = this.appDefinition.repeat;
@@ -133,8 +129,8 @@ var AppType;
       if (this.appDefinition.icon) {
         app.icon = this.appDefinition.icon;
       }
-      if (this.appDefinition.duration > 0) {
-        app.duration = this.appDefinition.duration;
+      if (this.appDefinition.durationMs > 0) {
+        app.durationMs = this.appDefinition.durationMs;
       }
       if (typeof val === "number") {
         if (this.appDefinition.thresholdLtActive && val < this.appDefinition.thresholdLtValue) {
@@ -145,11 +141,10 @@ var AppType;
             app.icon = this.appDefinition.thresholdLtIcon;
           }
           if (this.appDefinition.thresholdLtTextColor) {
-            app.color = this.appDefinition.thresholdLtTextColor;
-            app.rainbow = false;
+            app.textColor = this.appDefinition.thresholdLtTextColor;
           }
           if (this.appDefinition.thresholdLtBackgroundColor) {
-            app.background = this.appDefinition.thresholdLtBackgroundColor;
+            app.backgroundColor = this.appDefinition.thresholdLtBackgroundColor;
             if (this.appDefinition.useBackgroundEffect) {
               delete app.effect;
             }
@@ -162,11 +157,10 @@ var AppType;
             app.icon = this.appDefinition.thresholdGtIcon;
           }
           if (this.appDefinition.thresholdGtTextColor) {
-            app.color = this.appDefinition.thresholdGtTextColor;
-            app.rainbow = false;
+            app.textColor = this.appDefinition.thresholdGtTextColor;
           }
           if (this.appDefinition.thresholdGtBackgroundColor) {
-            app.background = this.appDefinition.thresholdGtBackgroundColor;
+            app.backgroundColor = this.appDefinition.thresholdGtBackgroundColor;
             if (this.appDefinition.useBackgroundEffect) {
               delete app.effect;
             }

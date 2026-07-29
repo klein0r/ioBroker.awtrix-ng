@@ -50,7 +50,7 @@ var AwtrixApi;
         };
       }
       this.axiosInstance = import_axios.default.create({
-        baseURL: `http://${ipAddress}:${port}/api/`,
+        baseURL: `http://${ipAddress}:${port}/api/v1/`,
         timeout: httpTimeout * 1e3 || 3e3,
         auth: httpAuth,
         validateStatus: (status) => {
@@ -62,9 +62,9 @@ var AwtrixApi;
     isConnected() {
       return this.apiConnected;
     }
-    async getStatsAsync() {
+    async getDeviceAsync() {
       return new Promise((resolve, reject) => {
-        this.requestAsync("stats", "GET").then((response) => {
+        this.requestAsync("device", "GET").then((response) => {
           if (response.status === 200) {
             this.apiConnected = true;
             resolve(response.data);
@@ -80,8 +80,8 @@ var AwtrixApi;
     async removeAppAsync(name) {
       return new Promise((resolve, reject) => {
         if (this.apiConnected) {
-          this.appRequestAsync(name).then((response) => {
-            if (response.status === 200 && response.data === "OK") {
+          this.appDeleteAsync(name).then((response) => {
+            if (response.status === 200 && response.data.ok === true) {
               this.adapter.log.debug(`[removeApp] Removed customApp app "${name}"`);
               resolve(true);
             } else {
@@ -97,10 +97,16 @@ var AwtrixApi;
       return this.requestAsync("settings", "POST", { [data.key]: data.value });
     }
     async indicatorRequestAsync(index, data) {
-      return this.requestAsync(`indicator${index}`, "POST", data);
+      return this.requestAsync(`indicators/${index}`, "PUT", data);
+    }
+    async indicatorDeleteAsync(index) {
+      return this.requestAsync(`indicators/${index}`, "DELETE");
     }
     async appRequestAsync(name, data) {
-      return this.requestAsync(`custom?name=${name}`, "POST", data);
+      return this.requestAsync(`apps/pushed/${name}`, "PUT", data);
+    }
+    async appDeleteAsync(name) {
+      return this.requestAsync(`apps/${name}`, "DELETE");
     }
     async requestAsync(url, method, data) {
       return new Promise((resolve, reject) => {

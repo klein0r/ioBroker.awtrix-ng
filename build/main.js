@@ -28,7 +28,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var main_exports = {};
 __export(main_exports, {
-  AwtrixLight: () => AwtrixLight
+  AwtrixNg: () => AwtrixNg
 });
 module.exports = __toCommonJS(main_exports);
 var utils = __toESM(require("@iobroker/adapter-core"));
@@ -40,7 +40,7 @@ var import_custom = require("./lib/app-type/user/custom");
 var import_expert = require("./lib/app-type/user/expert");
 var import_history = require("./lib/app-type/user/history");
 const NATIVE_APPS = ["Time", "Date", "Temperature", "Humidity", "Battery"];
-class AwtrixLight extends utils.Adapter {
+class AwtrixNg extends utils.Adapter {
   _isMainInstance;
   currentVersion;
   supportedVersion;
@@ -59,7 +59,7 @@ class AwtrixLight extends utils.Adapter {
     });
     this._isMainInstance = true;
     this.currentVersion = void 0;
-    this.supportedVersion = "0.98";
+    this.supportedVersion = "1.0.7";
     this.displayedVersionWarning = false;
     this.apiClient = null;
     this.apiConnected = false;
@@ -67,25 +67,25 @@ class AwtrixLight extends utils.Adapter {
     this.downloadScreenContentInterval = void 0;
     this.apps = [];
     this.backgroundEffects = [
-      "Fade",
-      "MovingLine",
       "BrickBreaker",
-      "PingPong",
-      "Radar",
       "Checkerboard",
+      "ColorWaves",
+      "Fade",
       "Fireworks",
+      "LookingEyes",
+      "Matrix",
+      "MovingLine",
+      "Pacifica",
+      "PingPong",
+      "Plasma",
       "PlasmaCloud",
+      "Radar",
       "Ripple",
       "Snake",
-      "Pacifica",
-      "TheaterChase",
-      "Plasma",
-      "Matrix",
       "SwirlIn",
       "SwirlOut",
-      "LookingEyes",
-      "TwinklingStars",
-      "ColorWaves"
+      "TheaterChase",
+      "TwinklingStar"
     ];
     this.on("ready", this.onReady.bind(this));
     this.on("stateChange", this.onStateChange.bind(this));
@@ -95,7 +95,6 @@ class AwtrixLight extends utils.Adapter {
   }
   async onReady() {
     await this.setApiConnected(false);
-    await this.upgradeFromPreviousVersion();
     await this.subscribeStatesAsync("*");
     if (!this.config.awtrixIp) {
       this.log.error(`IP address not configured - please check instance configuration and restart`);
@@ -119,12 +118,8 @@ class AwtrixLight extends utils.Adapter {
         this.apps.push(new import_native.AppType.Native(this.apiClient, this, nativeAppName));
       }
     }
-    let pos = 0;
     for (const customApp of this.config.customApps) {
       if (!this.findAppWithName(customApp.name)) {
-        if (!this.config.customPositions) {
-          customApp.position = pos++;
-        }
         this.apps.push(new import_custom.AppType.Custom(this.apiClient, this, customApp));
       } else {
         this.log.warn(`App with name ${customApp.name} already exists. Skipping custom app!`);
@@ -132,9 +127,6 @@ class AwtrixLight extends utils.Adapter {
     }
     for (const historyApp of this.config.historyApps) {
       if (!this.findAppWithName(historyApp.name)) {
-        if (!this.config.customPositions) {
-          historyApp.position = pos++;
-        }
         this.apps.push(new import_history.AppType.History(this.apiClient, this, historyApp));
       } else {
         this.log.warn(`App with name ${historyApp.name} already exists. Skipping history app!`);
@@ -142,40 +134,12 @@ class AwtrixLight extends utils.Adapter {
     }
     for (const expertApp of this.config.expertApps) {
       if (!this.findAppWithName(expertApp.name)) {
-        if (!this.config.customPositions) {
-          expertApp.position = pos++;
-        }
         this.apps.push(new import_expert.AppType.Expert(this.apiClient, this, expertApp));
       } else {
         this.log.warn(`App with name ${expertApp.name} already exists. Skipping expert app!`);
       }
     }
     this.refreshState();
-  }
-  async upgradeFromPreviousVersion() {
-    this.log.debug(`Upgrading objects from previous version`);
-    await this.delObjectAsync("apps.eyes", { recursive: true });
-    await this.extendObject("settings.calendarHeaderColor", {
-      common: {
-        type: "string",
-        role: "level.color.rgb",
-        def: "#FF0000"
-      }
-    });
-    await this.extendObject("settings.calendarBodyColor", {
-      common: {
-        type: "string",
-        role: "level.color.rgb",
-        def: "#FFFFFF"
-      }
-    });
-    await this.extendObject("settings.calendarTextColor", {
-      common: {
-        type: "string",
-        role: "level.color.rgb",
-        def: "#000000"
-      }
-    });
   }
   async importForeignSettings() {
     var _a, _b, _c;
@@ -193,7 +157,6 @@ class AwtrixLight extends utils.Adapter {
           this.config.autoDeleteForeignApps = instanceObj.native.autoDeleteForeignApps;
           this.config.removeAppsOnStop = instanceObj.native.removeAppsOnStop;
           this.config.expertApps = instanceObj.native.expertApps;
-          this.config.customPositions = instanceObj.native.customPositions;
           this.log.debug(
             `[importForeignSettings] Copied settings from foreign instance "system.adapter.${this.config.foreignSettingsInstance}"`
           );
@@ -237,8 +200,8 @@ class AwtrixLight extends utils.Adapter {
           }
         } else if (idNoNamespace === "display.power") {
           this.log.debug(`changing display power to ${state.val}`);
-          this.apiClient.requestAsync("power", "POST", { power: state.val }).then(async (response) => {
-            if (response.status === 200 && response.data === "OK") {
+          this.apiClient.requestAsync("display", "PATCH", { power: state.val }).then(async (response) => {
+            if (response.status === 200 && response.data.ok === true) {
               await this.setState(idNoNamespace, { val: state.val, ack: true });
             }
           }).catch((error) => {
@@ -246,17 +209,17 @@ class AwtrixLight extends utils.Adapter {
           });
         } else if (idNoNamespace === "device.sleep") {
           this.log.debug(`enable sleep mode of device for ${state.val} seconds`);
-          this.apiClient.requestAsync("sleep", "POST", { sleep: state.val }).then(async (response) => {
-            if (response.status === 200 && response.data === "OK") {
+          this.apiClient.requestAsync("device/sleep", "POST", { durationMs: state.val }).then(async (response) => {
+            if (response.status === 200 && response.data.ok === true) {
               await this.setState(idNoNamespace, { val: state.val, ack: true });
               await this.setApiConnected(false);
             }
           }).catch((error) => {
-            this.log.warn(`(sleep) Unable to execute action: ${error}`);
+            this.log.warn(`(device/sleep) Unable to execute action: ${error}`);
           });
         } else if (idNoNamespace.startsWith("display.moodlight.")) {
           this.updateMoodlightByStates().then(async (response) => {
-            if (response.status === 200 && response.data === "OK") {
+            if (response.status === 200 && response.data.ok === true) {
               await this.setState(idNoNamespace, { val: state.val, ack: true });
             }
           }).catch((error) => {
@@ -264,42 +227,52 @@ class AwtrixLight extends utils.Adapter {
           });
         } else if (idNoNamespace === "device.update") {
           this.log.info("performing firmware update");
-          this.apiClient.requestAsync("doupdate", "POST").then(async (response) => {
-            if (response.status === 200 && response.data === "OK") {
+          this.apiClient.requestAsync("update", "POST").then(async (response) => {
+            if (response.status === 200 && response.data.ok === true) {
               this.log.info("started firmware update");
               await this.setApiConnected(false);
             }
           }).catch((error) => {
             this.log.warn(
-              `(doupdate) Unable to execute firmware update (maybe this is already the newest version): ${error}`
+              `(update) Unable to execute firmware update (maybe this is already the newest version): ${error}`
             );
           });
         } else if (idNoNamespace === "device.reboot") {
-          this.apiClient.requestAsync("reboot", "POST").then(async (response) => {
-            if (response.status === 200 && response.data === "OK") {
+          this.apiClient.requestAsync("device/reboot", "POST").then(async (response) => {
+            if (response.status === 200 && response.data.ok === true) {
               this.log.info("rebooting device");
+              await this.setState(idNoNamespace, { val: state.val, ack: true });
               await this.setApiConnected(false);
             }
           }).catch((error) => {
-            this.log.warn(`(reboot) Unable to execute action: ${error}`);
+            this.log.warn(`(device/reboot) Unable to execute action: ${error}`);
           });
         } else if (idNoNamespace === "notification.dismiss") {
-          this.apiClient.requestAsync("notify/dismiss", "POST").then((response) => {
-            if (response.status === 200 && response.data === "OK") {
+          this.apiClient.requestAsync("notifications/active", "DELETE").then(async (response) => {
+            if (response.status === 200 && response.data.ok === true) {
               this.log.info("dismissed notifications");
+              await this.setState(idNoNamespace, { val: state.val, ack: true });
             }
           }).catch((error) => {
-            this.log.warn(`(notify/dismiss) Unable to execute action: ${error}`);
+            this.log.warn(`(notifications/active) Unable to execute action: ${error}`);
           });
         } else if (idNoNamespace === "apps.next") {
           this.log.debug("switching to next app");
-          this.apiClient.requestAsync("nextapp", "POST").catch((error) => {
-            this.log.warn(`(nextapp) Unable to execute action: ${error}`);
+          this.apiClient.requestAsync("apps/next", "POST").then(async (response) => {
+            if (response.status === 200 && response.data.ok === true) {
+              await this.setState(idNoNamespace, { val: state.val, ack: true });
+            }
+          }).catch((error) => {
+            this.log.warn(`(apps/next) Unable to execute action: ${error}`);
           });
         } else if (idNoNamespace === "apps.prev") {
           this.log.debug("switching to previous app");
-          this.apiClient.requestAsync("previousapp", "POST").catch((error) => {
-            this.log.warn(`(previousapp) Unable to execute action: ${error}`);
+          this.apiClient.requestAsync("apps/previous", "POST").then(async (response) => {
+            if (response.status === 200 && response.data.ok === true) {
+              await this.setState(idNoNamespace, { val: state.val, ack: true });
+            }
+          }).catch((error) => {
+            this.log.warn(`(apps/previous) Unable to execute action: ${error}`);
           });
         } else if (idNoNamespace.match(/indicator\.[0-9]{1}\..*$/g)) {
           const matches = idNoNamespace.match(/indicator\.([0-9]{1})\.(.*)$/);
@@ -308,7 +281,7 @@ class AwtrixLight extends utils.Adapter {
           this.log.debug(`Changed indicator ${indicatorNo} with action ${action}`);
           if (indicatorNo && indicatorNo >= 1) {
             this.updateIndicatorByStates(indicatorNo).then(async (response) => {
-              if (response.status === 200 && response.data === "OK") {
+              if (response.status === 200 && response.data.ok === true) {
                 await this.setState(idNoNamespace, { val: state.val, ack: true });
               }
             }).catch((error) => {
@@ -348,10 +321,10 @@ class AwtrixLight extends utils.Adapter {
           if (msgFiltered.repeat !== void 0 && msgFiltered.repeat <= 0) {
             delete msgFiltered.repeat;
           }
-          if (msgFiltered.duration !== void 0 && msgFiltered.duration <= 0) {
-            delete msgFiltered.duration;
+          if (msgFiltered.durationMs !== void 0 && msgFiltered.durationMs <= 0) {
+            delete msgFiltered.durationMs;
           }
-          this.apiClient.requestAsync("notify", "POST", msgFiltered).then((response) => {
+          this.apiClient.requestAsync("notifications", "POST", msgFiltered).then((response) => {
             this.sendTo(obj.from, obj.command, { error: null, data: response.data }, obj.callback);
           }).catch((error) => {
             this.sendTo(obj.from, obj.command, { error }, obj.callback);
@@ -367,7 +340,7 @@ class AwtrixLight extends utils.Adapter {
       } else if (obj.command === "sound" && typeof obj.message === "object") {
         if (this.apiClient && this.apiClient.isConnected()) {
           const msgFiltered = Object.fromEntries(Object.entries(obj.message).filter(([_, v]) => v !== null));
-          this.apiClient.requestAsync("sound", "POST", msgFiltered).then((response) => {
+          this.apiClient.requestAsync("sounds/play", "POST", msgFiltered).then((response) => {
             this.sendTo(obj.from, obj.command, { error: null, data: response.data }, obj.callback);
           }).catch((error) => {
             this.sendTo(obj.from, obj.command, { error }, obj.callback);
@@ -403,7 +376,7 @@ class AwtrixLight extends utils.Adapter {
           const notificationApp = {
             text: messages
           };
-          this.apiClient.requestAsync("notify", "POST", notificationApp).then((response) => {
+          this.apiClient.requestAsync("notifications", "POST", notificationApp).then((response) => {
             this.sendTo(obj.from, obj.command, { error: null, sent: true }, obj.callback);
           }).catch((error) => {
             this.sendTo(obj.from, obj.command, { error, sent: false }, obj.callback);
@@ -433,17 +406,17 @@ class AwtrixLight extends utils.Adapter {
       if (connection) {
         this.log.debug("API is online");
         try {
-          this.apiClient.requestAsync("notify", "POST", {
-            duration: 2,
+          this.apiClient.requestAsync("notifications", "POST", {
+            durationMs: 2e3,
             draw: [
-              {
-                dc: [16, 4, 3, "#164477"],
-                // [x, y, r, cl] Draw a circle with center at (x, y), radius r, and color cl
-                dl: [16, 3, 16, 8, "#3399cc"],
-                // [x0, y0, x1, y1, cl] Draw a line from (x0, y0) to (x1, y1) with color cl
-                dp: [16, 1, "#3399cc"]
-                // [x, y, cl] Draw a pixel at position (x, y) with color cl
-              }
+              ["circle", 3, 4, 3, "#164477"],
+              // ["circle", cx, cy, r, color]
+              ["line", 3, 3, 3, 8, "#3399cc"],
+              // ["line", x1, y1, x2, y2, color]
+              ["pixel", 3, 1, "#3399cc"],
+              // ["pixel", x, y, color]
+              ["text", 10, 2, this.version, "#164477"]
+              // ["text", x, y, "HI", color]
             ]
           }).catch((error) => {
             this.log.warn(error);
@@ -469,11 +442,11 @@ class AwtrixLight extends utils.Adapter {
             );
             this.downloadScreenContentInterval = this.setInterval(() => {
               if (this.apiClient.isConnected()) {
-                this.apiClient.requestAsync("screen", "GET").then(async (response) => {
+                this.apiClient.requestAsync("display/screen", "GET").then(async (response) => {
                   if (response.status === 200) {
                     const pixelData = response.data;
-                    const width = 640;
-                    const height = 160;
+                    const width = pixelData.width;
+                    const height = pixelData.height;
                     const scaleX = width / 32;
                     const scaleY = height / 8;
                     let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 640 160">`;
@@ -489,7 +462,7 @@ class AwtrixLight extends utils.Adapter {
                     await this.setState("display.content", { val: svg, ack: true });
                   }
                 }).catch((error) => {
-                  this.log.debug(`(screen) received error: ${JSON.stringify(error)}`);
+                  this.log.debug(`(display/screen) received error: ${JSON.stringify(error)}`);
                 });
               }
             }, this.config.downloadScreenContentInterval * 1e3);
@@ -515,7 +488,7 @@ class AwtrixLight extends utils.Adapter {
   }
   refreshState() {
     this.log.debug("refreshing device state");
-    this.apiClient.getStatsAsync().then(async (content) => {
+    this.apiClient.getDeviceAsync().then(async (content) => {
       await this.setApiConnected(true);
       this.currentVersion = String(content.version);
       if (this.isNewerVersion(this.currentVersion, this.supportedVersion) && !this.displayedVersionWarning) {
@@ -525,21 +498,21 @@ class AwtrixLight extends utils.Adapter {
           `Firmware update: ${this.currentVersion} -> ${this.supportedVersion}`
         );
         this.log.warn(
-          `You should update your Awtrix Light - supported version of this adapter is ${this.supportedVersion} (or later). Your current version is ${this.currentVersion}`
+          `You should update your Awtrix NG - supported version of this adapter is ${this.supportedVersion} (or later). Your current version is ${this.currentVersion}`
         );
         this.displayedVersionWarning = true;
       }
       await this.setStateChangedAsync("meta.uid", { val: content.uid, ack: true });
       await this.setStateChangedAsync("meta.version", { val: content.version, ack: true });
-      await this.setStateChangedAsync("sensor.lux", { val: parseInt(content.lux), ack: true });
-      await this.setStateChangedAsync("sensor.temp", { val: parseInt(content.temp), ack: true });
-      await this.setStateChangedAsync("sensor.humidity", { val: parseInt(content.hum), ack: true });
-      await this.setStateChangedAsync("display.brightness", { val: content.bri, ack: true });
-      await this.setStateChangedAsync("device.battery", { val: content.bat, ack: true });
-      await this.setStateChangedAsync("device.ipAddress", { val: content.ip_address, ack: true });
-      await this.setStateChangedAsync("device.wifiSignal", { val: content.wifi_signal, ack: true });
-      await this.setStateChangedAsync("device.freeRAM", { val: content.ram, ack: true });
-      await this.setStateChangedAsync("device.uptime", { val: parseInt(content.uptime), ack: true });
+      await this.setStateChangedAsync("sensor.lux", { val: content.lightLevel, ack: true });
+      await this.setStateChangedAsync("sensor.temp", { val: content.temperature, ack: true });
+      await this.setStateChangedAsync("sensor.humidity", { val: content.humidity, ack: true });
+      await this.setStateChangedAsync("display.brightness", { val: content.brightness, ack: true });
+      await this.setStateChangedAsync("device.battery", { val: content.batteryPercent, ack: true });
+      await this.setStateChangedAsync("device.ipAddress", { val: content.ipAddress, ack: true });
+      await this.setStateChangedAsync("device.wifiSignal", { val: content.wifiRssi, ack: true });
+      await this.setStateChangedAsync("device.freeRAM", { val: content.freeHeapBytes, ack: true });
+      await this.setStateChangedAsync("device.uptime", { val: content.uptimeSeconds, ack: true });
     }).catch((error) => {
       this.currentVersion = void 0;
       this.log.debug(`(stats) received error - API is now offline: ${JSON.stringify(error)}`);
@@ -612,12 +585,12 @@ class AwtrixLight extends utils.Adapter {
   }
   async refreshBackgroundEffects() {
     return new Promise((resolve, reject) => {
-      this.apiClient.requestAsync("effects").then((response) => {
+      this.apiClient.requestAsync("capabilities").then((response) => {
         if (response.status === 200) {
           this.log.debug(
             `[refreshBackgroundEffects] Existing effects "${JSON.stringify(response.data)}"`
           );
-          this.backgroundEffects = response.data;
+          this.backgroundEffects = response.data.effects;
           resolve(true);
         } else {
           reject(new Error(`${response.status}: ${response.data}`));
@@ -627,12 +600,13 @@ class AwtrixLight extends utils.Adapter {
   }
   async refreshTransitions() {
     return new Promise((resolve, reject) => {
-      this.apiClient.requestAsync("transitions").then((response) => {
+      this.apiClient.requestAsync("capabilities").then((response) => {
         if (response.status === 200) {
-          this.log.debug(`[refreshTransitions] Existing transitions "${JSON.stringify(response.data)}"`);
+          const transitions = response.data.transitions;
+          this.log.debug(`[refreshTransitions] Existing transitions "${JSON.stringify(transitions)}"`);
           const states = {};
-          for (let i = 0; i < response.data.length; i++) {
-            states[i] = response.data[i];
+          for (let i = 0; i < transitions.length; i++) {
+            states[i] = transitions[i];
           }
           this.extendObject("settings.appTransitionEffect", {
             common: {
@@ -747,22 +721,22 @@ class AwtrixLight extends utils.Adapter {
       }),
       {}
     );
-    const postObj = {
-      color: indicatorValues[`indicator.${index}.color`]
-    };
-    if (postObj.color !== "0") {
-      const blink = indicatorValues[`indicator.${index}.blink`];
-      if (blink > 0) {
-        postObj.blink = blink;
-      } else {
-        const fade = indicatorValues[`indicator.${index}.fade`];
-        postObj.fade = fade;
+    if (indicatorValues[`indicator.${index}.active`]) {
+      const indicator = {
+        color: indicatorValues[`indicator.${index}.color`]
+      };
+      if (indicator.color !== "0") {
+        const blink = indicatorValues[`indicator.${index}.blink`];
+        if (blink > 0) {
+          indicator.blinkMs = blink;
+        } else {
+          const fade = indicatorValues[`indicator.${index}.fade`];
+          indicator.fadeMs = fade;
+        }
       }
+      return this.apiClient.indicatorRequestAsync(index, indicator);
     }
-    return this.apiClient.indicatorRequestAsync(
-      index,
-      indicatorValues[`indicator.${index}.active`] ? postObj : void 0
-    );
+    return this.apiClient.indicatorDeleteAsync(index);
   }
   async updateMoodlightByStates() {
     this.log.debug(`Updating moodlight`);
@@ -774,15 +748,14 @@ class AwtrixLight extends utils.Adapter {
       }),
       {}
     );
-    const postObj = {
-      brightness: moodlightValues["display.moodlight.brightness"],
-      color: String(moodlightValues["display.moodlight.color"]).toUpperCase()
-    };
-    return this.apiClient.requestAsync(
-      "moodlight",
-      "POST",
-      moodlightValues["display.moodlight.active"] ? postObj : void 0
-    );
+    if (moodlightValues["display.moodlight.active"]) {
+      const moodlight = {
+        brightness: moodlightValues["display.moodlight.brightness"],
+        color: String(moodlightValues["display.moodlight.color"]).toUpperCase()
+      };
+      return this.apiClient.requestAsync("display/moodlight", "PUT", moodlight);
+    }
+    return this.apiClient.requestAsync("display/moodlight", "DELETE");
   }
   removeNamespace(id) {
     const re = new RegExp(`${this.namespace}*\\.`, "g");
@@ -810,8 +783,8 @@ class AwtrixLight extends utils.Adapter {
     }
   }
   isNewerVersion(oldVer, newVer) {
-    const oldParts = oldVer.split(".");
-    const newParts = newVer.split(".");
+    const oldParts = oldVer.replace("-dev", "").split(".");
+    const newParts = newVer.replace("-dev", "").split(".");
     for (let i = 0; i < newParts.length; i++) {
       const a = ~~newParts[i];
       const b = ~~oldParts[i];
@@ -846,12 +819,12 @@ class AwtrixLight extends utils.Adapter {
   }
 }
 if (require.main !== module) {
-  module.exports = (options) => new AwtrixLight(options);
+  module.exports = (options) => new AwtrixNg(options);
 } else {
-  (() => new AwtrixLight())();
+  (() => new AwtrixNg())();
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  AwtrixLight
+  AwtrixNg
 });
 //# sourceMappingURL=main.js.map
