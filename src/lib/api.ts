@@ -1,6 +1,6 @@
 import type { AxiosInstance, AxiosResponse } from 'axios';
 import axios from 'axios';
-import type { AwtrixNg } from '../main';
+import type { AwtrixNg } from '../awtrix-ng';
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace AwtrixApi {

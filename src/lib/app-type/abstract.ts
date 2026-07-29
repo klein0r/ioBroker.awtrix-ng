@@ -1,4 +1,4 @@
-import type { AwtrixNg } from '../../main';
+import type { AwtrixNg } from '../../awtrix-ng';
 import type { AwtrixApi } from '../api';
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
