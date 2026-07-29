@@ -39,6 +39,10 @@ Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amaz
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+
+* (@klein0r) Added weather overlays to expert apps
+
 ### 0.0.3 (2026-07-29)
 
 * (@klein0r) Updated settings workflow and keys for Awtrix NG

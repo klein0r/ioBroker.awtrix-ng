@@ -13,6 +13,7 @@ export type CustomApp = DefaultApp & {
     decimals: number;
     dynamicRound: boolean;
     textColor: string;
+    textBlinkMs: number;
     noScroll: boolean;
     scrollSpeed: number;
     useBackgroundEffect: boolean;

@@ -82,7 +82,7 @@ export namespace AppType {
                     ...this.baseObject,
                     text: typeof this.appStates.text === 'string' ? this.appStates.text : '',
                     textCase: 'asTyped', // show as sent
-                    textColor: typeof this.appStates.color === 'string' ? this.appStates.color : '#FFFFFF',
+                    textColor: typeof this.appStates.textColor === 'string' ? this.appStates.textColor : '#FFFFFF',
                     backgroundColor:
                         typeof this.appStates.background === 'string' ? this.appStates.background : '#000000',
                     icon: typeof this.appStates.icon === 'string' ? this.appStates.icon : '',
@@ -91,6 +91,10 @@ export namespace AppType {
                         speed: typeof this.appStates.scrollSpeed === 'number' ? this.appStates.scrollSpeed : 100,
                     },
                 };
+
+                if (this.appStates.overlay && typeof this.appStates.overlay === 'string' && this.appStates.overlay !== 'none') {
+                    app.overlay = this.appStates.overlay;
+                }
 
                 if (this.appStates.progress && typeof this.appStates.progress === 'number') {
                     if (this.appStates.progress >= 0 && this.appStates.progress <= 100) {
@@ -200,7 +204,7 @@ export namespace AppType {
                     def: '#FFFFFF',
                 },
                 native: {
-                    attribute: 'color',
+                    attribute: 'textColor',
                 },
             });
 
@@ -283,6 +287,34 @@ export namespace AppType {
                 },
                 native: {
                     attribute: 'durationMs',
+                },
+            });
+
+            await this.adapter.extendObject(`apps.${appName}.overlay`, {
+                type: 'state',
+                common: {
+                    name: {
+                        en: 'Weather style',
+                        de: 'Wetter-Stil',
+                        ru: 'Стиль погоды',
+                        pt: 'Estilo meteorológico',
+                        nl: 'Weerstijl',
+                        fr: 'Style météo',
+                        it: 'Stile meteorologico',
+                        es: 'Estilo meteorológico',
+                        pl: 'Styl pogodowy',
+                        uk: 'Стиль погоди',
+                        'zh-cn': 'Weather style',
+                    },
+                    type: 'string',
+                    role: 'text',
+                    read: true,
+                    write: this.isMainInstance(),
+                    def: 'none',
+                    states: ((overlays: Array<string>) => { return Object.fromEntries(overlays.map(item => [item, item])) })(this.adapter.getWeatherOverlays()),
+                },
+                native: {
+                    attribute: 'overlay',
                 },
             });
 
@@ -426,6 +458,7 @@ export namespace AppType {
                 await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.backgroundColor`);
                 await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.icon`);
                 await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.durationMs`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.overlay`);
                 await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.scrollSpeed`);
                 await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.progress.percent`);
                 await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.progress.color`);

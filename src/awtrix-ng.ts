@@ -89,6 +89,7 @@ export class AwtrixNg extends utils.Adapter {
 
     private apps: Array<AppTypeAbstract.AbstractApp>;
     private backgroundEffects: Array<string>;
+    private weatherOverlays: Array<string>;
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
@@ -130,6 +131,14 @@ export class AwtrixNg extends utils.Adapter {
             'SwirlOut',
             'TheaterChase',
             'TwinklingStar',
+        ];
+        this.weatherOverlays = [
+            'rain',
+            'snow',
+            'drizzle',
+            'storm',
+            'thunder',
+            'frost',
         ];
 
         this.on('ready', this.onReady.bind(this));
@@ -399,6 +408,10 @@ export class AwtrixNg extends utils.Adapter {
         }
     }
 
+    public getWeatherOverlays(): Array<string> {
+        return ['none', ...this.weatherOverlays];
+    }
+
     private onMessage(obj: ioBroker.Message): void {
         this.log.debug(`[onMessage] received command "${obj.command}" with message: ${JSON.stringify(obj.message)}`);
 
@@ -550,7 +563,7 @@ export class AwtrixNg extends utils.Adapter {
 
                     // settings
                     await this.refreshSettings();
-                    await this.refreshBackgroundEffects();
+                    await this.refreshEffectsLists();
                     await this.refreshTransitions();
 
                     // apps
@@ -757,16 +770,17 @@ export class AwtrixNg extends utils.Adapter {
         });
     }
 
-    private async refreshBackgroundEffects(): Promise<boolean> {
+    private async refreshEffectsLists(): Promise<boolean> {
         return new Promise<boolean>((resolve, reject) => {
             this.apiClient!.requestAsync('capabilities')
                 .then(response => {
                     if (response.status === 200) {
                         this.log.debug(
-                            `[refreshBackgroundEffects] Existing effects "${JSON.stringify(response.data)}"`,
+                            `[refreshEffectsLists] Existing effects "${JSON.stringify(response.data)}"`,
                         );
 
                         this.backgroundEffects = response.data.effects;
+                        this.weatherOverlays = response.data.overlays;
 
                         resolve(true);
                     } else {
