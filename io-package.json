@@ -15,19 +15,6 @@
         "pl": "Aktualizacja ustawień przepływu pracy i klawiszy dla Awtrix NG",
         "uk": "Оновлені налаштування робочого процесу та ключі для Awtrix NG",
         "zh-cn": "更新了 Awtrix NG 的设置工作流程和密钥"
-      },
-      "0.0.2": {
-        "en": "Updated API and settings for new Awtrix NG firmware",
-        "de": "Aktualisierte API und Einstellungen für neue Awtrix NG Firmware",
-        "ru": "Обновленный API и настройки для новой прошивки Awtrix NG",
-        "pt": "API e configurações atualizadas para o novo firmware Awtrix NG",
-        "nl": "Bijgewerkt API en instellingen voor nieuwe Awtrix NG firmware",
-        "fr": "API mise à jour et paramètres pour le nouveau firmware Awtrix NG",
-        "it": "API e impostazioni aggiornate per il nuovo firmware Awtrix NG",
-        "es": "API actualizada y configuración para el nuevo firmware Awtrix NG",
-        "pl": "Aktualizacja API i ustawień dla nowego oprogramowania Awtrix NG",
-        "uk": "Оновлений API і налаштування для нової прошивки Awtrix NG",
-        "zh-cn": "更新了新 Awtrix NG 固件的 API 和设置"
       }
     },
     "titleLang": {
