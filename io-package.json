@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "awtrix-ng",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "news": {
+      "0.0.3": {
+        "en": "Updated settings workflow and keys for Awtrix NG",
+        "de": "Aktualisierte Einstellungen Workflow und Tasten für Awtrix NG",
+        "ru": "Обновленные настройки рабочего процесса и клавиш для Awtrix NG",
+        "pt": "Fluxo de trabalho de configurações atualizadas e chaves para Awtrix NG",
+        "nl": "Bijgewerkte instellingen workflow en sleutels voor Awtrix NG",
+        "fr": "Configuration mise à jour du workflow et des clés pour Awtrix NG",
+        "it": "Flusso di lavoro e chiavi delle impostazioni aggiornate per Awtrix NG",
+        "es": "Ajustes actualizados flujo de trabajo y claves para Awtrix NG",
+        "pl": "Aktualizacja ustawień przepływu pracy i klawiszy dla Awtrix NG",
+        "uk": "Оновлені налаштування робочого процесу та ключі для Awtrix NG",
+        "zh-cn": "更新了 Awtrix NG 的设置工作流程和密钥"
+      },
       "0.0.2": {
         "en": "Updated API and settings for new Awtrix NG firmware",
         "de": "Aktualisierte API und Einstellungen für neue Awtrix NG Firmware",

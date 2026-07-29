@@ -93,8 +93,9 @@ var AwtrixApi;
         }
       });
     }
-    async settingsRequestAsync(data) {
-      return this.requestAsync("settings", "POST", { [data.key]: data.value });
+    async settingsRequestAsync(key, value) {
+      const settingsObj = key.split(".").reduceRight((acc, key2) => ({ [key2]: acc }), value);
+      return this.requestAsync("settings", "PATCH", settingsObj);
     }
     async indicatorRequestAsync(index, data) {
       return this.requestAsync(`indicators/${index}`, "PUT", data);

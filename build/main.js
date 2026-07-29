@@ -187,8 +187,8 @@ class AwtrixNg extends utils.Adapter {
           this.log.debug(`changing setting ${idNoNamespace} power to ${state.val}`);
           const settingsObj = await this.getObjectAsync(idNoNamespace);
           if (settingsObj && ((_a = settingsObj.native) == null ? void 0 : _a.settingsKey)) {
-            this.apiClient.settingsRequestAsync({ key: settingsObj.native.settingsKey, value: state.val }).then(async (response) => {
-              if (response.status === 200 && response.data === "OK") {
+            this.apiClient.settingsRequestAsync(settingsObj.native.settingsKey, state.val).then(async (response) => {
+              if (response.status === 200 && response.data.ok === true) {
                 await this.setState(idNoNamespace, { val: state.val, ack: true });
               }
               await this.refreshSettings();
@@ -526,12 +526,24 @@ class AwtrixNg extends utils.Adapter {
       this.refreshState();
     }, 60 * 1e3);
   }
+  flattenObject(obj, prefix = "") {
+    return Object.keys(obj).reduce((acc, key) => {
+      const newPath = prefix ? `${prefix}.${key}` : key;
+      const value = obj[key];
+      if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+        Object.assign(acc, this.flattenObject(value, newPath));
+      } else {
+        acc[newPath] = value;
+      }
+      return acc;
+    }, {});
+  }
   async refreshSettings() {
     return new Promise((resolve, reject) => {
       this.apiClient.requestAsync("settings", "GET").then(async (response) => {
         var _a, _b;
         if (response.status === 200) {
-          const content = response.data;
+          const content = this.flattenObject(response.data);
           const settingsStates = await this.getObjectViewAsync("system", "state", {
             startkey: `${this.namespace}.settings.`,
             endkey: `${this.namespace}.settings.\u9999`
@@ -548,26 +560,14 @@ class AwtrixNg extends utils.Adapter {
           const unknownSettings = [];
           for (const [settingsKey, val] of Object.entries(content)) {
             if (Object.prototype.hasOwnProperty.call(knownSettings, settingsKey)) {
-              if (knownSettings[settingsKey].role === "level.color.rgb") {
-                const newVal = (0, import_color_convert.rgb565to888Str)(val);
-                this.log.debug(
-                  `[refreshSettings] updating settings value "${knownSettings[settingsKey].id}" to ${newVal} (converted from ${String(val)})`
-                );
-                await this.setStateChangedAsync(knownSettings[settingsKey].id, {
-                  val: newVal,
-                  ack: true,
-                  c: "Updated from API (converted from RGB565)"
-                });
-              } else {
-                this.log.debug(
-                  `[refreshSettings] updating settings value "${knownSettings[settingsKey].id}" to ${String(val)}`
-                );
-                await this.setStateChangedAsync(knownSettings[settingsKey].id, {
-                  val,
-                  ack: true,
-                  c: "Updated from API"
-                });
-              }
+              this.log.debug(
+                `[refreshSettings] updating settings value "${knownSettings[settingsKey].id}" to ${String(val)}`
+              );
+              await this.setStateChangedAsync(knownSettings[settingsKey].id, {
+                val,
+                ack: true,
+                c: "Updated from API"
+              });
             } else {
               unknownSettings.push(settingsKey);
             }
@@ -606,9 +606,9 @@ class AwtrixNg extends utils.Adapter {
           this.log.debug(`[refreshTransitions] Existing transitions "${JSON.stringify(transitions)}"`);
           const states = {};
           for (let i = 0; i < transitions.length; i++) {
-            states[i] = transitions[i];
+            states[transitions[i]] = transitions[i];
           }
-          this.extendObject("settings.appTransitionEffect", {
+          this.extendObject("settings.apps.transitionEffect", {
             common: {
               states
             }
