@@ -96,7 +96,7 @@ export class AwtrixNg extends utils.Adapter {
         this._isMainInstance = true;
 
         this.currentVersion = undefined;
-        this.supportedVersion = '1.0.4';
+        this.supportedVersion = '1.0.7';
         this.displayedVersionWarning = false;
 
         this.apiClient = null;
@@ -533,13 +533,14 @@ export class AwtrixNg extends utils.Adapter {
                 this.log.debug('API is online');
 
                 try {
-                    // welcome (ioBroker icon)
+                    // welcome (ioBroker icon and adapter version)
                     this.apiClient!.requestAsync('notifications', 'POST', {
                         durationMs: 2000,
                         draw: [
-                            ['circle', 16, 4, 3, '#164477'], // [x, y, r, cl] Draw a circle with center at (x, y), radius r, and color cl
-                            ['line', 16, 3, 16, 8, '#3399cc'], // [x0, y0, x1, y1, cl] Draw a line from (x0, y0) to (x1, y1) with color cl
-                            ['pixel', 16, 1, '#3399cc'], // [x, y, cl] Draw a pixel at position (x, y) with color cl
+                            ['circle', 3, 4, 3, '#164477'], // ["circle", cx, cy, r, color]
+                            ['line', 3, 3, 3, 8, '#3399cc'], // ["line", x1, y1, x2, y2, color]
+                            ['pixel', 3, 1, '#3399cc'], // ["pixel", x, y, color]
+                            ['text', 10, 2, this.version, '#164477'], // ["text", x, y, "HI", color]
                         ],
                     }).catch(error => {
                         this.log.warn(error);
@@ -1007,8 +1008,8 @@ export class AwtrixNg extends utils.Adapter {
     }
 
     private isNewerVersion(oldVer: string, newVer: string): boolean {
-        const oldParts = oldVer.split('.');
-        const newParts = newVer.split('.');
+        const oldParts = oldVer.replace('-dev', '').split('.');
+        const newParts = newVer.replace('-dev', '').split('.');
         for (let i = 0; i < newParts.length; i++) {
             const a = ~~newParts[i]; // parse int
             const b = ~~oldParts[i]; // parse int
