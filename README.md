@@ -20,9 +20,9 @@
 ![Stable](http://iobroker.live/badges/awtrix-ng-stable.svg)
 ![Installed](http://iobroker.live/badges/awtrix-ng-installed.svg)
 
-Integrate your [Awtrix 3 (Awtrix NG)](https://github.com/Blueforcer/awtrix-ng) device (e.g. Ulanzi TC001) via HTTP
+Integrate your [Awtrix NG](https://github.com/Blueforcer/awtrix-ng) device (e.g. Ulanzi TC001) via HTTP
 
-Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001) or here: [ulanzi.de](https://haus-auto.com/p/ula/UlanziTC001) (Affiliate-Links)
+Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC001) or here: [ulanzi.de](https://haus-auto.com/p/ula/UlanziTC001) (Affiliate-Links)
 
 ## Sponsored by
 
@@ -41,7 +41,7 @@ Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001) or here: [ul
 -->
 ### **WORK IN PROGRESS**
 
-* (@klein0r) 
+* (@klein0r) Updated API and settings for new Awtrix NG firmware
 
 [Older changelogs can be found there](CHANGELOG_OLD.md)
 
