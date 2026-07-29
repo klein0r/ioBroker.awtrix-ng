@@ -563,8 +563,7 @@ export class AwtrixNg extends utils.Adapter {
 
                     // settings
                     await this.refreshSettings();
-                    await this.refreshEffectsLists();
-                    await this.refreshTransitions();
+                    await this.refreshCapabilitiesLists();
 
                     // apps
                     await this.createAppObjects();
@@ -770,46 +769,27 @@ export class AwtrixNg extends utils.Adapter {
         });
     }
 
-    private async refreshEffectsLists(): Promise<boolean> {
-        return new Promise<boolean>((resolve, reject) => {
+    private async refreshCapabilitiesLists(): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
             this.apiClient!.requestAsync('capabilities')
                 .then(response => {
                     if (response.status === 200) {
                         this.log.debug(
-                            `[refreshEffectsLists] Existing effects "${JSON.stringify(response.data)}"`,
+                            `[refreshCapabilitiesLists] Existing capabilities "${JSON.stringify(response.data)}"`,
                         );
 
                         this.backgroundEffects = response.data.effects;
                         this.weatherOverlays = response.data.overlays;
 
-                        resolve(true);
-                    } else {
-                        reject(new Error(`${response.status}: ${response.data}`));
-                    }
-                })
-                .catch(reject);
-        });
-    }
-
-    private async refreshTransitions(): Promise<void> {
-        return new Promise((resolve, reject) => {
-            this.apiClient!.requestAsync('capabilities')
-                .then(response => {
-                    if (response.status === 200) {
+                        // Transistions
                         const transitions = response.data.transitions;
-
-                        this.log.debug(`[refreshTransitions] Existing transitions "${JSON.stringify(transitions)}"`);
 
                         const states: { [key: string]: string } = {};
                         for (let i = 0; i < transitions.length; i++) {
                             states[transitions[i]] = transitions[i];
                         }
 
-                        this.extendObject('settings.apps.transitionEffect', {
-                            common: {
-                                states,
-                            },
-                        })
+                        this.extendObject('settings.apps.transitionEffect', { common: { states } })
                             .then(() => {
                                 resolve();
                             })

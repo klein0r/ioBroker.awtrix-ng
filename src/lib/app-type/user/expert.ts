@@ -93,7 +93,9 @@ export namespace AppType {
                 };
 
                 if (this.appStates.overlay && typeof this.appStates.overlay === 'string' && this.appStates.overlay !== 'none') {
-                    app.overlay = this.appStates.overlay;
+                    if (this.adapter.getWeatherOverlays().includes(this.appStates.overlay)) {
+                        app.overlay = this.appStates.overlay;
+                    }
                 }
 
                 if (this.appStates.progress && typeof this.appStates.progress === 'number') {
