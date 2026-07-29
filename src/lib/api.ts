@@ -44,7 +44,7 @@ export namespace AwtrixApi {
         paletteSpan?: number;
         paletteSpeed?: number;
         // Overlay
-        overlay?: string; // rain · snow · drizzle · storm · thunder · frost
+        overlay?: string; // rain, snow, drizzle, storm, thunder, frost
         // Draw commands
         draw?: Array<object>;
     };
@@ -61,11 +61,6 @@ export namespace AwtrixApi {
         whenFits?: 'static' | 'scroll';
         speed?: number;
         gap?: number;
-    };
-
-    export type Settings = {
-        key: string;
-        value: any;
     };
 
     export type Indicator = {
@@ -157,8 +152,11 @@ export namespace AwtrixApi {
             });
         }
 
-        public async settingsRequestAsync(data: AwtrixApi.Settings): Promise<AxiosResponse> {
-            return this.requestAsync('settings', 'POST', { [data.key]: data.value });
+        public async settingsRequestAsync(key: string, value: any): Promise<AxiosResponse> {
+            // settings key to nested object
+            const settingsObj = key.split('.').reduceRight((acc, key) => ({ [key]: acc }), value);
+
+            return this.requestAsync('settings', 'PATCH', settingsObj);
         }
 
         public async indicatorRequestAsync(index: number, data?: AwtrixApi.Indicator): Promise<AxiosResponse> {

@@ -15,6 +15,10 @@ import { AppType as AppTypeCustom } from './lib/app-type/user/custom';
 import { AppType as AppTypeExpert } from './lib/app-type/user/expert';
 import { AppType as AppTypeHistory } from './lib/app-type/user/history';
 
+type NestedObject = {
+    [key: string]: any;
+};
+
 const NATIVE_APPS = ['Time', 'Date', 'Temperature', 'Humidity', 'Battery'];
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -246,9 +250,9 @@ export class AwtrixNg extends utils.Adapter {
 
                     const settingsObj = await this.getObjectAsync(idNoNamespace);
                     if (settingsObj && settingsObj.native?.settingsKey) {
-                        this.apiClient!.settingsRequestAsync({ key: settingsObj.native.settingsKey, value: state.val })
+                        this.apiClient!.settingsRequestAsync(settingsObj.native.settingsKey, state.val)
                             .then(async response => {
-                                if (response.status === 200 && response.data === 'OK') {
+                                if (response.status === 200 && response.data.ok === true) {
                                     await this.setState(idNoNamespace, { val: state.val, ack: true });
                                 }
 
@@ -681,12 +685,27 @@ export class AwtrixNg extends utils.Adapter {
             }, 60 * 1000);
     }
 
+    private flattenObject(obj: NestedObject, prefix = ''): Record<string, any> {
+        return Object.keys(obj).reduce<Record<string, any>>((acc, key) => {
+            const newPath = prefix ? `${prefix}.${key}` : key;
+            const value = obj[key];
+
+            if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                Object.assign(acc, this.flattenObject(value as NestedObject, newPath));
+            } else {
+                acc[newPath] = value;
+            }
+
+            return acc;
+        }, {});
+    }
+
     private async refreshSettings(): Promise<number> {
         return new Promise<number>((resolve, reject) => {
             this.apiClient!.requestAsync('settings', 'GET')
                 .then(async response => {
                     if (response.status === 200) {
-                        const content = response.data;
+                        const content = this.flattenObject(response.data);
 
                         const settingsStates = await this.getObjectViewAsync('system', 'state', {
                             startkey: `${this.namespace}.settings.`,
@@ -708,28 +727,15 @@ export class AwtrixNg extends utils.Adapter {
 
                         for (const [settingsKey, val] of Object.entries(content)) {
                             if (Object.prototype.hasOwnProperty.call(knownSettings, settingsKey)) {
-                                if (knownSettings[settingsKey].role === 'level.color.rgb') {
-                                    const newVal = rgb565to888Str(val as number);
-                                    this.log.debug(
-                                        `[refreshSettings] updating settings value "${knownSettings[settingsKey].id}" to ${newVal} (converted from ${String(val)})`,
-                                    );
+                                this.log.debug(
+                                    `[refreshSettings] updating settings value "${knownSettings[settingsKey].id}" to ${String(val)}`,
+                                );
 
-                                    await this.setStateChangedAsync(knownSettings[settingsKey].id, {
-                                        val: newVal,
-                                        ack: true,
-                                        c: 'Updated from API (converted from RGB565)',
-                                    });
-                                } else {
-                                    this.log.debug(
-                                        `[refreshSettings] updating settings value "${knownSettings[settingsKey].id}" to ${String(val)}`,
-                                    );
-
-                                    await this.setStateChangedAsync(knownSettings[settingsKey].id, {
-                                        val: val as string | number,
-                                        ack: true,
-                                        c: 'Updated from API',
-                                    });
-                                }
+                                await this.setStateChangedAsync(knownSettings[settingsKey].id, {
+                                    val: val as string | number,
+                                    ack: true,
+                                    c: 'Updated from API',
+                                });
                             } else {
                                 unknownSettings.push(settingsKey);
                             }
@@ -782,10 +788,10 @@ export class AwtrixNg extends utils.Adapter {
 
                         const states: { [key: string]: string } = {};
                         for (let i = 0; i < transitions.length; i++) {
-                            states[i] = transitions[i];
+                            states[transitions[i]] = transitions[i];
                         }
 
-                        this.extendObject('settings.appTransitionEffect', {
+                        this.extendObject('settings.apps.transitionEffect', {
                             common: {
                                 states,
                             },
