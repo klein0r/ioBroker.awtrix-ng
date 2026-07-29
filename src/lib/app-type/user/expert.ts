@@ -100,7 +100,9 @@ export namespace AppType {
                         app.progressColor =
                             typeof this.appStates.progressColor === 'string' ? this.appStates.progressColor : '#00FF00';
                         app.progressTrackColor =
-                            typeof this.appStates.progressTrackColor === 'string' ? this.appStates.progressTrackColor : '#FFFFFF';
+                            typeof this.appStates.progressTrackColor === 'string'
+                                ? this.appStates.progressTrackColor
+                                : '#FFFFFF';
                     }
                 }
 
