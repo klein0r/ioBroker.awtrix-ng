@@ -952,6 +952,7 @@ export class AwtrixNg extends utils.Adapter {
 
             return this.apiClient!.indicatorRequestAsync(index, indicator);
         }
+
         return this.apiClient!.indicatorDeleteAsync(index);
     }
 
@@ -975,6 +976,7 @@ export class AwtrixNg extends utils.Adapter {
 
             return this.apiClient!.requestAsync('display/moodlight', 'PUT', moodlight);
         }
+
         return this.apiClient!.requestAsync('display/moodlight', 'DELETE');
     }
 
