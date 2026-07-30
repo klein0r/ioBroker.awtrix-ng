@@ -42,6 +42,7 @@ Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amaz
 ### **WORK IN PROGRESS**
 
 * (@klein0r) Added weather overlays to expert apps
+* (@klein0r) Fixed state object role definitions
 
 ### 0.0.3 (2026-07-29)
 
