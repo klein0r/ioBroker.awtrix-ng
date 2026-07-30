@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "awtrix-ng",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "news": {
+      "0.0.4": {
+        "en": "Added weather overlays to expert apps\nFixed state object role definitions",
+        "de": "Wetter-Overlays zu Experten-Apps hinzugefügt\nRollendefinitionen für Festkörperobjekte",
+        "ru": "Добавлены погодные накладки в экспертные приложения\nОпределения роли фиксированного состояния объекта",
+        "pt": "Sobreposições meteorológicas adicionadas para aplicativos especializados\nDefinições de função de objeto de estado fixo",
+        "nl": "Toegevoegd weer overlays aan expert apps\nRoldefinities van vaste toestand van objecten",
+        "fr": "Ajout de recouvrements météorologiques aux applications expertes\nDéfinition des rôles des objets de l'état fixe",
+        "it": "Aggiunto il tempo sovrapposizioni alle app di esperti\nDefinizioni dei ruoli degli oggetti di stato fissi",
+        "es": "Añadido el tiempo superpuestas a las aplicaciones expertas\nDefiniciones del papel de objeto estatal fijo",
+        "pl": "Dodano nakłady pogodowe do aplikacji ekspertów\nDefinicja roli obiektu w stanie ustalonym",
+        "uk": "Додано погодні накладки для експертних додатків\nВиправлені визначення ролі об’єкта держави",
+        "zh-cn": "添加到专家应用程序中的天气覆盖\n固定状态对象角色定义"
+      },
       "0.0.3": {
         "en": "Updated settings workflow and keys for Awtrix NG",
         "de": "Aktualisierte Einstellungen Workflow und Tasten für Awtrix NG",

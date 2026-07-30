@@ -39,7 +39,7 @@ Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amaz
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.0.4 (2026-07-30)
 
 * (@klein0r) Added weather overlays to expert apps
 * (@klein0r) Fixed state object role definitions

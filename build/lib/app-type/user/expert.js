@@ -87,7 +87,7 @@ var AppType;
           text: typeof this.appStates.text === "string" ? this.appStates.text : "",
           textCase: "asTyped",
           // show as sent
-          textColor: typeof this.appStates.color === "string" ? this.appStates.color : "#FFFFFF",
+          textColor: typeof this.appStates.textColor === "string" ? this.appStates.textColor : "#FFFFFF",
           backgroundColor: typeof this.appStates.background === "string" ? this.appStates.background : "#000000",
           icon: typeof this.appStates.icon === "string" ? this.appStates.icon : "",
           durationMs: typeof this.appStates.durationMs === "number" ? this.appStates.durationMs : 0,
@@ -95,6 +95,11 @@ var AppType;
             speed: typeof this.appStates.scrollSpeed === "number" ? this.appStates.scrollSpeed : 100
           }
         };
+        if (this.appStates.overlay && typeof this.appStates.overlay === "string" && this.appStates.overlay !== "none") {
+          if (this.adapter.getWeatherOverlays().includes(this.appStates.overlay)) {
+            app.overlay = this.appStates.overlay;
+          }
+        }
         if (this.appStates.progress && typeof this.appStates.progress === "number") {
           if (this.appStates.progress >= 0 && this.appStates.progress <= 100) {
             app.progress = this.appStates.progress;
@@ -189,7 +194,7 @@ var AppType;
           def: "#FFFFFF"
         },
         native: {
-          attribute: "color"
+          attribute: "textColor"
         }
       });
       await this.adapter.extendObject(`apps.${appName}.backgroundColor`, {
@@ -261,7 +266,7 @@ var AppType;
             "zh-cn": "\u4F1A\u671F"
           },
           type: "number",
-          role: "value",
+          role: "level.timer",
           read: true,
           write: this.isMainInstance(),
           def: 0,
@@ -269,6 +274,35 @@ var AppType;
         },
         native: {
           attribute: "durationMs"
+        }
+      });
+      await this.adapter.extendObject(`apps.${appName}.overlay`, {
+        type: "state",
+        common: {
+          name: {
+            en: "Weather style",
+            de: "Wetter-Stil",
+            ru: "\u0421\u0442\u0438\u043B\u044C \u043F\u043E\u0433\u043E\u0434\u044B",
+            pt: "Estilo meteorol\xF3gico",
+            nl: "Weerstijl",
+            fr: "Style m\xE9t\xE9o",
+            it: "Stile meteorologico",
+            es: "Estilo meteorol\xF3gico",
+            pl: "Styl pogodowy",
+            uk: "\u0421\u0442\u0438\u043B\u044C \u043F\u043E\u0433\u043E\u0434\u0438",
+            "zh-cn": "Weather style"
+          },
+          type: "string",
+          role: "text",
+          read: true,
+          write: this.isMainInstance(),
+          def: "none",
+          states: ((overlays) => {
+            return Object.fromEntries(overlays.map((item) => [item, item]));
+          })(this.adapter.getWeatherOverlays())
+        },
+        native: {
+          attribute: "overlay"
         }
       });
       await this.adapter.extendObject(`apps.${appName}.scrollSpeed`, {
@@ -288,7 +322,7 @@ var AppType;
             "zh-cn": "\u6EDA\u52A8\u901F\u5EA6"
           },
           type: "number",
-          role: "value",
+          role: "level.timer",
           read: true,
           write: this.isMainInstance(),
           def: 100,
@@ -335,7 +369,7 @@ var AppType;
             "zh-cn": "\u8FDB\u5C55"
           },
           type: "number",
-          role: "value",
+          role: "level",
           read: true,
           write: this.isMainInstance(),
           def: 0,
@@ -406,6 +440,7 @@ var AppType;
         await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.backgroundColor`);
         await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.icon`);
         await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.durationMs`);
+        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.overlay`);
         await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.scrollSpeed`);
         await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.progress.percent`);
         await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.progress.color`);
