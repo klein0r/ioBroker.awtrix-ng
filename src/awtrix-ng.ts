@@ -9,7 +9,7 @@ import { rgb565to888Str } from './lib/color-convert';
 
 import { AwtrixApi } from './lib/api';
 import type { AppType as AppTypeAbstract } from './lib/app-type/abstract';
-import { AppType as AppTypeNative } from './lib/app-type/native';
+import { AppType as AppTypeBuiltin } from './lib/app-type/builtin';
 import { AppType as AppTypeUser } from './lib/app-type/user';
 import { AppType as AppTypeCustom } from './lib/app-type/user/custom';
 import { AppType as AppTypeExpert } from './lib/app-type/user/expert';
@@ -19,7 +19,7 @@ type NestedObject = {
     [key: string]: any;
 };
 
-const NATIVE_APPS = ['Time', 'Date', 'Temperature', 'Humidity', 'Battery'];
+const BUILTIN_APPS = ['Time', 'Date', 'Temperature', 'Humidity', 'Battery'];
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace NotificationManager {
@@ -90,6 +90,8 @@ export class AwtrixNg extends utils.Adapter {
     private apps: Array<AppTypeAbstract.AbstractApp>;
     private backgroundEffects: Array<string>;
     private weatherOverlays: Array<string>;
+    private palettes: Array<string>;
+    private paletteEffects: Array<string>;
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
@@ -101,7 +103,7 @@ export class AwtrixNg extends utils.Adapter {
         this._isMainInstance = true;
 
         this.currentVersion = undefined;
-        this.supportedVersion = '1.0.11';
+        this.supportedVersion = '1.0.12';
         this.displayedVersionWarning = false;
 
         this.apiClient = null;
@@ -130,9 +132,36 @@ export class AwtrixNg extends utils.Adapter {
             'SwirlIn',
             'SwirlOut',
             'TheaterChase',
-            'TwinklingStar',
+            'TwinklingStars',
         ];
         this.weatherOverlays = ['rain', 'snow', 'drizzle', 'storm', 'thunder', 'frost'];
+        this.palettes = [
+            'Cloud',
+            'Lava',
+            'Ocean',
+            'Forest',
+            'Stripe',
+            'Party',
+            'Heat',
+            'Rainbow',
+        ];
+        this.paletteEffects = [
+            'Checkerboard',
+            'ColorWaves',
+            'Fade',
+            'Fireworks',
+            'MovingLine',
+            'Pacifica',
+            'Plasma',
+            'PlasmaCloud',
+            'Radar',
+            'Ripple',
+            'Snake',
+            'SwirlIn',
+            'SwirlOut',
+            'TheaterChase',
+            'TwinklingStars',
+        ];
 
         this.on('ready', this.onReady.bind(this));
         this.on('stateChange', this.onStateChange.bind(this));
@@ -167,9 +196,9 @@ export class AwtrixNg extends utils.Adapter {
         }
 
         // Init all apps
-        for (const nativeAppName of NATIVE_APPS) {
-            if (!this.findAppWithName(nativeAppName)) {
-                this.apps.push(new AppTypeNative.Native(this.apiClient, this, nativeAppName));
+        for (const builtinAppName of BUILTIN_APPS) {
+            if (!this.findAppWithName(builtinAppName)) {
+                this.apps.push(new AppTypeBuiltin.Builtin(this.apiClient, this, builtinAppName));
             }
         }
 
@@ -403,6 +432,14 @@ export class AwtrixNg extends utils.Adapter {
 
     public getWeatherOverlays(): Array<string> {
         return ['none', ...this.weatherOverlays];
+    }
+
+    public getPalettes(): Array<string> {
+        return ['none', ...this.palettes];
+    }
+
+    public getPaletteEffects(): Array<string> {
+        return ['none', ...this.paletteEffects];
     }
 
     private onMessage(obj: ioBroker.Message): void {
@@ -811,7 +848,7 @@ export class AwtrixNg extends utils.Adapter {
                             const historyApps = this.config.historyApps.map(a => a.name);
                             const expertApps = this.config.expertApps.map(a => a.name);
                             const existingApps = content.map(a => a.name);
-                            const allApps = [...NATIVE_APPS, ...customApps, ...historyApps, ...expertApps];
+                            const allApps = [...BUILTIN_APPS, ...customApps, ...historyApps, ...expertApps];
 
                             this.log.debug(
                                 `[createAppObjects] existing apps on awtrix light: ${JSON.stringify(existingApps)}`,
@@ -833,12 +870,12 @@ export class AwtrixNg extends utils.Adapter {
                                 }
                             }
 
-                            // Create new app structure for all native apps and apps of instance configuration
+                            // Create new app structure for all builtin apps and apps of instance configuration
                             for (const name of allApps) {
                                 appsKeep.push(`apps.${name}`);
                                 this.log.debug(`[createAppObjects] found (keep): apps.${name}`);
 
-                                const isNativeApp = NATIVE_APPS.includes(name);
+                                const isBuiltinApp = BUILTIN_APPS.includes(name);
                                 const isCustomApp = customApps.includes(name);
                                 const isHistoryApp = historyApps.includes(name);
                                 const isExpertApp = expertApps.includes(name);
@@ -853,7 +890,7 @@ export class AwtrixNg extends utils.Adapter {
                                             icon: app.getIconForObjectTree(),
                                         },
                                         native: {
-                                            isNativeApp,
+                                            isBuiltinApp,
                                             isCustomApp,
                                             isHistoryApp,
                                             isExpertApp,

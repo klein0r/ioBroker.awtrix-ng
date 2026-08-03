@@ -4,13 +4,13 @@ import { AppType as AbstractAppType } from './abstract';
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace AppType {
-    export class Native extends AbstractAppType.AbstractApp {
+    export class Builtin extends AbstractAppType.AbstractApp {
         public constructor(apiClient: AwtrixApi.Client, adapter: AwtrixNg, name: string) {
             super(apiClient, adapter, name);
         }
 
         public override getDescription(): string {
-            return 'native';
+            return 'builtin';
         }
 
         public override getIconForObjectTree(): string {
