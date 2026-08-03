@@ -86,11 +86,18 @@ export namespace AppType {
                     backgroundColor:
                         typeof this.appStates.background === 'string' ? this.appStates.background : '#000000',
                     icon: typeof this.appStates.icon === 'string' ? this.appStates.icon : '',
-                    durationMs: typeof this.appStates.durationMs === 'number' ? this.appStates.durationMs : 0,
                     scroll: {
                         speed: typeof this.appStates.scrollSpeed === 'number' ? this.appStates.scrollSpeed : 100,
                     },
                 };
+
+                if (
+                    this.appStates.durationMs &&
+                    typeof this.appStates.durationMs === 'number' &&
+                    this.appStates.durationMs > 0
+                ) {
+                    app.durationMs = this.appStates.durationMs
+                }
 
                 if (
                     this.appStates.overlay &&
