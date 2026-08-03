@@ -10,6 +10,7 @@ import { rgb565to888Str } from './lib/color-convert';
 import { AwtrixApi } from './lib/api';
 import type { AppType as AppTypeAbstract } from './lib/app-type/abstract';
 import { AppType as AppTypeBuiltin } from './lib/app-type/builtin';
+import { AppType as AppTypeScript } from './lib/app-type/script';
 import { AppType as AppTypeUser } from './lib/app-type/user';
 import { AppType as AppTypeCustom } from './lib/app-type/user/custom';
 import { AppType as AppTypeExpert } from './lib/app-type/user/expert';
@@ -18,8 +19,6 @@ import { AppType as AppTypeHistory } from './lib/app-type/user/history';
 type NestedObject = {
     [key: string]: any;
 };
-
-const BUILTIN_APPS = ['Time', 'Date', 'Temperature', 'Humidity', 'Battery'];
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace NotificationManager {
@@ -193,37 +192,6 @@ export class AwtrixNg extends utils.Adapter {
 
             await this.subscribeForeignObjectsAsync(`system.adapter.${this.config.foreignSettingsInstance}`);
             await this.importForeignSettings();
-        }
-
-        // Init all apps
-        for (const builtinAppName of BUILTIN_APPS) {
-            if (!this.findAppWithName(builtinAppName)) {
-                this.apps.push(new AppTypeBuiltin.Builtin(this.apiClient, this, builtinAppName));
-            }
-        }
-
-        for (const customApp of this.config.customApps) {
-            if (!this.findAppWithName(customApp.name)) {
-                this.apps.push(new AppTypeCustom.Custom(this.apiClient, this, customApp));
-            } else {
-                this.log.warn(`App with name ${customApp.name} already exists. Skipping custom app!`);
-            }
-        }
-
-        for (const historyApp of this.config.historyApps) {
-            if (!this.findAppWithName(historyApp.name)) {
-                this.apps.push(new AppTypeHistory.History(this.apiClient, this, historyApp));
-            } else {
-                this.log.warn(`App with name ${historyApp.name} already exists. Skipping history app!`);
-            }
-        }
-
-        for (const expertApp of this.config.expertApps) {
-            if (!this.findAppWithName(expertApp.name)) {
-                this.apps.push(new AppTypeExpert.Expert(this.apiClient, this, expertApp));
-            } else {
-                this.log.warn(`App with name ${expertApp.name} already exists. Skipping expert app!`);
-            }
         }
 
         this.refreshState();
@@ -598,12 +566,6 @@ export class AwtrixNg extends utils.Adapter {
                     // apps
                     await this.createAppObjects();
 
-                    for (const app of this.apps) {
-                        if (await app.init()) {
-                            await app.refresh();
-                        }
-                    }
-
                     // indicators
                     for (let i = 1; i <= 3; i++) {
                         await this.updateIndicatorByStates(i);
@@ -840,17 +802,57 @@ export class AwtrixNg extends utils.Adapter {
                 this.apiClient!.requestAsync('apps', 'GET')
                     .then(async response => {
                         if (response.status === 200) {
-                            const content = response.data as Array<{ name: string }>;
+                            const content = response.data as Array<AwtrixApi.AppOrderDefinition>;
 
-                            const customApps = this.config.customApps.map(a => a.name);
-                            const historyApps = this.config.historyApps.map(a => a.name);
-                            const expertApps = this.config.expertApps.map(a => a.name);
                             const existingApps = content.map(a => a.name);
-                            const allApps = [...BUILTIN_APPS, ...customApps, ...historyApps, ...expertApps];
+                            const builtinApps = content.filter(a => a.origin === 'builtin').map(a => a.name);
+                            const scriptApps = content.filter(a => a.origin === 'script').map(a => a.name);
 
                             this.log.debug(
                                 `[createAppObjects] existing apps on awtrix light: ${JSON.stringify(existingApps)}`,
                             );
+
+                            // Init all apps
+                            for (const builtinAppName of builtinApps) {
+                                if (!this.findAppWithName(builtinAppName)) {
+                                    this.apps.push(new AppTypeBuiltin.Builtin(this.apiClient!, this, builtinAppName));
+                                }
+                            }
+
+                            for (const scriptAppName of scriptApps) {
+                                if (!this.findAppWithName(scriptAppName)) {
+                                    this.apps.push(new AppTypeScript.Script(this.apiClient!, this, scriptAppName));
+                                }
+                            }
+
+                            for (const customApp of this.config.customApps) {
+                                if (!this.findAppWithName(customApp.name)) {
+                                    this.apps.push(new AppTypeCustom.Custom(this.apiClient!, this, customApp));
+                                } else {
+                                    this.log.warn(`App with name ${customApp.name} already exists. Skipping custom app!`);
+                                }
+                            }
+
+                            for (const historyApp of this.config.historyApps) {
+                                if (!this.findAppWithName(historyApp.name)) {
+                                    this.apps.push(new AppTypeHistory.History(this.apiClient!, this, historyApp));
+                                } else {
+                                    this.log.warn(`App with name ${historyApp.name} already exists. Skipping history app!`);
+                                }
+                            }
+
+                            for (const expertApp of this.config.expertApps) {
+                                if (!this.findAppWithName(expertApp.name)) {
+                                    this.apps.push(new AppTypeExpert.Expert(this.apiClient!, this, expertApp));
+                                } else {
+                                    this.log.warn(`App with name ${expertApp.name} already exists. Skipping expert app!`);
+                                }
+                            }
+
+                            const customApps = this.config.customApps.map(a => a.name);
+                            const historyApps = this.config.historyApps.map(a => a.name);
+                            const expertApps = this.config.expertApps.map(a => a.name);
+                            const allApps = [...builtinApps, ...scriptApps, ...customApps, ...historyApps, ...expertApps];
 
                             const appsAll = [];
                             const appsKeep = [];
@@ -868,12 +870,13 @@ export class AwtrixNg extends utils.Adapter {
                                 }
                             }
 
-                            // Create new app structure for all builtin apps and apps of instance configuration
+                            // Create new app structure for all existing apps and apps of instance configuration
                             for (const name of allApps) {
                                 appsKeep.push(`apps.${name}`);
                                 this.log.debug(`[createAppObjects] found (keep): apps.${name}`);
 
-                                const isBuiltinApp = BUILTIN_APPS.includes(name);
+                                const isBuiltinApp = builtinApps.includes(name);
+                                const isScriptApp = scriptApps.includes(name);
                                 const isCustomApp = customApps.includes(name);
                                 const isHistoryApp = historyApps.includes(name);
                                 const isExpertApp = expertApps.includes(name);
@@ -889,17 +892,22 @@ export class AwtrixNg extends utils.Adapter {
                                         },
                                         native: {
                                             isBuiltinApp,
+                                            isScriptApp,
                                             isCustomApp,
                                             isHistoryApp,
                                             isExpertApp,
                                         },
                                     });
 
+                                    const orderDefinition = content.find(a => a.name === app.getName());
+
                                     await app.createObjects();
+                                    await app.init(orderDefinition);
+                                    await app.refresh();
                                 }
                             }
 
-                            // Delete non existent apps
+                            // Delete non existent app objects
                             for (const app of appsAll) {
                                 if (!appsKeep.includes(app)) {
                                     await this.delObjectAsync(app, { recursive: true });
@@ -942,6 +950,16 @@ export class AwtrixNg extends utils.Adapter {
             } else {
                 reject(new Error('API_OFFLINE'));
             }
+        });
+    }
+
+    public async refreshAppOrder(): Promise<void> {
+        const appsEnabled = this.apps.filter(a => a.enabled());
+        appsEnabled.sort((a, b) => (a.getSlot() ?? 9999) - (b.getSlot() ?? 9999));
+
+        await this.apiClient?.requestAsync('apps/order', 'PUT', {
+            order: appsEnabled.map(a => a.getName()),
+            hidden: this.apps.filter(a => !a.enabled()).map(a => a.getName())
         });
     }
 

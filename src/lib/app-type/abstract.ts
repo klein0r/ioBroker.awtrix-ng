@@ -11,10 +11,12 @@ export namespace AppType {
 
         protected objPrefix: string;
         protected isEnabled: boolean;
+        protected slot: number | null;
 
         public constructor(apiClient: AwtrixApi.Client, adapter: AwtrixNg, name: string) {
             this.name = name;
             this.isEnabled = false;
+            this.slot = null;
 
             this.apiClient = apiClient;
             this.adapter = adapter;
@@ -29,32 +31,36 @@ export namespace AppType {
             adapter.on('objectChange', this.onObjectChange.bind(this));
         }
 
-        public async init(): Promise<boolean> {
+        public async init(orderDefinition?: AwtrixApi.AppOrderDefinition): Promise<void> {
             const appName = this.getName();
             const appEnabledState = await this.adapter.getForeignStateAsync(
                 `${this.objPrefix}.apps.${appName}.enabled`,
             );
-            this.isEnabled = appEnabledState ? !!appEnabledState.val : true;
+            const appSlotState = await this.adapter.getForeignStateAsync(
+                `${this.objPrefix}.apps.${appName}.slot`,
+            );
+
+            if (orderDefinition) {
+                this.isEnabled = orderDefinition?.enabled ?? true;
+                this.slot = orderDefinition?.slot ?? null;
+            } else {
+                this.isEnabled = appEnabledState && typeof appEnabledState?.val === 'boolean' ? !!appEnabledState.val : true;
+                this.slot = appSlotState && typeof appSlotState?.val === 'number' ? appSlotState.val : null;
+            }
 
             // Ack if changed while instance was stopped
-            if (appEnabledState && !appEnabledState?.ack) {
+            if (!appEnabledState || !appEnabledState?.ack || appEnabledState?.val !== this.isEnabled) {
                 await this.adapter.setState(`apps.${appName}.enabled`, { val: this.isEnabled, ack: true, c: 'init' });
             }
 
-            return this.isEnabled;
+            if (!appSlotState || !appSlotState?.ack || appSlotState?.val !== this.slot) {
+                await this.adapter.setState(`apps.${appName}.slot`, { val: this.slot, ack: true, c: 'init' });
+            }
         }
 
         // eslint-disable-next-line @typescript-eslint/require-await
         public async refresh(): Promise<boolean> {
-            if (!this.isEnabled && this.apiClient.isConnected()) {
-                // Hide app automatically
-                const appName = this.getName();
-                this.apiClient.removeAppAsync(appName).catch(error => {
-                    this.adapter.log.warn(`[refreshApp] Unable to remove hidden app "${appName}": ${error}`);
-                });
-            }
-
-            return this.isEnabled && this.apiClient.isConnected();
+            return true;
         }
 
         public abstract getDescription(): string;
@@ -63,6 +69,14 @@ export namespace AppType {
 
         public getName(): string {
             return this.name;
+        }
+
+        public enabled(): boolean {
+            return this.isEnabled;
+        }
+
+        public getSlot(): number | null {
+            return this.slot;
         }
 
         public isMainInstance(): boolean {
@@ -111,8 +125,33 @@ export namespace AppType {
                 native: {},
             });
 
+            await this.adapter.extendObject(`apps.${appName}.slot`, {
+                type: 'state',
+                common: {
+                    name: {
+                        en: 'Position in loop',
+                        de: 'Position in der Schleife',
+                        ru: 'Позиция в цикле',
+                        pt: 'Posição no ciclo',
+                        nl: 'Positie in de lus',
+                        fr: 'Position dans la boucle',
+                        it: 'Posizione nel ciclo',
+                        es: 'Posición en el bucle',
+                        pl: 'Pozycja w pętli',
+                        uk: 'Позиція в циклі',
+                        'zh-cn': 'Position in loop',
+                    },
+                    type: 'number',
+                    role: 'value',
+                    read: true,
+                    write: this.isMainInstance(),
+                },
+                native: {},
+            });
+
             if (!this.isMainInstance()) {
                 await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.enabled`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.slot`);
             }
 
             if (this.hasOwnActivateState()) {
@@ -157,19 +196,23 @@ export namespace AppType {
                         `${this.hasOwnActivateState() ? this.adapter.namespace : this.objPrefix}.apps.${appName}.activate`
                     ) {
                         if (state.val) {
-                            this.apiClient
-                                .requestAsync('apps/active', 'PUT', { name: appName })
-                                .then(async response => {
-                                    if (response.status === 200 && response.data.ok === true) {
-                                        const idOwnNamespace = this.getObjIdOwnNamespace(id);
-                                        await this.adapter.setState(idOwnNamespace, { val: state.val, ack: true });
-                                    }
-                                })
-                                .catch(error => {
-                                    this.adapter.log.warn(
-                                        `[onStateChange] ${appName}: (apps/activate) Unable to execute action: ${error}`,
-                                    );
-                                });
+                            if (this.isEnabled) {
+                                this.apiClient
+                                    .requestAsync('apps/active', 'PUT', { name: appName })
+                                    .then(async response => {
+                                        if (response.status === 200 && response.data.ok === true) {
+                                            const idOwnNamespace = this.getObjIdOwnNamespace(id);
+                                            await this.adapter.setState(idOwnNamespace, { val: state.val, ack: true });
+                                        }
+                                    })
+                                    .catch(error => {
+                                        this.adapter.log.warn(
+                                            `[onStateChange] ${appName}: (apps/activate) Unable to execute action: ${error}`,
+                                        );
+                                    });
+                            } else {
+                                this.adapter.log.warn(`[onStateChange] ${appName}: App is not enabled - unable to activate`);
+                            }
                         } else {
                             this.adapter.log.warn(`[onStateChange] ${appName}: Received invalid value for state ${id}`);
                         }
@@ -194,8 +237,8 @@ export namespace AppType {
                         );
 
                         this.isEnabled = !!state.val;
+                        this.adapter.refreshAppOrder();
 
-                        await this.refresh();
                         await this.adapter.setState(idOwnNamespace, {
                             val: state.val,
                             ack: true,
@@ -204,6 +247,31 @@ export namespace AppType {
                     } else {
                         this.adapter.log.debug(
                             `[onStateChange] ${appName}: Enabled of app "${appName}" IGNORED (not changed): ${state.val}`,
+                        );
+
+                        await this.adapter.setState(idOwnNamespace, {
+                            val: state.val,
+                            ack: true,
+                            c: `onStateChange ${this.objPrefix} (unchanged)`,
+                        });
+                    }
+                } else if (id === `${this.objPrefix}.apps.${appName}.slot` && typeof state.val === 'number') {
+                    if (state.val !== this.slot) {
+                        this.adapter.log.debug(
+                            `[onStateChange] ${appName}: Slot of app ${appName} changed to ${state.val}`,
+                        );
+
+                        this.slot = state.val;
+                        this.adapter.refreshAppOrder();
+
+                        await this.adapter.setState(idOwnNamespace, {
+                            val: state.val,
+                            ack: true,
+                            c: `onStateChange ${this.objPrefix}`,
+                        });
+                    } else {
+                        this.adapter.log.debug(
+                            `[onStateChange] ${appName}: Slot of app "${appName}" IGNORED (not changed): ${state.val}`,
                         );
 
                         await this.adapter.setState(idOwnNamespace, {

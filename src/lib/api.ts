@@ -74,6 +74,15 @@ export namespace AwtrixApi {
         color?: string;
     };
 
+    export type AppOrderDefinition = {
+        name: string,
+        enabled: boolean,
+        inLoop: boolean,
+        slot: number,
+        present: boolean,
+        origin: 'builtin' | 'pushed' | 'script'
+    };
+
     export class Client {
         private adapter: AwtrixNg;
         private axiosInstance: AxiosInstance | undefined = undefined;
