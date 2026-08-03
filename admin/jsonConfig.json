@@ -249,7 +249,7 @@
                             "xl": 4,
                             "default": "",
                             "help": "Must be uploaded manually",
-                            "helpLink": "https://ang.blueforcer.de/guides/icons/"
+                            "helpLink": "https://blueforcer.github.io/awtrix-ng/guides/icons/"
                         },
                         {
                             "type": "number",
@@ -431,7 +431,7 @@
                             "default": "BrickBreaker",
                             "label": "Background effect",
                             "help": "See all effects",
-                            "helpLink": "https://ang.blueforcer.de/guides/effects/"
+                            "helpLink": "https://blueforcer.github.io/awtrix-ng/guides/effects/"
                         },
                         {
                             "hidden": "data.objId.length == 0",
@@ -656,7 +656,7 @@
                             "xl": 4,
                             "default": "",
                             "help": "Must be uploaded manually",
-                            "helpLink": "https://ang.blueforcer.de/guides/icons/"
+                            "helpLink": "https://blueforcer.github.io/awtrix-ng/guides/icons/"
                         },
                         {
                             "type": "number",
