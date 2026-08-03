@@ -599,10 +599,8 @@ export class AwtrixNg extends utils.Adapter {
                     await this.createAppObjects();
 
                     for (const app of this.apps) {
-                        if (app instanceof AppTypeUser.UserApp) {
-                            if (await app.init()) {
-                                await app.refresh();
-                            }
+                        if (await app.init()) {
+                            await app.refresh();
                         }
                     }
 

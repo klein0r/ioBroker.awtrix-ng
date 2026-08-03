@@ -10,9 +10,11 @@ export namespace AppType {
         protected adapter: AwtrixNg;
 
         protected objPrefix: string;
+        protected isEnabled: boolean;
 
         public constructor(apiClient: AwtrixApi.Client, adapter: AwtrixNg, name: string) {
             this.name = name;
+            this.isEnabled = false;
 
             this.apiClient = apiClient;
             this.adapter = adapter;
@@ -25,6 +27,34 @@ export namespace AppType {
 
             adapter.on('stateChange', this.onStateChange.bind(this));
             adapter.on('objectChange', this.onObjectChange.bind(this));
+        }
+
+        public async init(): Promise<boolean> {
+            const appName = this.getName();
+            const appEnabledState = await this.adapter.getForeignStateAsync(
+                `${this.objPrefix}.apps.${appName}.enabled`,
+            );
+            this.isEnabled = appEnabledState ? !!appEnabledState.val : true;
+
+            // Ack if changed while instance was stopped
+            if (appEnabledState && !appEnabledState?.ack) {
+                await this.adapter.setState(`apps.${appName}.enabled`, { val: this.isEnabled, ack: true, c: 'init' });
+            }
+
+            return this.isEnabled;
+        }
+
+        // eslint-disable-next-line @typescript-eslint/require-await
+        public async refresh(): Promise<boolean> {
+            if (!this.isEnabled && this.apiClient.isConnected()) {
+                // Hide app automatically
+                const appName = this.getName();
+                this.apiClient.removeAppAsync(appName).catch(error => {
+                    this.adapter.log.warn(`[refreshApp] Unable to remove hidden app "${appName}": ${error}`);
+                });
+            }
+
+            return this.isEnabled && this.apiClient.isConnected();
         }
 
         public abstract getDescription(): string;
@@ -55,6 +85,35 @@ export namespace AppType {
             this.adapter.log.debug(
                 `[createObjects] Creating objects for app "${appName}" (${this.isMainInstance() ? 'main' : this.objPrefix})`,
             );
+
+            await this.adapter.extendObject(`apps.${appName}.enabled`, {
+                type: 'state',
+                common: {
+                    name: {
+                        en: 'Enabled',
+                        de: 'Aktiviert',
+                        ru: 'Включено',
+                        pt: 'Ativado',
+                        nl: 'Ingeschakeld',
+                        fr: 'Activé',
+                        it: 'Abilitato',
+                        es: 'Activado',
+                        pl: 'Włączone',
+                        uk: 'Увімкнено',
+                        'zh-cn': '已啟用',
+                    },
+                    type: 'boolean',
+                    role: 'switch.enable',
+                    read: true,
+                    write: this.isMainInstance(),
+                    def: true,
+                },
+                native: {},
+            });
+
+            if (!this.isMainInstance()) {
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.enabled`);
+            }
 
             if (this.hasOwnActivateState()) {
                 await this.adapter.extendObject(`apps.${appName}.activate`, {
@@ -123,7 +182,38 @@ export namespace AppType {
 
         /* eslint-disable @typescript-eslint/no-unused-vars */
         protected async stateChanged(id: string, state: ioBroker.State | null | undefined): Promise<void> {
-            // override
+            // Handle all states for user apps
+            if (id && state && !state.ack) {
+                const appName = this.getName();
+                const idOwnNamespace = this.getObjIdOwnNamespace(id);
+
+                if (id === `${this.objPrefix}.apps.${appName}.enabled`) {
+                    if (state.val !== this.isEnabled) {
+                        this.adapter.log.debug(
+                            `[onStateChange] ${appName}: Enabled of app ${appName} changed to ${state.val}`,
+                        );
+
+                        this.isEnabled = !!state.val;
+
+                        await this.refresh();
+                        await this.adapter.setState(idOwnNamespace, {
+                            val: state.val,
+                            ack: true,
+                            c: `onStateChange ${this.objPrefix}`,
+                        });
+                    } else {
+                        this.adapter.log.debug(
+                            `[onStateChange] ${appName}: Enabled of app "${appName}" IGNORED (not changed): ${state.val}`,
+                        );
+
+                        await this.adapter.setState(idOwnNamespace, {
+                            val: state.val,
+                            ack: true,
+                            c: `onStateChange ${this.objPrefix} (unchanged)`,
+                        });
+                    }
+                }
+            }
         }
 
         private async onObjectChange(id: string, obj: ioBroker.Object | null | undefined): Promise<void> {
