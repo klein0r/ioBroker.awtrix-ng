@@ -941,7 +941,7 @@ export class AwtrixNg extends utils.Adapter {
 
         await this.apiClient?.requestAsync('apps/order', 'PUT', {
             order: appsEnabled.map(a => a.getName()),
-            hidden: this.apps.filter(a => !a.enabled()).map(a => a.getName()),
+            disabled: this.apps.filter(a => !a.enabled()).map(a => a.getName()),
         });
     }
 
