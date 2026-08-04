@@ -289,21 +289,6 @@ export class AwtrixNg extends utils.Adapter {
                         .catch(error => {
                             this.log.warn(`(moodlight) Unable to execute action: ${error}`);
                         });
-                } else if (idNoNamespace === 'device.update') {
-                    this.log.info('performing firmware update');
-
-                    this.apiClient!.requestAsync('update', 'POST')
-                        .then(async response => {
-                            if (response.status === 200 && response.data.ok === true) {
-                                this.log.info('started firmware update');
-                                await this.setApiConnected(false);
-                            }
-                        })
-                        .catch(error => {
-                            this.log.warn(
-                                `(update) Unable to execute firmware update (maybe this is already the newest version): ${error}`,
-                            );
-                        });
                 } else if (idNoNamespace === 'device.reboot') {
                     this.apiClient!.requestAsync('device/reboot', 'POST')
                         .then(async response => {
@@ -633,12 +618,6 @@ export class AwtrixNg extends utils.Adapter {
                 this.currentVersion = String(content.version);
 
                 if (this.isNewerVersion(this.currentVersion, this.supportedVersion) && !this.displayedVersionWarning) {
-                    await this.registerNotification(
-                        'awtrix-ng',
-                        'deviceUpdate',
-                        `Firmware update: ${this.currentVersion} -> ${this.supportedVersion}`,
-                    );
-
                     this.log.warn(
                         `You should update your Awtrix NG - supported version of this adapter is ${this.supportedVersion} (or later). Your current version is ${this.currentVersion}`,
                     );

@@ -99,8 +99,7 @@
     "dataSource": "poll",
     "blockly": true,
     "supportedMessages": {
-      "custom": true,
-      "notifications": true
+      "custom": true
     },
     "adminUI": {
       "config": "json"
@@ -124,71 +123,6 @@
       }
     ]
   },
-  "notifications": [
-    {
-      "scope": "awtrix-ng",
-      "name": {
-        "en": "Awtrix NG",
-        "de": "Awtrix NG",
-        "ru": "Awtrix NG",
-        "pt": "Awtrix NG",
-        "nl": "Awtrix NG",
-        "fr": "Awtrix NG",
-        "it": "Awtrix NG",
-        "es": "Awtrix NG",
-        "pl": "Awtrix NG",
-        "uk": "Awtrix NG",
-        "zh-cn": "Awtrix NG"
-      },
-      "description": {
-        "en": "These notifications represent news of connected devices.",
-        "de": "Diese Benachrichtigungen stellen Neuigkeiten über angeschlossene Geräte dar.",
-        "ru": "Эти уведомления представляют собой новости о подключенных устройствах.",
-        "pt": "Essas notificações representam notícias de dispositivos conectados.",
-        "nl": "Deze meldingen vertegenwoordigen nieuws van aangesloten apparaten.",
-        "fr": "Ces notifications représentent des nouvelles d'appareils connectés.",
-        "it": "Queste notifiche rappresentano notizie di dispositivi collegati.",
-        "es": "Estas notificaciones representan noticias de dispositivos conectados.",
-        "pl": "Powiadomienia te stanowią wiadomości o podłączonych urządzeniach.",
-        "uk": "Ці повідомлення представляють новини підключених пристроїв.",
-        "zh-cn": "这些通知代表了连接设备的消息."
-      },
-      "categories": [
-        {
-          "category": "deviceUpdate",
-          "name": {
-            "en": "Firmware update available",
-            "de": "Firmware-Update verfügbar",
-            "ru": "Доступное обновление прошивки",
-            "pt": "Atualização de firmware disponível",
-            "nl": "Firmware-update beschikbaar",
-            "fr": "Mise à jour du firmware disponible",
-            "it": "Aggiornamento firmware disponibile",
-            "es": "Actualización de firmware disponible",
-            "pl": "Dostępna aktualizacja oprogramowania firmowego",
-            "uk": "Оновлення прошивки",
-            "zh-cn": "可更新的固件"
-          },
-          "severity": "notify",
-          "description": {
-            "en": "New firmware update is available for your device.",
-            "de": "Neues Firmware-Update ist für dein Gerät verfügbar.",
-            "ru": "Новое обновление прошивки доступно для вашего устройства.",
-            "pt": "Nova atualização de firmware está disponível para o seu dispositivo.",
-            "nl": "Nieuwe firmware update is beschikbaar voor uw apparaat.",
-            "fr": "Une nouvelle mise à jour firmware est disponible pour votre appareil.",
-            "it": "Nuovo aggiornamento firmware è disponibile per il dispositivo.",
-            "es": "Nueva actualización de firmware está disponible para su dispositivo.",
-            "pl": "Dla Twojego urządzenia dostępna jest nowa aktualizacja oprogramowania firmowego.",
-            "uk": "Нові оновлення прошивки доступні для вашого пристрою.",
-            "zh-cn": "您的设备有新的固件更新 ."
-          },
-          "regex": [],
-          "limit": 1
-        }
-      ]
-    }
-  ],
   "protectedNative": [
     "userName",
     "userPassword"
@@ -1108,30 +1042,6 @@
           "uk": "Пристрої",
           "zh-cn": "证人"
         }
-      },
-      "native": {}
-    },
-    {
-      "_id": "device.update",
-      "type": "state",
-      "common": {
-        "name": {
-          "en": "Start firmware update",
-          "de": "Firmware-Update starten",
-          "ru": "Начните обновление прошивки",
-          "pt": "Iniciar atualização de firmware",
-          "nl": "Start firmaware update",
-          "fr": "Mise à jour du firmware",
-          "it": "Avviare l'aggiornamento firmware",
-          "es": "Inicio actualización de firmware",
-          "pl": "Aktualizacja",
-          "uk": "Почати оновлення мікропрограми",
-          "zh-cn": "导 言"
-        },
-        "type": "boolean",
-        "role": "button",
-        "read": false,
-        "write": true
       },
       "native": {}
     },
