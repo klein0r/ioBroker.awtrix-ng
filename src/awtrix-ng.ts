@@ -134,16 +134,7 @@ export class AwtrixNg extends utils.Adapter {
             'TwinklingStars',
         ];
         this.weatherOverlays = ['rain', 'snow', 'drizzle', 'storm', 'thunder', 'frost'];
-        this.palettes = [
-            'Cloud',
-            'Lava',
-            'Ocean',
-            'Forest',
-            'Stripe',
-            'Party',
-            'Heat',
-            'Rainbow',
-        ];
+        this.palettes = ['Cloud', 'Lava', 'Ocean', 'Forest', 'Stripe', 'Party', 'Heat', 'Rainbow'];
         this.paletteEffects = [
             'Checkerboard',
             'ColorWaves',
@@ -829,7 +820,9 @@ export class AwtrixNg extends utils.Adapter {
                                 if (!this.findAppWithName(customApp.name)) {
                                     this.apps.push(new AppTypeCustom.Custom(this.apiClient!, this, customApp));
                                 } else {
-                                    this.log.warn(`App with name ${customApp.name} already exists. Skipping custom app!`);
+                                    this.log.warn(
+                                        `App with name ${customApp.name} already exists. Skipping custom app!`,
+                                    );
                                 }
                             }
 
@@ -837,7 +830,9 @@ export class AwtrixNg extends utils.Adapter {
                                 if (!this.findAppWithName(historyApp.name)) {
                                     this.apps.push(new AppTypeHistory.History(this.apiClient!, this, historyApp));
                                 } else {
-                                    this.log.warn(`App with name ${historyApp.name} already exists. Skipping history app!`);
+                                    this.log.warn(
+                                        `App with name ${historyApp.name} already exists. Skipping history app!`,
+                                    );
                                 }
                             }
 
@@ -845,14 +840,22 @@ export class AwtrixNg extends utils.Adapter {
                                 if (!this.findAppWithName(expertApp.name)) {
                                     this.apps.push(new AppTypeExpert.Expert(this.apiClient!, this, expertApp));
                                 } else {
-                                    this.log.warn(`App with name ${expertApp.name} already exists. Skipping expert app!`);
+                                    this.log.warn(
+                                        `App with name ${expertApp.name} already exists. Skipping expert app!`,
+                                    );
                                 }
                             }
 
                             const customApps = this.config.customApps.map(a => a.name);
                             const historyApps = this.config.historyApps.map(a => a.name);
                             const expertApps = this.config.expertApps.map(a => a.name);
-                            const allApps = [...builtinApps, ...scriptApps, ...customApps, ...historyApps, ...expertApps];
+                            const allApps = [
+                                ...builtinApps,
+                                ...scriptApps,
+                                ...customApps,
+                                ...historyApps,
+                                ...expertApps,
+                            ];
 
                             const appsAll = [];
                             const appsKeep = [];
@@ -959,7 +962,7 @@ export class AwtrixNg extends utils.Adapter {
 
         await this.apiClient?.requestAsync('apps/order', 'PUT', {
             order: appsEnabled.map(a => a.getName()),
-            hidden: this.apps.filter(a => !a.enabled()).map(a => a.getName())
+            hidden: this.apps.filter(a => !a.enabled()).map(a => a.getName()),
         });
     }
 

@@ -36,15 +36,14 @@ export namespace AppType {
             const appEnabledState = await this.adapter.getForeignStateAsync(
                 `${this.objPrefix}.apps.${appName}.enabled`,
             );
-            const appSlotState = await this.adapter.getForeignStateAsync(
-                `${this.objPrefix}.apps.${appName}.slot`,
-            );
+            const appSlotState = await this.adapter.getForeignStateAsync(`${this.objPrefix}.apps.${appName}.slot`);
 
             if (orderDefinition) {
                 this.isEnabled = orderDefinition?.enabled ?? true;
                 this.slot = orderDefinition?.slot ?? null;
             } else {
-                this.isEnabled = appEnabledState && typeof appEnabledState?.val === 'boolean' ? !!appEnabledState.val : true;
+                this.isEnabled =
+                    appEnabledState && typeof appEnabledState?.val === 'boolean' ? !!appEnabledState.val : true;
                 this.slot = appSlotState && typeof appSlotState?.val === 'number' ? appSlotState.val : null;
             }
 
@@ -211,7 +210,9 @@ export namespace AppType {
                                         );
                                     });
                             } else {
-                                this.adapter.log.warn(`[onStateChange] ${appName}: App is not enabled - unable to activate`);
+                                this.adapter.log.warn(
+                                    `[onStateChange] ${appName}: App is not enabled - unable to activate`,
+                                );
                             }
                         } else {
                             this.adapter.log.warn(`[onStateChange] ${appName}: Received invalid value for state ${id}`);
@@ -223,7 +224,6 @@ export namespace AppType {
             await this.stateChanged(id, state);
         }
 
-        /* eslint-disable @typescript-eslint/no-unused-vars */
         protected async stateChanged(id: string, state: ioBroker.State | null | undefined): Promise<void> {
             // Handle all states for user apps
             if (id && state && !state.ack) {
@@ -237,7 +237,7 @@ export namespace AppType {
                         );
 
                         this.isEnabled = !!state.val;
-                        this.adapter.refreshAppOrder();
+                        await this.adapter.refreshAppOrder();
 
                         await this.adapter.setState(idOwnNamespace, {
                             val: state.val,
@@ -262,7 +262,7 @@ export namespace AppType {
                         );
 
                         this.slot = state.val;
-                        this.adapter.refreshAppOrder();
+                        await this.adapter.refreshAppOrder();
 
                         await this.adapter.setState(idOwnNamespace, {
                             val: state.val,

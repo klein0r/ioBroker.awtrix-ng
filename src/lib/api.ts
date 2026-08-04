@@ -75,12 +75,12 @@ export namespace AwtrixApi {
     };
 
     export type AppOrderDefinition = {
-        name: string,
-        enabled: boolean,
-        inLoop: boolean,
-        slot: number,
-        present: boolean,
-        origin: 'builtin' | 'pushed' | 'script'
+        name: string;
+        enabled: boolean;
+        inLoop: boolean;
+        slot: number;
+        present: boolean;
+        origin: 'builtin' | 'pushed' | 'script';
     };
 
     export class Client {

@@ -28,6 +28,7 @@ export namespace AppType {
             return 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NDAgNTEyIj48IS0tIUZvbnQgQXdlc29tZSBGcmVlIDYuNy4yIGJ5IEBmb250YXdlc29tZSAtIGh0dHBzOi8vZm9udGF3ZXNvbWUuY29tIExpY2Vuc2UgLSBodHRwczovL2ZvbnRhd2Vzb21lLmNvbS9saWNlbnNlL2ZyZWUgQ29weXJpZ2h0IDIwMjUgRm9udGljb25zLCBJbmMuLS0+PHBhdGggZD0iTTk2IDEyOGExMjggMTI4IDAgMSAxIDI1NiAwQTEyOCAxMjggMCAxIDEgOTYgMTI4ek0wIDQ4Mi4zQzAgMzgzLjggNzkuOCAzMDQgMTc4LjMgMzA0bDkxLjQgMEMzNjguMiAzMDQgNDQ4IDM4My44IDQ0OCA0ODIuM2MwIDE2LjQtMTMuMyAyOS43LTI5LjcgMjkuN0wyOS43IDUxMkMxMy4zIDUxMiAwIDQ5OC43IDAgNDgyLjN6TTUwNCAzMTJsMC02NC02NCAwYy0xMy4zIDAtMjQtMTAuNy0yNC0yNHMxMC43LTI0IDI0LTI0bDY0IDAgMC02NGMwLTEzLjMgMTAuNy0yNCAyNC0yNHMyNCAxMC43IDI0IDI0bDAgNjQgNjQgMGMxMy4zIDAgMjQgMTAuNyAyNCAyNHMtMTAuNyAyNC0yNCAyNGwtNjQgMCAwIDY0YzAgMTMuMy0xMC43IDI0LTI0IDI0cy0yNC0xMC43LTI0LTI0eiIvPjwvc3ZnPg==';
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         public override async init(orderDefinition?: AwtrixApi.AppOrderDefinition): Promise<void> {
             const appName = this.getName();
 
@@ -67,7 +68,7 @@ export namespace AppType {
                 `[initExpertApp] current states of app "${appName}": ${JSON.stringify(this.appStates)}`,
             );
 
-            super.init();
+            await super.init();
         }
 
         public override async refresh(): Promise<boolean> {
@@ -96,7 +97,7 @@ export namespace AppType {
                     typeof this.appStates.durationMs === 'number' &&
                     this.appStates.durationMs > 0
                 ) {
-                    app.durationMs = this.appStates.durationMs
+                    app.durationMs = this.appStates.durationMs;
                 }
 
                 if (
