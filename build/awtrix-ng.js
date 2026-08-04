@@ -34,12 +34,12 @@ module.exports = __toCommonJS(awtrix_ng_exports);
 var utils = __toESM(require("@iobroker/adapter-core"));
 var import_color_convert = require("./lib/color-convert");
 var import_api = require("./lib/api");
-var import_native = require("./lib/app-type/native");
+var import_builtin = require("./lib/app-type/builtin");
+var import_script = require("./lib/app-type/script");
 var import_user = require("./lib/app-type/user");
 var import_custom = require("./lib/app-type/user/custom");
 var import_expert = require("./lib/app-type/user/expert");
 var import_history = require("./lib/app-type/user/history");
-const NATIVE_APPS = ["Time", "Date", "Temperature", "Humidity", "Battery"];
 class AwtrixNg extends utils.Adapter {
   _isMainInstance;
   currentVersion;
@@ -52,6 +52,8 @@ class AwtrixNg extends utils.Adapter {
   apps;
   backgroundEffects;
   weatherOverlays;
+  palettes;
+  paletteEffects;
   constructor(options = {}) {
     super({
       ...options,
@@ -60,7 +62,7 @@ class AwtrixNg extends utils.Adapter {
     });
     this._isMainInstance = true;
     this.currentVersion = void 0;
-    this.supportedVersion = "1.0.8";
+    this.supportedVersion = "1.0.12";
     this.displayedVersionWarning = false;
     this.apiClient = null;
     this.apiConnected = false;
@@ -86,9 +88,36 @@ class AwtrixNg extends utils.Adapter {
       "SwirlIn",
       "SwirlOut",
       "TheaterChase",
-      "TwinklingStar"
+      "TwinklingStars"
     ];
     this.weatherOverlays = ["rain", "snow", "drizzle", "storm", "thunder", "frost"];
+    this.palettes = [
+      "Cloud",
+      "Lava",
+      "Ocean",
+      "Forest",
+      "Stripe",
+      "Party",
+      "Heat",
+      "Rainbow"
+    ];
+    this.paletteEffects = [
+      "Checkerboard",
+      "ColorWaves",
+      "Fade",
+      "Fireworks",
+      "MovingLine",
+      "Pacifica",
+      "Plasma",
+      "PlasmaCloud",
+      "Radar",
+      "Ripple",
+      "Snake",
+      "SwirlIn",
+      "SwirlOut",
+      "TheaterChase",
+      "TwinklingStars"
+    ];
     this.on("ready", this.onReady.bind(this));
     this.on("stateChange", this.onStateChange.bind(this));
     this.on("objectChange", this.onObjectChange.bind(this));
@@ -114,32 +143,6 @@ class AwtrixNg extends utils.Adapter {
       this._isMainInstance = false;
       await this.subscribeForeignObjectsAsync(`system.adapter.${this.config.foreignSettingsInstance}`);
       await this.importForeignSettings();
-    }
-    for (const nativeAppName of NATIVE_APPS) {
-      if (!this.findAppWithName(nativeAppName)) {
-        this.apps.push(new import_native.AppType.Native(this.apiClient, this, nativeAppName));
-      }
-    }
-    for (const customApp of this.config.customApps) {
-      if (!this.findAppWithName(customApp.name)) {
-        this.apps.push(new import_custom.AppType.Custom(this.apiClient, this, customApp));
-      } else {
-        this.log.warn(`App with name ${customApp.name} already exists. Skipping custom app!`);
-      }
-    }
-    for (const historyApp of this.config.historyApps) {
-      if (!this.findAppWithName(historyApp.name)) {
-        this.apps.push(new import_history.AppType.History(this.apiClient, this, historyApp));
-      } else {
-        this.log.warn(`App with name ${historyApp.name} already exists. Skipping history app!`);
-      }
-    }
-    for (const expertApp of this.config.expertApps) {
-      if (!this.findAppWithName(expertApp.name)) {
-        this.apps.push(new import_expert.AppType.Expert(this.apiClient, this, expertApp));
-      } else {
-        this.log.warn(`App with name ${expertApp.name} already exists. Skipping expert app!`);
-      }
     }
     this.refreshState();
   }
@@ -308,6 +311,12 @@ class AwtrixNg extends utils.Adapter {
   getWeatherOverlays() {
     return ["none", ...this.weatherOverlays];
   }
+  getPalettes() {
+    return ["none", ...this.palettes];
+  }
+  getPaletteEffects() {
+    return ["none", ...this.paletteEffects];
+  }
   onMessage(obj) {
     this.log.debug(`[onMessage] received command "${obj.command}" with message: ${JSON.stringify(obj.message)}`);
     if (obj && obj.message) {
@@ -429,13 +438,6 @@ class AwtrixNg extends utils.Adapter {
           await this.refreshSettings();
           await this.refreshCapabilitiesLists();
           await this.createAppObjects();
-          for (const app of this.apps) {
-            if (app instanceof import_user.AppType.UserApp) {
-              if (await app.init()) {
-                await app.refresh();
-              }
-            }
-          }
           for (let i = 1; i <= 3; i++) {
             await this.updateIndicatorByStates(i);
           }
@@ -619,14 +621,47 @@ class AwtrixNg extends utils.Adapter {
         this.apiClient.requestAsync("apps", "GET").then(async (response) => {
           if (response.status === 200) {
             const content = response.data;
-            const customApps = this.config.customApps.map((a) => a.name);
-            const historyApps = this.config.historyApps.map((a) => a.name);
-            const expertApps = this.config.expertApps.map((a) => a.name);
             const existingApps = content.map((a) => a.name);
-            const allApps = [...NATIVE_APPS, ...customApps, ...historyApps, ...expertApps];
+            const builtinApps = content.filter((a) => a.origin === "builtin").map((a) => a.name);
+            const scriptApps = content.filter((a) => a.origin === "script").map((a) => a.name);
             this.log.debug(
               `[createAppObjects] existing apps on awtrix light: ${JSON.stringify(existingApps)}`
             );
+            for (const builtinAppName of builtinApps) {
+              if (!this.findAppWithName(builtinAppName)) {
+                this.apps.push(new import_builtin.AppType.Builtin(this.apiClient, this, builtinAppName));
+              }
+            }
+            for (const scriptAppName of scriptApps) {
+              if (!this.findAppWithName(scriptAppName)) {
+                this.apps.push(new import_script.AppType.Script(this.apiClient, this, scriptAppName));
+              }
+            }
+            for (const customApp of this.config.customApps) {
+              if (!this.findAppWithName(customApp.name)) {
+                this.apps.push(new import_custom.AppType.Custom(this.apiClient, this, customApp));
+              } else {
+                this.log.warn(`App with name ${customApp.name} already exists. Skipping custom app!`);
+              }
+            }
+            for (const historyApp of this.config.historyApps) {
+              if (!this.findAppWithName(historyApp.name)) {
+                this.apps.push(new import_history.AppType.History(this.apiClient, this, historyApp));
+              } else {
+                this.log.warn(`App with name ${historyApp.name} already exists. Skipping history app!`);
+              }
+            }
+            for (const expertApp of this.config.expertApps) {
+              if (!this.findAppWithName(expertApp.name)) {
+                this.apps.push(new import_expert.AppType.Expert(this.apiClient, this, expertApp));
+              } else {
+                this.log.warn(`App with name ${expertApp.name} already exists. Skipping expert app!`);
+              }
+            }
+            const customApps = this.config.customApps.map((a) => a.name);
+            const historyApps = this.config.historyApps.map((a) => a.name);
+            const expertApps = this.config.expertApps.map((a) => a.name);
+            const allApps = [...builtinApps, ...scriptApps, ...customApps, ...historyApps, ...expertApps];
             const appsAll = [];
             const appsKeep = [];
             const existingChannels = await this.getChannelsOfAsync("apps");
@@ -641,7 +676,8 @@ class AwtrixNg extends utils.Adapter {
             for (const name of allApps) {
               appsKeep.push(`apps.${name}`);
               this.log.debug(`[createAppObjects] found (keep): apps.${name}`);
-              const isNativeApp = NATIVE_APPS.includes(name);
+              const isBuiltinApp = builtinApps.includes(name);
+              const isScriptApp = scriptApps.includes(name);
               const isCustomApp = customApps.includes(name);
               const isHistoryApp = historyApps.includes(name);
               const isExpertApp = expertApps.includes(name);
@@ -655,13 +691,17 @@ class AwtrixNg extends utils.Adapter {
                     icon: app.getIconForObjectTree()
                   },
                   native: {
-                    isNativeApp,
+                    isBuiltinApp,
+                    isScriptApp,
                     isCustomApp,
                     isHistoryApp,
                     isExpertApp
                   }
                 });
+                const orderDefinition = content.find((a) => a.name === app.getName());
                 await app.createObjects();
+                await app.init(orderDefinition);
+                await app.refresh();
               }
             }
             for (const app of appsAll) {
@@ -699,6 +739,18 @@ class AwtrixNg extends utils.Adapter {
         reject(new Error("API_OFFLINE"));
       }
     });
+  }
+  async refreshAppOrder() {
+    var _a;
+    const appsEnabled = this.apps.filter((a) => a.enabled());
+    appsEnabled.sort((a, b) => {
+      var _a2, _b;
+      return ((_a2 = a.getSlot()) != null ? _a2 : 9999) - ((_b = b.getSlot()) != null ? _b : 9999);
+    });
+    await ((_a = this.apiClient) == null ? void 0 : _a.requestAsync("apps/order", "PUT", {
+      order: appsEnabled.map((a) => a.getName()),
+      hidden: this.apps.filter((a) => !a.enabled()).map((a) => a.getName())
+    }));
   }
   async updateIndicatorByStates(index) {
     this.log.debug(`Updating indicator with index ${index}`);
