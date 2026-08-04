@@ -33,7 +33,7 @@
     "If value greater than": "Если значение больше, чем",
     "If value less than": "Если значение меньше",
     "Ignore new values after state change (in seconds)": "Игнорировать новые значения после изменения состояния (в секундах)",
-    "Just lower case letters (a-z)": "Только строчные буквы (a-z)",
+    "Just letters, max. 32 characters": "Просто буквы, максимум. 32 символа",
     "Last values": "Последние значения",
     "Line": "Линия",
     "Line color of chart": "Цвет линии графика",

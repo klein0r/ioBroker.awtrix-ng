@@ -33,7 +33,7 @@
     "If value greater than": "Als de waarde groter is dan",
     "If value less than": "Indien waarde kleiner dan",
     "Ignore new values after state change (in seconds)": "Negeer nieuwe waarden na statusverandering (in seconden)",
-    "Just lower case letters (a-z)": "Gewoon kleine letters (a-z)",
+    "Just letters, max. 32 characters": "Enkel letters, max. 32 tekens",
     "Last values": "Laatste waarden",
     "Line": "Lijn",
     "Line color of chart": "Lijnkleur van de grafiek",

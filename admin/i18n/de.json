@@ -33,7 +33,7 @@
     "If value greater than": "Falls Wert größer als",
     "If value less than": "Falls Wert kleiner als",
     "Ignore new values after state change (in seconds)": "Neue Werte nach Änderung ignorieren (in Sekunden)",
-    "Just lower case letters (a-z)": "Nur Kleinbuchstaben (a-z)",
+    "Just letters, max. 32 characters": "Nur Buchstaben, max. 32 Zeichen",
     "Last values": "Letzte Werte",
     "Line": "Linie",
     "Line color of chart": "Linienfarbe des Diagramms",

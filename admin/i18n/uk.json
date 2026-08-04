@@ -33,7 +33,7 @@
     "If value greater than": "Якщо значення більше ніж",
     "If value less than": "Якщо значення менше",
     "Ignore new values after state change (in seconds)": "Ігнорувати нові значення після зміни стану (у секундах)",
-    "Just lower case letters (a-z)": "Тільки малі літери (a-z)",
+    "Just letters, max. 32 characters": "Тільки букви, макс. 32 символи",
     "Last values": "Останні значення",
     "Line": "лінія",
     "Line color of chart": "Колір лінії діаграми",

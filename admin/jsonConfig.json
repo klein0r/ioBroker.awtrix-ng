@@ -233,9 +233,9 @@
                             "lg": 4,
                             "xl": 4,
                             "default": "custom",
-                            "help": "Just lower case letters (a-z)",
-                            "validator": "/^([a-z]{1,32})$/.test(data.name) && !['time', 'date', 'temperature', 'humidity', 'battery'].includes(data.name) && [...globalData.customApps, ...globalData.historyApps, ...globalData.expertApps].filter(app => app.name === data.name).length === 1",
-                            "validatorErrorText": "Just lower case letters (a-z)",
+                            "help": "Just letters, max. 32 characters",
+                            "validator": "/^([A-Za-z]{1,32})$/.test(data.name) && !['time', 'date', 'temperature', 'humidity', 'battery'].includes(data.name) && [...globalData.customApps, ...globalData.historyApps, ...globalData.expertApps].filter(app => app.name === data.name).length === 1",
+                            "validatorErrorText": "Just letters, max. 32 characters",
                             "validatorNoSaveOnError": true
                         },
                         {
@@ -640,9 +640,9 @@
                             "lg": 4,
                             "xl": 4,
                             "default": "history",
-                            "help": "Just lower case letters (a-z)",
-                            "validator": "/^([a-z]{1,32})$/.test(data.name) && !['time', 'date', 'temperature', 'humidity', 'battery'].includes(data.name) && [...globalData.customApps, ...globalData.historyApps, ...globalData.expertApps].filter(app => app.name === data.name).length === 1",
-                            "validatorErrorText": "Just lower case letters (a-z)",
+                            "help": "Just letters, max. 32 characters",
+                            "validator": "/^([A-Za-z]{1,32})$/.test(data.name) && !['time', 'date', 'temperature', 'humidity', 'battery'].includes(data.name) && [...globalData.customApps, ...globalData.historyApps, ...globalData.expertApps].filter(app => app.name === data.name).length === 1",
+                            "validatorErrorText": "Just letters, max. 32 characters",
                             "validatorNoSaveOnError": true
                         },
                         {
@@ -951,9 +951,9 @@
                             "lg": 4,
                             "xl": 4,
                             "default": "expert",
-                            "help": "Just lower case letters (a-z)",
-                            "validator": "/^([a-z]{1,32})$/.test(data.name) && !['time', 'date', 'temperature', 'humidity', 'battery'].includes(data.name) && [...globalData.customApps, ...globalData.historyApps, ...globalData.expertApps].filter(app => app.name === data.name).length === 1",
-                            "validatorErrorText": "Just lower case letters (a-z)",
+                            "help": "Just letters, max. 32 characters",
+                            "validator": "/^([A-Za-z]{1,32})$/.test(data.name) && !['time', 'date', 'temperature', 'humidity', 'battery'].includes(data.name) && [...globalData.customApps, ...globalData.historyApps, ...globalData.expertApps].filter(app => app.name === data.name).length === 1",
+                            "validatorErrorText": "Just letters, max. 32 characters",
                             "validatorNoSaveOnError": true
                         }
                     ]
