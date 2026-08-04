@@ -42,6 +42,7 @@ Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amaz
 ### **WORK IN PROGRESS**
 
 * (@klein0r) Removed device update state and notification
+* (@klein0r) Fixed rtttl endpoint
 
 ### 0.0.6 (2026-08-04)
 

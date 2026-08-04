@@ -455,7 +455,7 @@ export class AwtrixNg extends utils.Adapter {
                 // RTTTL sounds
                 if (this.apiClient && this.apiClient.isConnected()) {
                     this.apiClient
-                        .requestAsync('rtttl', 'POST', obj.message)
+                        .requestAsync('sounds/play', 'POST', { rtttl: obj.message })
                         .then(response => {
                             this.sendTo(obj.from, obj.command, { error: null, data: response.data }, obj.callback);
                         })
