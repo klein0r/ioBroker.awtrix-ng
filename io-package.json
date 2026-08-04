@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "awtrix-ng",
-    "version": "0.0.5",
+    "version": "0.0.6",
     "news": {
+      "0.0.6": {
+        "en": "Renamed visible to enabled\nAdded slot positions",
+        "de": "„Sichtbar“ wurde in „Aktiviert“ umbenannt.\nHinzugefügte Slot-Positionen",
+        "ru": "Переименовано из visible в enabled\nДобавлены позиции слотов",
+        "pt": "Renomeado de visível para ativado\nPosições de slot adicionadas",
+        "nl": "Hernoemd naar zichtbaar naar ingeschakeld\nToegevoegde slotposities",
+        "fr": "Renommé visible en activé\nAjout de positions d'emplacement",
+        "it": "Rinominato visibile in abilitato\nPosizioni slot aggiunte",
+        "es": "Se cambió el nombre de visible a habilitado.\nSe agregaron posiciones de ranura",
+        "pl": "Zmieniono nazwę z widocznego na włączony\nDodano pozycje slotów",
+        "uk": "Перейменовано з видимого на ввімкнено\nДодані позиції слотів",
+        "zh-cn": "将“可见”重命名为“已启用”。\n新增插槽位置"
+      },
       "0.0.4": {
         "en": "Added weather overlays to expert apps\nFixed state object role definitions",
         "de": "Wetter-Overlays zu Experten-Apps hinzugefügt\nRollendefinitionen für Festkörperobjekte",

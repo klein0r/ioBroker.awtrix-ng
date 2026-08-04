@@ -44,6 +44,7 @@ var AppType;
     getIconForObjectTree() {
       return "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NDggNTEyIj48IS0tIUZvbnQgQXdlc29tZSBGcmVlIDYuNy4yIGJ5IEBmb250YXdlc29tZSAtIGh0dHBzOi8vZm9udGF3ZXNvbWUuY29tIExpY2Vuc2UgLSBodHRwczovL2ZvbnRhd2Vzb21lLmNvbS9saWNlbnNlL2ZyZWUgQ29weXJpZ2h0IDIwMjUgRm9udGljb25zLCBJbmMuLS0+PHBhdGggZD0iTTIyNCAyNTZBMTI4IDEyOCAwIDEgMCAyMjQgMGExMjggMTI4IDAgMSAwIDAgMjU2em0tNDUuNyA0OEM3OS44IDMwNCAwIDM4My44IDAgNDgyLjNDMCA0OTguNyAxMy4zIDUxMiAyOS43IDUxMmwzODguNiAwYzE2LjQgMCAyOS43LTEzLjMgMjkuNy0yOS43QzQ0OCAzODMuOCAzNjguMiAzMDQgMjY5LjcgMzA0bC05MS40IDB6Ii8+PC9zdmc+";
     }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async init(orderDefinition) {
       var _a, _b;
       const text = String(this.appDefinition.text).trim();
@@ -100,7 +101,7 @@ var AppType;
         this.adapter.log.debug(`[initCustomApp] Init app "${this.appDefinition.name}" with background only`);
         this.isBackgroundOny = true;
       }
-      super.init();
+      await super.init();
     }
     createAppRequestObj(text, val) {
       const app = {};

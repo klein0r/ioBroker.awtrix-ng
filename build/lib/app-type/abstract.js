@@ -50,9 +50,7 @@ var AppType;
       const appEnabledState = await this.adapter.getForeignStateAsync(
         `${this.objPrefix}.apps.${appName}.enabled`
       );
-      const appSlotState = await this.adapter.getForeignStateAsync(
-        `${this.objPrefix}.apps.${appName}.slot`
-      );
+      const appSlotState = await this.adapter.getForeignStateAsync(`${this.objPrefix}.apps.${appName}.slot`);
       if (orderDefinition) {
         this.isEnabled = (_a = orderDefinition == null ? void 0 : orderDefinition.enabled) != null ? _a : true;
         this.slot = (_b = orderDefinition == null ? void 0 : orderDefinition.slot) != null ? _b : null;
@@ -194,7 +192,9 @@ var AppType;
                   );
                 });
               } else {
-                this.adapter.log.warn(`[onStateChange] ${appName}: App is not enabled - unable to activate`);
+                this.adapter.log.warn(
+                  `[onStateChange] ${appName}: App is not enabled - unable to activate`
+                );
               }
             } else {
               this.adapter.log.warn(`[onStateChange] ${appName}: Received invalid value for state ${id}`);
@@ -204,7 +204,6 @@ var AppType;
       }
       await this.stateChanged(id, state);
     }
-    /* eslint-disable @typescript-eslint/no-unused-vars */
     async stateChanged(id, state) {
       if (id && state && !state.ack) {
         const appName = this.getName();
@@ -215,7 +214,7 @@ var AppType;
               `[onStateChange] ${appName}: Enabled of app ${appName} changed to ${state.val}`
             );
             this.isEnabled = !!state.val;
-            this.adapter.refreshAppOrder();
+            await this.adapter.refreshAppOrder();
             await this.adapter.setState(idOwnNamespace, {
               val: state.val,
               ack: true,
@@ -237,7 +236,7 @@ var AppType;
               `[onStateChange] ${appName}: Slot of app ${appName} changed to ${state.val}`
             );
             this.slot = state.val;
-            this.adapter.refreshAppOrder();
+            await this.adapter.refreshAppOrder();
             await this.adapter.setState(idOwnNamespace, {
               val: state.val,
               ack: true,
