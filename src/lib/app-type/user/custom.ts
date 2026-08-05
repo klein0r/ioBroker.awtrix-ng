@@ -128,8 +128,8 @@ export namespace AppType {
                 app.scroll = { mode: 'static' };
             } else {
                 // Scroll speed
-                if (this.appDefinition.scrollSpeed > 0) {
-                    app.scroll = { speed: this.appDefinition.scrollSpeed };
+                if (this.appDefinition.scrollSpeed > 0 && this.appDefinition.scrollSpeed <= 100) {
+                    app.scroll = { mode: 'wrap', speed: this.appDefinition.scrollSpeed, whenFits: 'scroll' };
                 }
 
                 // Repeat
