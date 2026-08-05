@@ -288,7 +288,7 @@ Blockly.JavaScript['awtrix-ng'] = function (block) {
     sound && objText.push('sound: ' + sound);
     icon && objText.push('icon: ' + icon);
     repeat && objText.push('repeat: parseInt(' + repeat + ')');
-    durationMs && objText.push('durationMs: parseInt(' + duration + ')');
+    duration && objText.push('durationMs: parseInt(' + duration + ')');
     objText.push('stack: ' + stack);
     objText.push('wakeup: ' + wakeup);
     objText.push('hold: ' + hold);
