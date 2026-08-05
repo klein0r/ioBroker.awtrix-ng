@@ -936,13 +936,19 @@ export class AwtrixNg extends utils.Adapter {
     }
 
     public async refreshAppOrder(): Promise<void> {
-        const appsEnabled = this.apps.filter(a => a.enabled());
-        appsEnabled.sort((a, b) => (a.getSlot() ?? 9999) - (b.getSlot() ?? 9999));
+        if (this.apiClient && this.apiClient.isConnected()) {
+            try {
+                const appsEnabled = this.apps.filter(a => a.enabled());
+                appsEnabled.sort((a, b) => (a.getSlot() ?? 9999) - (b.getSlot() ?? 9999));
 
-        await this.apiClient?.requestAsync('apps/order', 'PUT', {
-            order: appsEnabled.map(a => a.getName()),
-            disabled: this.apps.filter(a => !a.enabled()).map(a => a.getName()),
-        });
+                await this.apiClient?.requestAsync('apps/order', 'PUT', {
+                    order: appsEnabled.map(a => a.getName()),
+                    disabled: this.apps.filter(a => !a.enabled()).map(a => a.getName()),
+                });
+            } catch (err) {
+                this.log.error(`[refreshAppOrder] Failed to change app order: ${err}`);
+            }
+        }
     }
 
     private async updateIndicatorByStates(index: number): Promise<AxiosResponse> {
