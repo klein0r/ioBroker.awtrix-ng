@@ -507,6 +507,60 @@
       }
     },
     {
+      "_id": "settings.datetime.time24h",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "24h time format",
+          "de": "24-Stunden-Zeitformat",
+          "ru": "24-часовой формат времени",
+          "pt": "Formato de hora de 24 horas",
+          "nl": "24-uursnotatie",
+          "fr": "Format d'heure sur 24 heures",
+          "it": "Formato dell'ora 24 ore",
+          "es": "Formato de hora de 24 horas",
+          "pl": "Format czasu 24-godzinny",
+          "uk": "24-годинний формат часу",
+          "zh-cn": "24h time format"
+        },
+        "type": "boolean",
+        "role": "switch",
+        "read": true,
+        "write": true,
+        "def": true
+      },
+      "native": {
+        "settingsKey": "time24h"
+      }
+    },
+    {
+      "_id": "settings.datetime.showLeadingZero",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Show leading zero for time",
+          "de": "Führende Null bei der Zeit anzeigen",
+          "ru": "Отображать ведущий ноль в показании времени",
+          "pt": "Mostrar o zero à esquerda na hora",
+          "nl": "Toon de voorloopnul bij de tijd",
+          "fr": "Afficher le zéro initial pour l'heure",
+          "it": "Mostra lo zero iniziale nell'ora",
+          "es": "Mostrar el cero inicial en la hora",
+          "pl": "Wyświetlaj zerę na początku godziny",
+          "uk": "Показувати початковий нуль у позначенні часу",
+          "zh-cn": "Show leading zero for time"
+        },
+        "type": "boolean",
+        "role": "switch",
+        "read": true,
+        "write": true,
+        "def": true
+      },
+      "native": {
+        "settingsKey": "timeLeadingZero"
+      }
+    },
+    {
       "_id": "settings.datetime.dateShowWeekday",
       "type": "state",
       "common": {

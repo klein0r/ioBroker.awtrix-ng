@@ -39,6 +39,10 @@ Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amaz
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+
+* (@klein0r) Added more settings
+
 ### 0.0.7 (2026-08-05)
 
 * (@klein0r) Removed device update state and notification
