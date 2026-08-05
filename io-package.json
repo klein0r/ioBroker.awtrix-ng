@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "awtrix-ng",
-    "version": "0.0.6",
+    "version": "0.0.7",
     "news": {
+      "0.0.7": {
+        "en": "Removed device update state and notification\nFixed rtttl endpoint\nImproved error handling\nFixed Blockly code generation",
+        "de": "Geräteaktualisierungsstatus und Benachrichtigung entfernt\nKorrigierter rtttl-Endpunkt\nVerbesserte Fehlerbehandlung\nFehler bei der Blockly-Codegenerierung behoben",
+        "ru": "Удалено состояние обновления устройства и уведомление.\nИсправлена конечная точка rtttl\nУлучшена обработка ошибок\nИсправлена генерация кода Blockly",
+        "pt": "Estado e notificação de atualização do dispositivo removidos\nEndpoint rtttl corrigido\nMelhoria no tratamento de erros\nCorreção na geração de código Blockly",
+        "nl": "Apparaatupdate-status en -melding verwijderd.\nVaste rtttl-eindpunt\nVerbeterde foutafhandeling\nDe code-generatie van Blockly is gecorrigeerd.",
+        "fr": "Suppression de l'état et de la notification de mise à jour de l'appareil\nPoint de terminaison rtttl fixe\nGestion des erreurs améliorée\nGénération de code Blockly corrigée",
+        "it": "Stato di aggiornamento del dispositivo e notifica rimossi\nEndpoint rtttl fisso\nGestione degli errori migliorata\nGenerazione del codice Blockly corretta",
+        "es": "Se eliminó el estado de actualización del dispositivo y la notificación.\nPunto final rttttl corregido\nManejo de errores mejorado\nGeneración de código Blockly corregida",
+        "pl": "Usunięto stan aktualizacji urządzenia i powiadomienie\nNaprawiono punkt końcowy rtttl\nUlepszona obsługa błędów\nNaprawiono generowanie kodu Blockly",
+        "uk": "Видалено стан оновлення пристрою та сповіщення\nВиправлена кінцева точка rtttl\nПокращена обробка помилок\nВиправлена генерація блочного коду",
+        "zh-cn": "已移除设备更新状态和通知\n固定 rtttl 端点\n改进的错误处理\n修复了 Blockly 代码生成问题"
+      },
       "0.0.6": {
         "en": "Renamed visible to enabled\nAdded slot positions",
         "de": "„Sichtbar“ wurde in „Aktiviert“ umbenannt.\nHinzugefügte Slot-Positionen",

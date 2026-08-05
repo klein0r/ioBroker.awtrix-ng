@@ -62,7 +62,7 @@ class AwtrixNg extends utils.Adapter {
     });
     this._isMainInstance = true;
     this.currentVersion = void 0;
-    this.supportedVersion = "1.0.12";
+    this.supportedVersion = "1.0.13";
     this.displayedVersionWarning = false;
     this.apiClient = null;
     this.apiConnected = false;
@@ -221,18 +221,6 @@ class AwtrixNg extends utils.Adapter {
           }).catch((error) => {
             this.log.warn(`(moodlight) Unable to execute action: ${error}`);
           });
-        } else if (idNoNamespace === "device.update") {
-          this.log.info("performing firmware update");
-          this.apiClient.requestAsync("update", "POST").then(async (response) => {
-            if (response.status === 200 && response.data.ok === true) {
-              this.log.info("started firmware update");
-              await this.setApiConnected(false);
-            }
-          }).catch((error) => {
-            this.log.warn(
-              `(update) Unable to execute firmware update (maybe this is already the newest version): ${error}`
-            );
-          });
         } else if (idNoNamespace === "device.reboot") {
           this.apiClient.requestAsync("device/reboot", "POST").then(async (response) => {
             if (response.status === 200 && response.data.ok === true) {
@@ -360,7 +348,7 @@ class AwtrixNg extends utils.Adapter {
         }
       } else if (obj.command === "rtttl" && typeof obj.message === "string") {
         if (this.apiClient && this.apiClient.isConnected()) {
-          this.apiClient.requestAsync("rtttl", "POST", obj.message).then((response) => {
+          this.apiClient.requestAsync("sounds/play", "POST", { rtttl: obj.message }).then((response) => {
             this.sendTo(obj.from, obj.command, { error: null, data: response.data }, obj.callback);
           }).catch((error) => {
             this.sendTo(obj.from, obj.command, { error }, obj.callback);
@@ -489,11 +477,6 @@ class AwtrixNg extends utils.Adapter {
       await this.setApiConnected(true);
       this.currentVersion = String(content.version);
       if (this.isNewerVersion(this.currentVersion, this.supportedVersion) && !this.displayedVersionWarning) {
-        await this.registerNotification(
-          "awtrix-ng",
-          "deviceUpdate",
-          `Firmware update: ${this.currentVersion} -> ${this.supportedVersion}`
-        );
         this.log.warn(
           `You should update your Awtrix NG - supported version of this adapter is ${this.supportedVersion} (or later). Your current version is ${this.currentVersion}`
         );
@@ -745,15 +728,21 @@ class AwtrixNg extends utils.Adapter {
   }
   async refreshAppOrder() {
     var _a;
-    const appsEnabled = this.apps.filter((a) => a.enabled());
-    appsEnabled.sort((a, b) => {
-      var _a2, _b;
-      return ((_a2 = a.getSlot()) != null ? _a2 : 9999) - ((_b = b.getSlot()) != null ? _b : 9999);
-    });
-    await ((_a = this.apiClient) == null ? void 0 : _a.requestAsync("apps/order", "PUT", {
-      order: appsEnabled.map((a) => a.getName()),
-      hidden: this.apps.filter((a) => !a.enabled()).map((a) => a.getName())
-    }));
+    if (this.apiClient && this.apiClient.isConnected()) {
+      try {
+        const appsEnabled = this.apps.filter((a) => a.enabled());
+        appsEnabled.sort((a, b) => {
+          var _a2, _b;
+          return ((_a2 = a.getSlot()) != null ? _a2 : 9999) - ((_b = b.getSlot()) != null ? _b : 9999);
+        });
+        await ((_a = this.apiClient) == null ? void 0 : _a.requestAsync("apps/order", "PUT", {
+          order: appsEnabled.map((a) => a.getName()),
+          disabled: this.apps.filter((a) => !a.enabled()).map((a) => a.getName())
+        }));
+      } catch (err) {
+        this.log.error(`[refreshAppOrder] Failed to change app order: ${err}`);
+      }
+    }
   }
   async updateIndicatorByStates(index) {
     this.log.debug(`Updating indicator with index ${index}`);

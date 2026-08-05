@@ -120,8 +120,8 @@ var AppType;
       if (this.appDefinition.noScroll) {
         app.scroll = { mode: "static" };
       } else {
-        if (this.appDefinition.scrollSpeed > 0) {
-          app.scroll = { speed: this.appDefinition.scrollSpeed };
+        if (this.appDefinition.scrollSpeed > 0 && this.appDefinition.scrollSpeed <= 100) {
+          app.scroll = { mode: "wrap", speed: this.appDefinition.scrollSpeed, whenFits: "scroll" };
         }
         if (this.appDefinition.repeat > 0) {
           app.repeat = this.appDefinition.repeat;
