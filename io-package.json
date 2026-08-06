@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "awtrix-ng",
-    "version": "0.0.8",
+    "version": "0.0.9",
     "news": {
+      "0.0.9": {
+        "en": "Removed option to automatically delete other apps\nUpdated logo",
+        "de": "Die Option zum automatischen Löschen anderer Apps wurde entfernt.\nAktualisiertes Logo",
+        "ru": "Удалена опция автоматического удаления других приложений.\nОбновленный логотип",
+        "pt": "Removemos a opção de excluir outros aplicativos automaticamente.\nLogotipo atualizado",
+        "nl": "De optie om andere apps automatisch te verwijderen is verwijderd.\nBijgewerkt logo",
+        "fr": "Suppression de l'option permettant de supprimer automatiquement les autres applications\nLogo mis à jour",
+        "it": "Rimossa l'opzione per eliminare automaticamente le altre app\nLogo aggiornato",
+        "es": "Se eliminó la opción de eliminar automáticamente otras aplicaciones.\nLogotipo actualizado",
+        "pl": "Usunięto opcję automatycznego usuwania innych aplikacji\nZaktualizowane logo",
+        "uk": "Видалено опцію автоматичного видалення інших програм\nОновлений логотип",
+        "zh-cn": "已移除自动删除其他应用的选项\n更新后的标志"
+      },
       "0.0.8": {
         "en": "Added more settings\nFixed Blockly code generation",
         "de": "Weitere Einstellungen hinzugefügt\nFehler bei der Blockly-Codegenerierung behoben",

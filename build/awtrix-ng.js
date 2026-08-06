@@ -150,7 +150,6 @@ class AwtrixNg extends utils.Adapter {
           this.config.ignoreNewValueForAppInTimeRange = instanceObj.native.ignoreNewValueForAppInTimeRange;
           this.config.historyApps = instanceObj.native.historyApps;
           this.config.historyAppsRefreshInterval = instanceObj.native.historyAppsRefreshInterval;
-          this.config.autoDeleteForeignApps = instanceObj.native.autoDeleteForeignApps;
           this.config.removeAppsOnStop = instanceObj.native.removeAppsOnStop;
           this.config.expertApps = instanceObj.native.expertApps;
           this.log.debug(
@@ -694,22 +693,6 @@ class AwtrixNg extends utils.Adapter {
               if (!appsKeep.includes(app)) {
                 await this.delObjectAsync(app, { recursive: true });
                 this.log.debug(`[createAppObjects] deleted: ${app}`);
-              }
-            }
-            if (this.config.autoDeleteForeignApps) {
-              for (const name of existingApps.filter((a) => !allApps.includes(a))) {
-                this.log.info(
-                  `[createAppObjects] Deleting unknown app on awtrix light with name "${name}"`
-                );
-                try {
-                  await this.apiClient.removeAppAsync(name).catch((error) => {
-                    this.log.warn(`Unable to remove unknown app "${name}": ${error}`);
-                  });
-                } catch (error) {
-                  this.log.error(
-                    `[createAppObjects] Unable to delete unknown app ${name}: ${error}`
-                  );
-                }
               }
             }
             resolve(appsKeep.length);
