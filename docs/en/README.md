@@ -77,11 +77,24 @@ Since version 0.15.0 (and later) the visibility of custom apps and contents of e
 Send a "one time" notification to your device:
 
 ```javascript
-sendTo('awtrix-ng.0', 'notification', { text: 'haus-automatisierung.com', repeat: 1, stack: true, wakeup: true, hold: false }, (res) => {
-    if (res && res.error) {
-        console.error(res.error);
+sendTo(
+    'awtrix-ng.0',
+    'notification',
+    {
+        text: 'haus:automation',
+        textColor: '#E2671F', // optional
+        durationMs: 5000, // optional
+        repeat: 1, // optional
+        stack: true, // optional
+        wakeup: true, // optional
+        hold: false // optional
+    },
+    (res) => {
+        if (res && res.error) {
+            console.error(res.error);
+        }
     }
-});
+);
 ```
 
 The message object supports all available options of the firmware. See [documentation](https://blueforcer.github.io/awtrix-ng/reference/payload/) for details.

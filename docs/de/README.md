@@ -77,11 +77,24 @@ Seit Version 0.15.0 (und neuer) wird die Sichtbarkeit von benutzerdefinierten Ap
 Sende eine einmalige Benachrichtigung an das Gerät:
 
 ```javascript
-sendTo('awtrix-ng.0', 'notification', { text: 'haus-automatisierung.com', repeat: 1, stack: true, wakeup: true, hold: false }, (res) => {
-    if (res && res.error) {
-        console.error(res.error);
+sendTo(
+    'awtrix-ng.0',
+    'notification',
+    {
+        text: 'haus:automation',
+        textColor: '#E2671F', // optional
+        durationMs: 5000, // optional
+        repeat: 1, // optional
+        stack: true, // optional
+        wakeup: true, // optional
+        hold: false // optional
+    },
+    (res) => {
+        if (res && res.error) {
+            console.error(res.error);
+        }
     }
-});
+);
 ```
 
 Das Nachrichten-Objekt unterstützt dabei alle Optionen, welche in der Firmware verfügbar sind. Siehe [Dokumentation](https://blueforcer.github.io/awtrix-ng/reference/payload/) für Details.
