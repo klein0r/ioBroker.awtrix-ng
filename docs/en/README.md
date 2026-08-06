@@ -13,7 +13,7 @@ Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amaz
 
 ## Getting started
 
-1. Flash the firmware on your device and add it to your WiFi network - see [documentation](https://blueforcer.github.io/awtrix3/#/quickstart)
+1. Flash the firmware on your device and add it to your WiFi network - see [documentation](https://blueforcer.github.io/awtrix-ng/getting-started/flashing/)
 2. Install the awtrix-ng adapter in ioBroker (and add a new instance)
 3. Open the instance configuration and enter the IP address of the device in your local network
 
@@ -27,23 +27,9 @@ No, this feature has been removed in the awtrix light firmware. Please use the o
 
 Just create an alias in `alias.0` of type `string` and convert your `boolean` value into any other text with a read function (like `val ? 'open' : 'closed'`). *This is an ioBroker feature and not related to this adapter.*
 
-**How can I update to the latest firmware version?**
-
-Just use the [onscreen menu](https://blueforcer.github.io/awtrix3/#/onscreen) and navigate to `update`. No need to use the web flasher again.
-
 **The device is getting hot while charging.**
 
 The hardware design is not the best. Please use a power supply which deliveres max. 1A.
-
-**Is it possible to remove the battery from the device?**
-
-Yes, but you have to open the case with a heat gun (since the front glued to the case) and [modify the PCB with a step down converter](https://github.com/Blueforcer/awtrix3/issues/67#issuecomment-1595418765).
-
-**Is it possible to re-order apps?**
-
-By default, apps are displayed in the same order as in the instance configuration. Just move an app up or down to change it's position. History apps are always positioned after all custom apps!
-
-To set custom positions for each app, the expert option `custom positions` has to be enabled. After that, it is possible to define a position on each app.
 
 **Can I define a custom number format?**
 
@@ -98,7 +84,7 @@ sendTo('awtrix-ng.0', 'notification', { text: 'haus-automatisierung.com', repeat
 });
 ```
 
-The message object supports all available options of the firmware. See [documentation](https://blueforcer.github.io/awtrix3/#/api?id=json-properties) for details.
+The message object supports all available options of the firmware. See [documentation](https://blueforcer.github.io/awtrix-ng/reference/payload/) for details.
 
 *You can also use a Blockly block to send a notification (doesn't provide all available options).*
 
@@ -109,21 +95,21 @@ The message object supports all available options of the firmware. See [document
 To play a (previously created) sound file `example.txt`:
 
 ```javascript
-sendTo('awtrix-ng.0', 'sound', { sound: 'example' }, (res) => {
+sendTo('awtrix-ng.0', 'sound', { name: 'example' }, (res) => {
     if (res && res.error) {
         console.error(res.error);
     }
 });
 ```
 
-The message object supports all available options of the firmware. See [documentation](https://blueforcer.github.io/awtrix3/#/api?id=sound-playback) for details.
+The message object supports all available options of the firmware. See [documentation](https://blueforcer.github.io/awtrix-ng/reference/payload/) for details.
 
 *You can also use a Blockly block to play a sound.*
 
 To play a custom ringtone:
 
 ```javascript
-sendTo('awtrix-ng.0', 'rtttl', 'Beep: d=32,o=7,b=120: a,P,c#', (res) => {
+sendTo('awtrix-ng.0', 'rtttl', 'beep:d=4,o=5,b=120:c,e,g', (res) => {
     if (res && res.error) {
         console.error(res.error);
     }
@@ -178,8 +164,4 @@ After that, all controllable states for the app name `test` will be created in `
 
 The base object is a basic defition of an awtrix app to allow all possible attributes. *The base object will be extended with other attributes of the expert app.*
 
-See [documentation](https://blueforcer.github.io/awtrix3/#/api?id=custom-apps-and-notifications) for available attributes.
-
-## Hide native apps
-
-If you want to disable/hide a native app (like battery, temperature or humidity): Use the on screen menu on the device! See [documentation](https://blueforcer.github.io/awtrix3/#/onscreen) for details.
+See [documentation](https://blueforcer.github.io/awtrix-ng/reference/payload/) for available attributes.

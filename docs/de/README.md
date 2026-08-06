@@ -13,7 +13,7 @@ Hier kaufen: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), hier: [A
 
 ## Erste Schritte
 
-1. Flashe die Firmware auf das Gerät und füge es zu deinem lokalen Netzwerk per WLAN hinzu - siehe [Dokumentation](https://blueforcer.github.io/awtrix3/#/quickstart)
+1. Flashe die Firmware auf das Gerät und füge es zu deinem lokalen Netzwerk per WLAN hinzu - siehe [Dokumentation](https://blueforcer.github.io/awtrix-ng/getting-started/flashing/)
 2. Installiere den awtrix-ng Adapter im ioBroker (und erstelle eine neue Instanz)
 3. Öffne die Instanz-Konfiguration und hinterlege die IP-Adresse des Gerätes im lokalen Netzwerk
 
@@ -27,23 +27,9 @@ Nein, dieses Feature wurde in der awtrix-ng Firmware mittlerweile entfernt. Nutz
 
 Erstelle dafür einfach einen Alias in `alias.0` vom Typ `string` (Zeichenkette) und konvertiere den Logikwert mit einer Lesefunktion in einen beliebigen anderen Wert (beispielsweise `val ? 'offen' : 'geschlossen'`). *Das ist ein Standard-Feature vom ioBroker und hat nichts direkt mit diesem Adapter zu tun.*
 
-**Wie kann ich zur aktuellsten Firmware-Version wechseln?**
-
-Nutze einfach das [Menu auf dem Gerät](https://blueforcer.github.io/awtrix3/#/onscreen) um zum Punkt `update` zu navigieren. Den Rest erledigt die Uhr dann selbst. Es ist nicht nötig, den Web-Flasher erneut zu verwenden (außer, ein Firware-Update erfordert dies explizit).
-
 **Das Gerät wird heiß während es geladen wird.**
 
 Das Hardware-Design ist leider nicht optimal. Es wird empfohlen, ein möglichst schwaches Netzteil zu verwenden, welches maximal 1A liefern kann.
-
-**Kann man den Akku aus dem Gerät entfernen?**
-
-Ja, es gibt diese Möglichkeit. Allerdings muss das Gerät dazu mit einem Heißluftföhn geöffnet werden, da die Frontscheibe verklebt ist. Außerdem ist es nötig einen [Step-Down-Converter zu verlöten](https://github.com/Blueforcer/awtrix3/issues/67#issuecomment-1595418765), damit alles funktioniert.
-
-**Kann man die Apps auf dem Gerät anders sortieren?**
-
-Im Standard werden die Apps in die gleichen Reihenfolge angezeigt, wie sie auch in den Instanz-Einstellungen angelegt wurden. Bewege einfach die Apps nach oben oder unten um die Position zu verändern. Apps mit historischen Daten / Graphen sind dabei hinter den anderen benutzerdefinierten Apps positioniert.
-
-Sollen eigene Positionen festgelegt werden, können die benutzerdefinierten Positionen in den Experten-Optionen aktiviert werden. Danach ist es möglich, für jede App eine numerische Position zu vergeben.
 
 **Kann ein anderes Zahlenformat hinterlegt werden?**
 
@@ -98,7 +84,7 @@ sendTo('awtrix-ng.0', 'notification', { text: 'haus-automatisierung.com', repeat
 });
 ```
 
-Das Nachrichten-Objekt unterstützt dabei alle Optionen, welche in der Firmware verfügbar sind. Siehe [Dokumentation](https://blueforcer.github.io/awtrix3/#/api?id=json-properties) für Details.
+Das Nachrichten-Objekt unterstützt dabei alle Optionen, welche in der Firmware verfügbar sind. Siehe [Dokumentation](https://blueforcer.github.io/awtrix-ng/reference/payload/) für Details.
 
 *Außerdem kann ein Blockly-Block verwendet werden um die Benachrichtigung zu erstellen (dort werden nicht alle verfügbaren Optionen angeboten).*
 
@@ -109,21 +95,21 @@ Das Nachrichten-Objekt unterstützt dabei alle Optionen, welche in der Firmware 
 Um eine (vorher angelegte) Ton-Datei `beispiel.txt` abzuspielen:
 
 ```javascript
-sendTo('awtrix-ng.0', 'sound', { sound: 'beispiel' }, (res) => {
+sendTo('awtrix-ng.0', 'sound', { name: 'beispiel' }, (res) => {
     if (res && res.error) {
         console.error(res.error);
     }
 });
 ```
 
-Das Nachrichten-Objekt unterstützt dabei alle Optionen, welche in der Firmware verfügbar sind. Siehe [Dokumentation](https://blueforcer.github.io/awtrix3/#/api?id=sound-playback) für Details.
+Das Nachrichten-Objekt unterstützt dabei alle Optionen, welche in der Firmware verfügbar sind. Siehe [Dokumentation](https://blueforcer.github.io/awtrix-ng/reference/payload/) für Details.
 
 *Es kann ein Blockly-Block verwendet werden, um diesen Aufruf noch einfacher zu verwenden.*
 
 Um einen eigenen Klingelton abzuspielen:
 
 ```javascript
-sendTo('awtrix-ng.0', 'rtttl', 'Beep: d=32,o=7,b=120: a,P,c#', (res) => {
+sendTo('awtrix-ng.0', 'rtttl', 'beep:d=4,o=5,b=120:c,e,g', (res) => {
     if (res && res.error) {
         console.error(res.error);
     }
@@ -178,8 +164,4 @@ Danach werden alle steuerbaren Zustände der App `test` unter `awtrix-ng.0.apps.
 
 Das Basisobjekt ist eine grundlegende Definition für eine Awtrix-App, um alle existierenden Optionen setzen zu können. *Das Basisobjekt wird mit allen anderen Attributen der Experten-App erweitert.*
 
-Siehe [Dokumentation](https://blueforcer.github.io/awtrix3/#/api?id=custom-apps-and-notifications) für alle verfügbaren Attribute.
-
-## Native Apps verstecken
-
-Um die Standard-Apps auf dem Gerät zu verstecken (wie die Temperatur oder die Luftfeuchtigkeit): Nutze das Menu auf dem Gerät selbst! Siehe [Dokumentation](https://blueforcer.github.io/awtrix3/#/onscreen) für Details.
+Siehe [Dokumentation](https://blueforcer.github.io/awtrix-ng/reference/payload/) für alle verfügbaren Attribute.
