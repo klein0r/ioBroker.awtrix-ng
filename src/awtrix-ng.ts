@@ -432,10 +432,8 @@ export class AwtrixNg extends utils.Adapter {
             } else if (obj.command === 'sound' && typeof obj.message === 'object') {
                 // Sound
                 if (this.apiClient && this.apiClient.isConnected()) {
-                    const msgFiltered = Object.fromEntries(Object.entries(obj.message).filter(([_, v]) => v !== null));
-
                     this.apiClient
-                        .requestAsync('sounds/play', 'POST', msgFiltered)
+                        .requestAsync('sounds/play', 'POST', obj.message )
                         .then(response => {
                             this.sendTo(obj.from, obj.command, { error: null, data: response.data }, obj.callback);
                         })
@@ -616,7 +614,11 @@ export class AwtrixNg extends utils.Adapter {
 
                 this.currentVersion = String(content.version);
 
-                if (this.isNewerVersion(this.currentVersion, this.supportedVersion) && !this.displayedVersionWarning) {
+                if (
+                    this.currentVersion &&
+                    this.isNewerVersion(this.currentVersion, this.supportedVersion) &&
+                    !this.displayedVersionWarning
+                ) {
                     this.log.warn(
                         `You should update your Awtrix NG - supported version of this adapter is ${this.supportedVersion} (or later). Your current version is ${this.currentVersion}`,
                     );
