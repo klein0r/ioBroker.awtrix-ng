@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "awtrix-ng",
-    "version": "0.0.7",
+    "version": "0.0.8",
     "news": {
+      "0.0.8": {
+        "en": "Added more settings\nFixed Blockly code generation",
+        "de": "Weitere Einstellungen hinzugefügt\nFehler bei der Blockly-Codegenerierung behoben",
+        "ru": "Добавлены дополнительные настройки.\nИсправлена генерация кода Blockly",
+        "pt": "Adicionadas mais configurações\nCorreção na geração de código Blockly",
+        "nl": "Meer instellingen toegevoegd\nDe code-generatie van Blockly is gecorrigeerd.",
+        "fr": "Ajout de paramètres supplémentaires\nGénération de code Blockly corrigée",
+        "it": "Sono state aggiunte altre impostazioni\nGenerazione del codice Blockly corretta",
+        "es": "Se agregaron más configuraciones\nGeneración de código Blockly corregida",
+        "pl": "Dodano więcej ustawień\nNaprawiono generowanie kodu Blockly",
+        "uk": "Додано більше налаштувань\nВиправлена генерація блочного коду",
+        "zh-cn": "新增更多设置\n修复了 Blockly 代码生成问题"
+      },
       "0.0.7": {
         "en": "Removed device update state and notification\nFixed rtttl endpoint\nImproved error handling\nFixed Blockly code generation",
         "de": "Geräteaktualisierungsstatus und Benachrichtigung entfernt\nKorrigierter rtttl-Endpunkt\nVerbesserte Fehlerbehandlung\nFehler bei der Blockly-Codegenerierung behoben",
