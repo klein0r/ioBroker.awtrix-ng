@@ -42,13 +42,13 @@ Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amaz
 ### **WORK IN PROGRESS**
 
 * (@klein0r) Added more settings
+* (@klein0r) Fixed Blockly code generation
 
 ### 0.0.7 (2026-08-05)
 
 * (@klein0r) Removed device update state and notification
 * (@klein0r) Fixed rtttl endpoint
 * (@klein0r) Improved error handling
-* (@klein0r) Fixed Blockly code generation
 
 ### 0.0.6 (2026-08-04)
 
