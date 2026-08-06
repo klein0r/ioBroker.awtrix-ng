@@ -169,7 +169,6 @@
     "historyApps": [],
     "historyAppsBackgroundColor": "#000000",
     "historyAppsRefreshInterval": 300,
-    "autoDeleteForeignApps": false,
     "removeAppsOnStop": true,
     "httpTimeout": 3,
     "numberFormat": "system",

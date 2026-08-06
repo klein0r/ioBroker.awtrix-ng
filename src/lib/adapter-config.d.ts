@@ -67,7 +67,6 @@ declare global {
             historyApps: Array<HistoryApp>;
             historyAppsBackgroundColor: string;
             historyAppsRefreshInterval: number;
-            autoDeleteForeignApps: boolean;
             removeAppsOnStop: boolean;
             httpTimeout: number;
             numberFormat: string;

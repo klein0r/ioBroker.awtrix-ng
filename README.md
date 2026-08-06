@@ -39,6 +39,10 @@ Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amaz
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+
+* (@klein0r) Removed option to automatically delete other apps
+
 ### 0.0.8 (2026-08-06)
 
 * (@klein0r) Added more settings

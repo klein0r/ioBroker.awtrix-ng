@@ -846,17 +846,6 @@
                     "lg": 12,
                     "xl": 12
                 },
-                "autoDeleteForeignApps": {
-                    "hidden": "!!data.foreignSettingsInstance",
-                    "newLine": true,
-                    "type": "checkbox",
-                    "label": "Automatically delete unknown apps",
-                    "xs": 12,
-                    "sm": 12,
-                    "md": 6,
-                    "lg": 6,
-                    "xl": 6
-                },
                 "removeAppsOnStop": {
                     "hidden": "!!data.foreignSettingsInstance",
                     "type": "checkbox",
