@@ -62,7 +62,7 @@ class AwtrixNg extends utils.Adapter {
     });
     this._isMainInstance = true;
     this.currentVersion = void 0;
-    this.supportedVersion = "1.0.13";
+    this.supportedVersion = "1.0.15";
     this.displayedVersionWarning = false;
     this.apiClient = null;
     this.apiConnected = false;
@@ -313,8 +313,17 @@ class AwtrixNg extends utils.Adapter {
           if (msgFiltered.repeat !== void 0 && msgFiltered.repeat <= 0) {
             delete msgFiltered.repeat;
           }
-          if (msgFiltered.durationMs !== void 0 && msgFiltered.durationMs <= 0) {
-            delete msgFiltered.durationMs;
+          if (msgFiltered.durationMs !== void 0) {
+            if (msgFiltered.durationMs <= 0) {
+              delete msgFiltered.durationMs;
+            } else if (msgFiltered.durationMs <= 500) {
+              this.log.warn(
+                `[onMessage <notification>] Very short duration detected: ${msgFiltered.durationMs} ms`
+              );
+            }
+          }
+          if (msgFiltered.icon && typeof msgFiltered.icon !== "string") {
+            msgFiltered.icon = String(msgFiltered.icon);
           }
           this.apiClient.requestAsync("notifications", "POST", msgFiltered).then((response) => {
             this.sendTo(obj.from, obj.command, { error: null, data: response.data }, obj.callback);
@@ -331,8 +340,7 @@ class AwtrixNg extends utils.Adapter {
         }
       } else if (obj.command === "sound" && typeof obj.message === "object") {
         if (this.apiClient && this.apiClient.isConnected()) {
-          const msgFiltered = Object.fromEntries(Object.entries(obj.message).filter(([_, v]) => v !== null));
-          this.apiClient.requestAsync("sounds/play", "POST", msgFiltered).then((response) => {
+          this.apiClient.requestAsync("sounds/play", "POST", obj.message).then((response) => {
             this.sendTo(obj.from, obj.command, { error: null, data: response.data }, obj.callback);
           }).catch((error) => {
             this.sendTo(obj.from, obj.command, { error }, obj.callback);
@@ -475,7 +483,7 @@ class AwtrixNg extends utils.Adapter {
     this.apiClient.getDeviceAsync().then(async (content) => {
       await this.setApiConnected(true);
       this.currentVersion = String(content.version);
-      if (this.isNewerVersion(this.currentVersion, this.supportedVersion) && !this.displayedVersionWarning) {
+      if (this.currentVersion && this.isNewerVersion(this.currentVersion, this.supportedVersion) && !this.displayedVersionWarning) {
         this.log.warn(
           `You should update your Awtrix NG - supported version of this adapter is ${this.supportedVersion} (or later). Your current version is ${this.currentVersion}`
         );

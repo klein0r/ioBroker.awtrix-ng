@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "awtrix-ng",
-    "version": "0.0.9",
+    "version": "0.0.10",
     "news": {
+      "0.0.10": {
+        "en": "Updated documentation\nRecommended Awtrix NG version is now 1.0.15\nAutomatically cast icon value to string in notifications",
+        "de": "Aktualisierte Dokumentation\nEmpfohlene Awtrix NG Version ist jetzt 1.0.15\nIcon Value automatisch in Benachrichtigungen nachfolgen lassen",
+        "ru": "Обновленная документация\nРекомендуемая версия Awtrix NG теперь 1.0.15\nАвтоматически отбрасывать значение значка в строку в уведомлениях",
+        "pt": "Documentação actualizada\nA versão recomendada do Awtrix NG é agora 1.0.15\nLançar automaticamente o valor do ícone para string nas notificações",
+        "nl": "Bijgewerkte documentatie\nAanbevolen Awtrix NG versie is nu 1.0.15\nPictogramwaarde automatisch naar tekenreeks in meldingen gieten",
+        "fr": "Documentation actualisée\nLa version recommandée d'Awtrix NG est maintenant 1.0.15\nLancer automatiquement la valeur d'icône à la chaîne dans les notifications",
+        "it": "Documentazione aggiornata\nLa versione raccomandata di Awtrix NG è ora 1.0.15\nAutomaticamente lanciare valore icona per stringa nelle notifiche",
+        "es": "Documentación actualizada\nVersión recomendada Awtrix NG es ahora 1.0.15\nValor de icono lanzado automáticamente a cadena en notificaciones",
+        "pl": "Aktualizacja dokumentacji\nZalecana wersja Awtrix NG to 1.0.15\nAutomatycznie rzucona wartość ikon do łańcucha w powiadomieniach",
+        "uk": "Оновлена документація\nРекомендована версія Awtrix NG тепер 1.0.15\nАвтоматично відхилити значення ікони для рядок в повідомленнях",
+        "zh-cn": "最新文件\n推荐的Awtrix NG版本现在是1.0.15\n在通知中自动将图标值设定为字符串"
+      },
       "0.0.9": {
         "en": "Removed option to automatically delete other apps\nUpdated logo",
         "de": "Die Option zum automatischen Löschen anderer Apps wurde entfernt.\nAktualisiertes Logo",

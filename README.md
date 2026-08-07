@@ -39,7 +39,7 @@ Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amaz
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.0.10 (2026-08-07)
 
 * (@klein0r) Updated documentation
 * (@klein0r) Recommended Awtrix NG version is now 1.0.15
@@ -65,11 +65,6 @@ Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amaz
 
 * (@klein0r) Renamed visible to enabled
 * (@klein0r) Added slot positions
-
-### 0.0.4 (2026-07-30)
-
-* (@klein0r) Added weather overlays to expert apps
-* (@klein0r) Fixed state object role definitions
 
 [Older changelogs can be found there](CHANGELOG_OLD.md)
 
