@@ -413,7 +413,9 @@ export class AwtrixNg extends utils.Adapter {
                         if (msgFiltered.durationMs <= 0) {
                             delete msgFiltered.durationMs;
                         } else if (msgFiltered.durationMs <= 500) {
-                            this.log.warn(`[onMessage <notification>] Very short duration detected: ${msgFiltered.durationMs} ms`);
+                            this.log.warn(
+                                `[onMessage <notification>] Very short duration detected: ${msgFiltered.durationMs} ms`,
+                            );
                         }
                     }
 
@@ -442,7 +444,7 @@ export class AwtrixNg extends utils.Adapter {
                 // Sound
                 if (this.apiClient && this.apiClient.isConnected()) {
                     this.apiClient
-                        .requestAsync('sounds/play', 'POST', obj.message )
+                        .requestAsync('sounds/play', 'POST', obj.message)
                         .then(response => {
                             this.sendTo(obj.from, obj.command, { error: null, data: response.data }, obj.callback);
                         })
