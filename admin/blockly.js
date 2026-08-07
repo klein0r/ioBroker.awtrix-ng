@@ -109,17 +109,17 @@ Blockly.Words['awtrix-ng_repeat'] = {
     'zh-cn': '重复',
 };
 Blockly.Words['awtrix-ng_duration'] = {
-    en: 'Duration',
-    de: 'Dauer',
-    ru: 'Продолжительность',
-    pt: 'Duração',
-    nl: 'Vertaling:',
-    fr: 'Durée',
-    it: 'Durata',
-    es: 'Duración',
-    pl: 'Duracja',
-    uk: 'Тривалість',
-    'zh-cn': '期间',
+    en: 'Duration (ms)',
+    de: 'Dauer (ms)',
+    ru: 'Продолжительность (ms)',
+    pt: 'Duração (ms)',
+    nl: 'Vertaling (ms)',
+    fr: 'Durée (ms)',
+    it: 'Durata (ms)',
+    es: 'Duración (ms)',
+    pl: 'Duracja (ms)',
+    uk: 'Тривалість (ms)',
+    'zh-cn': '期间 (ms)',
 };
 Blockly.Words['awtrix-ng_stack'] = {
     en: 'Stack',
