@@ -196,7 +196,7 @@ Blockly.Sendto.blocks['awtrix-ng'] =
     '  <field name="HOLD">FALSE</field>' +
     '  <value name="MESSAGE">' +
     '    <shadow type="text">' +
-    '      <field name="TEXT">haus-automatisierung.com</field>' +
+    '      <field name="TEXT">haus:automation</field>' +
     '    </shadow>' +
     '  </value>' +
     '  <value name="COLOR">' +
@@ -217,7 +217,7 @@ Blockly.Sendto.blocks['awtrix-ng'] =
     '  </value>' +
     '  <value name="DURATION">' +
     '    <shadow type="math_number">' +
-    '      <field name="NUM">0</field>' +
+    '      <field name="NUM">7000</field>' +
     '    </shadow>' +
     '  </value>' +
     '</block>';
