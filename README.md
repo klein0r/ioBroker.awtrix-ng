@@ -43,6 +43,7 @@ Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amaz
 
 * (@klein0r) Updated documentation
 * (@klein0r) Recommended Awtrix NG version is now 1.0.15
+* (@klein0r) Automatically cast icon value to string in notifications
 
 ### 0.0.9 (2026-08-06)
 

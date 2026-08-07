@@ -409,8 +409,17 @@ export class AwtrixNg extends utils.Adapter {
                     }
 
                     // Remove duration if <= 0
-                    if (msgFiltered.durationMs !== undefined && msgFiltered.durationMs <= 0) {
-                        delete msgFiltered.durationMs;
+                    if (msgFiltered.durationMs !== undefined) {
+                        if (msgFiltered.durationMs <= 0) {
+                            delete msgFiltered.durationMs;
+                        } else if (msgFiltered.durationMs <= 500) {
+                            this.log.warn(`[onMessage <notification>] Very short duration detected: ${msgFiltered.durationMs} ms`);
+                        }
+                    }
+
+                    // Icons must be a string
+                    if (msgFiltered.icon && typeof msgFiltered.icon !== 'string') {
+                        msgFiltered.icon = String(msgFiltered.icon);
                     }
 
                     this.apiClient

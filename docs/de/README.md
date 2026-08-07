@@ -83,6 +83,7 @@ sendTo(
     {
         text: 'haus:automation',
         textColor: '#E2671F', // optional
+        icon: '37620', // optional
         durationMs: 5000, // optional
         repeat: 1, // optional
         stack: true, // optional
