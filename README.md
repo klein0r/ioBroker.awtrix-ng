@@ -42,6 +42,7 @@ Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amaz
 ### **WORK IN PROGRESS**
 
 * (@klein0r) Updated documentation
+* (@klein0r) Recommended Awtrix NG version is now 1.0.15
 
 ### 0.0.9 (2026-08-06)
 

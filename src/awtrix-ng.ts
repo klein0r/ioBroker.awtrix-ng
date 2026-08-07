@@ -102,7 +102,7 @@ export class AwtrixNg extends utils.Adapter {
         this._isMainInstance = true;
 
         this.currentVersion = undefined;
-        this.supportedVersion = '1.0.13';
+        this.supportedVersion = '1.0.15';
         this.displayedVersionWarning = false;
 
         this.apiClient = null;
