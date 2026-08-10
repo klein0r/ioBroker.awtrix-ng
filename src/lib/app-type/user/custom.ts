@@ -290,7 +290,7 @@ export namespace AppType {
                                         )
                                         .catch(error => {
                                             this.adapter.log.warn(
-                                                `(custom?name=${this.appDefinition.name}) Unable to update custom app "${this.appDefinition.name}": ${error}`,
+                                                `[refreshCustomApp] Unable to update custom app "${this.appDefinition.name}": ${error}`,
                                             );
                                         });
 
@@ -344,7 +344,7 @@ export namespace AppType {
                             .appRequestAsync(this.appDefinition.name, this.createAppRequestObj(displayText))
                             .catch(error => {
                                 this.adapter.log.warn(
-                                    `(custom?name=${this.appDefinition.name}) Unable to create app "${this.appDefinition.name}" with static text: ${error}`,
+                                    `[refreshCustomApp] Unable to create app "${this.appDefinition.name}" with static text: ${error}`,
                                 );
                             });
 
@@ -366,7 +366,7 @@ export namespace AppType {
                         .appRequestAsync(this.appDefinition.name, this.createAppRequestObj(''))
                         .catch(error => {
                             this.adapter.log.warn(
-                                `(custom?name=${this.appDefinition.name}) Unable to create app "${this.appDefinition.name}" with background only: ${error}`,
+                                `[refreshCustomApp] Unable to create app "${this.appDefinition.name}" with background only: ${error}`,
                             );
                         });
 
