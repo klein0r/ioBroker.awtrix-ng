@@ -106,10 +106,10 @@ Das Nachrichten-Objekt unterstützt dabei alle Optionen, welche in der Firmware 
 
 **Die Sound-Dateien müssen im RTTTL-Format im Ordner MELODIES abgelegt werden. Die Dateiendung für diese Sounds ist .txt. Beim Abspielen der Sounds darf die Dateiendung nicht mit übergeben werden!**
 
-Um eine (vorher angelegte) Ton-Datei `beispiel.txt` abzuspielen:
+Um einen (vorher angelegten) Ton namens `beispiel` abzuspielen:
 
 ```javascript
-sendTo('awtrix-ng.0', 'sound', { name: 'beispiel' }, (res) => {
+sendTo('awtrix-ng.0', 'audio', { sound: 'beispiel' }, (res) => {
     if (res && res.error) {
         console.error(res.error);
     }
@@ -123,7 +123,7 @@ Das Nachrichten-Objekt unterstützt dabei alle Optionen, welche in der Firmware 
 Um einen eigenen Klingelton abzuspielen:
 
 ```javascript
-sendTo('awtrix-ng.0', 'rtttl', 'beep:d=4,o=5,b=120:c,e,g', (res) => {
+sendTo('awtrix-ng.0', 'audio', { rtttl: 'beep:d=4,o=5,b=120:c,e,g' }, (res) => {
     if (res && res.error) {
         console.error(res.error);
     }

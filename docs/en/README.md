@@ -106,10 +106,10 @@ The message object supports all available options of the firmware. See [document
 
 **The sound files must be saved as RTTTL fomat in the folder MELODIES. The file extension of these files is .txt. When playing those files, the file extension must not be provided.**
 
-To play a (previously created) sound file `example.txt`:
+To play a (previously created) sound with the name `example`:
 
 ```javascript
-sendTo('awtrix-ng.0', 'sound', { name: 'example' }, (res) => {
+sendTo('awtrix-ng.0', 'audio', { sound: 'example' }, (res) => {
     if (res && res.error) {
         console.error(res.error);
     }
@@ -123,7 +123,7 @@ The message object supports all available options of the firmware. See [document
 To play a custom ringtone:
 
 ```javascript
-sendTo('awtrix-ng.0', 'rtttl', 'beep:d=4,o=5,b=120:c,e,g', (res) => {
+sendTo('awtrix-ng.0', 'audio', { rtttl: 'beep:d=4,o=5,b=120:c,e,g' }, (res) => {
     if (res && res.error) {
         console.error(res.error);
     }

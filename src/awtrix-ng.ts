@@ -440,30 +440,23 @@ export class AwtrixNg extends utils.Adapter {
                         obj.callback,
                     );
                 }
-            } else if (obj.command === 'sound' && typeof obj.message === 'object') {
-                // Sound
+            } else if (obj.command === 'audio' && typeof obj.message === 'object') {
+                // Audio (generic)
                 if (this.apiClient && this.apiClient.isConnected()) {
-                    this.apiClient
-                        .requestAsync('sounds/play', 'POST', obj.message)
-                        .then(response => {
-                            this.sendTo(obj.from, obj.command, { error: null, data: response.data }, obj.callback);
-                        })
-                        .catch(error => {
-                            this.sendTo(obj.from, obj.command, { error }, obj.callback);
-                        });
-                } else {
-                    this.sendTo(
-                        obj.from,
-                        obj.command,
-                        { error: 'API is not connected (device offline ?)' },
-                        obj.callback,
+                    const msgFiltered: AwtrixApi.App = Object.fromEntries(
+                        Object.entries(obj.message).filter(([_, v]) => v !== null),
                     );
-                }
-            } else if (obj.command === 'rtttl' && typeof obj.message === 'string') {
-                // RTTTL sounds
-                if (this.apiClient && this.apiClient.isConnected()) {
+
+                    const keys = Object.keys(msgFiltered);
+
+                    if (keys.length > 1) {
+                        this.log.warn(
+                            `[onMessage <audio>] Received multiple keys for audio - just use one: ${JSON.stringify(keys)}`,
+                        );
+                    }
+
                     this.apiClient
-                        .requestAsync('sounds/play', 'POST', { rtttl: obj.message })
+                        .requestAsync('audio/play', 'POST', msgFiltered)
                         .then(response => {
                             this.sendTo(obj.from, obj.command, { error: null, data: response.data }, obj.callback);
                         })

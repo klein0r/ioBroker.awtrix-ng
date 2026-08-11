@@ -82,6 +82,19 @@ Blockly.Words['awtrix-ng_sound'] = {
     uk: 'Звуковий',
     'zh-cn': '保密',
 };
+Blockly.Words['awtrix-ng_rtttl'] = {
+    en: 'Ring Tones Text (RTTTL)',
+    de: 'Klingeltontext (RTTTL)',
+    ru: 'Текст мелодий звонка (RTTTL)',
+    pt: 'Ringtones Text (RTTTL)',
+    nl: 'Tekst met beltonen (RTTTL)',
+    fr: 'Ring Tones Text (RTTTL)',
+    it: 'Suonerie (RTTTL)',
+    es: 'Ringtones Text (RTTTL)',
+    pl: 'Tekst dzwonków (RTTTL)',
+    uk: 'Текст дзвінків (RTTTL)',
+    'zh-cn': '铃声文本 (RTTTL)',
+};
 Blockly.Words['awtrix-ng_icon'] = {
     en: 'Icon',
     de: 'Icon',
@@ -185,6 +198,19 @@ Blockly.Words['awtrix-ng_tooltip'] = {
     pl: 'Powiadomienie Awtrix',
     uk: 'Надіслати повідомлення на Awtrix',
     'zh-cn': '向Awtrix发出通知',
+};
+Blockly.Words['awtrix-ng_playsound_tooltip'] = {
+    en: 'Just use one option (set others to null)',
+    de: 'Nur eine Option nutzen (andere auf null setzen)',
+    ru: 'Просто используйте один вариант (установите для других значение null)',
+    pt: 'Use uma opção (defina outras como nulas)',
+    nl: 'Gebruik gewoon één optie (zet andere op null)',
+    fr: 'Utilisez une option (nullez les autres)',
+    it: 'Usa un\'opzione (le altre sono nulle)',
+    es: 'Solo use una opción (ponga otras en nulo)',
+    pl: 'Po prostu użyj jednej opcji (ustaw inne na null)',
+    uk: 'Просто використовуйте один варіант (встановіть інші на null)',
+    'zh-cn': '只需使用一个选项（将其他选项设置为空）',
 };
 Blockly.Words['awtrix-ng_help'] = { en: 'https://github.com/klein0r/ioBroker.awtrix-ng/blob/main/docs/en/README.md', de: 'https://github.com/klein0r/ioBroker.awtrix-ng/blob/main/docs/de/README.md' };
 
@@ -304,6 +330,9 @@ Blockly.Sendto.blocks['awtrix-ng_playsound'] =
     '      <field name="TEXT">...</field>' +
     '    </shadow>' +
     '  </value>' +
+    '  <value name="RTTTL">' +
+    '    <shadow type="logic_null"></shadow>' +
+    '  </value>' +
     '</block>';
 
 Blockly.Blocks['awtrix-ng_playsound'] = {
@@ -330,22 +359,25 @@ Blockly.Blocks['awtrix-ng_playsound'] = {
 
         this.appendDummyInput('INSTANCE').appendField(Blockly.Translate('awtrix-ng_playsound')).appendField(new Blockly.FieldDropdown(options), 'INSTANCE');
         this.appendValueInput('SOUND').appendField(Blockly.Translate('awtrix-ng_sound'));
+        this.appendValueInput('RTTTL').appendField(Blockly.Translate('awtrix-ng_rtttl'));
 
         this.setInputsInline(false);
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
 
         this.setColour(Blockly.Sendto.HUE);
-        this.setTooltip(Blockly.Translate('awtrix-ng_tooltip'));
+        this.setTooltip(Blockly.Translate('awtrix-ng_playsound_tooltip'));
         this.setHelpUrl(Blockly.Translate('awtrix-ng_help'));
     },
 };
 
 Blockly.JavaScript['awtrix-ng_playsound'] = function (block) {
     const sound = Blockly.JavaScript.valueToCode(block, 'SOUND', Blockly.JavaScript.ORDER_ATOMIC);
+    const rtttl = Blockly.JavaScript.valueToCode(block, 'RTTTL', Blockly.JavaScript.ORDER_ATOMIC);
 
     const objText = [];
-    sound && objText.push('name: ' + sound);
+    sound && objText.push('sound: ' + sound);
+    rtttl && objText.push('rtttl: ' + rtttl);
 
-    return `sendTo('awtrix-ng${block.getFieldValue('INSTANCE')}', 'sound', { ${objText.join(', ')} });`;
+    return `sendTo('awtrix-ng${block.getFieldValue('INSTANCE')}', 'audio', { ${objText.join(', ')} });`;
 };
