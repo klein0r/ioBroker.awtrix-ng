@@ -1,6 +1,6 @@
 {
     "plugins": ["iobroker", "license", "manual-review"],
     "exec": {
-        "before_commit": "npm run lint && npm run build"
+        "before_commit": "bash -c 'npm run lint && npm run build'"
     }
 }
