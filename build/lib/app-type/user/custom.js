@@ -237,7 +237,7 @@ var AppType;
                     this.createAppRequestObj(displayText, val)
                   ).catch((error) => {
                     this.adapter.log.warn(
-                      `(custom?name=${this.appDefinition.name}) Unable to update custom app "${this.appDefinition.name}": ${error}`
+                      `[refreshCustomApp] Unable to update custom app "${this.appDefinition.name}": ${error}`
                     );
                   });
                   refreshed = true;
@@ -280,7 +280,7 @@ var AppType;
           if (displayText.length > 0) {
             await this.apiClient.appRequestAsync(this.appDefinition.name, this.createAppRequestObj(displayText)).catch((error) => {
               this.adapter.log.warn(
-                `(custom?name=${this.appDefinition.name}) Unable to create app "${this.appDefinition.name}" with static text: ${error}`
+                `[refreshCustomApp] Unable to create app "${this.appDefinition.name}" with static text: ${error}`
               );
             });
             refreshed = true;
@@ -297,7 +297,7 @@ var AppType;
         } else if (this.isBackgroundOny) {
           await this.apiClient.appRequestAsync(this.appDefinition.name, this.createAppRequestObj("")).catch((error) => {
             this.adapter.log.warn(
-              `(custom?name=${this.appDefinition.name}) Unable to create app "${this.appDefinition.name}" with background only: ${error}`
+              `[refreshCustomApp] Unable to create app "${this.appDefinition.name}" with background only: ${error}`
             );
           });
           refreshed = true;

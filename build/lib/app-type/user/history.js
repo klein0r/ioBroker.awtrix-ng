@@ -153,7 +153,7 @@ var AppType;
             ...moreOptions
           }).catch((error) => {
             this.adapter.log.warn(
-              `(custom?name=${this.appDefinition.name}) Unable to create app "${this.appDefinition.name}": ${error}`
+              `[refreshHistoryApp] Unable to create app "${this.appDefinition.name}": ${error}`
             );
           });
           refreshed = true;

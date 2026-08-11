@@ -39,7 +39,7 @@ Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amaz
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.1.0 (2026-08-11)
 
 * (@klein0r) Used new audio API endpoint for all types of sounds (file, mp3, rtttl)
 * (@klein0r) Recommended Awtrix NG version is now 1.1.0
@@ -65,11 +65,6 @@ Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amaz
 * (@klein0r) Removed device update state and notification
 * (@klein0r) Fixed rtttl endpoint
 * (@klein0r) Improved error handling
-
-### 0.0.6 (2026-08-04)
-
-* (@klein0r) Renamed visible to enabled
-* (@klein0r) Added slot positions
 
 [Older changelogs can be found there](CHANGELOG_OLD.md)
 

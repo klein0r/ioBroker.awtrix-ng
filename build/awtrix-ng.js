@@ -62,7 +62,7 @@ class AwtrixNg extends utils.Adapter {
     });
     this._isMainInstance = true;
     this.currentVersion = void 0;
-    this.supportedVersion = "1.0.15";
+    this.supportedVersion = "1.1.0";
     this.displayedVersionWarning = false;
     this.apiClient = null;
     this.apiConnected = false;
@@ -338,24 +338,18 @@ class AwtrixNg extends utils.Adapter {
             obj.callback
           );
         }
-      } else if (obj.command === "sound" && typeof obj.message === "object") {
+      } else if (obj.command === "audio" && typeof obj.message === "object") {
         if (this.apiClient && this.apiClient.isConnected()) {
-          this.apiClient.requestAsync("sounds/play", "POST", obj.message).then((response) => {
-            this.sendTo(obj.from, obj.command, { error: null, data: response.data }, obj.callback);
-          }).catch((error) => {
-            this.sendTo(obj.from, obj.command, { error }, obj.callback);
-          });
-        } else {
-          this.sendTo(
-            obj.from,
-            obj.command,
-            { error: "API is not connected (device offline ?)" },
-            obj.callback
+          const msgFiltered = Object.fromEntries(
+            Object.entries(obj.message).filter(([_, v]) => v !== null)
           );
-        }
-      } else if (obj.command === "rtttl" && typeof obj.message === "string") {
-        if (this.apiClient && this.apiClient.isConnected()) {
-          this.apiClient.requestAsync("sounds/play", "POST", { rtttl: obj.message }).then((response) => {
+          const keys = Object.keys(msgFiltered);
+          if (keys.length > 1) {
+            this.log.warn(
+              `[onMessage <audio>] Received multiple keys for audio - just use one: ${JSON.stringify(keys)}`
+            );
+          }
+          this.apiClient.requestAsync("audio/play", "POST", msgFiltered).then((response) => {
             this.sendTo(obj.from, obj.command, { error: null, data: response.data }, obj.callback);
           }).catch((error) => {
             this.sendTo(obj.from, obj.command, { error }, obj.callback);

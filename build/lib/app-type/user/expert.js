@@ -112,7 +112,7 @@ var AppType;
         }
         await this.apiClient.appRequestAsync(this.appDefinition.name, app).catch((error) => {
           this.adapter.log.warn(
-            `(custom?name=${this.appDefinition.name}) Unable to update custom app "${this.appDefinition.name}": ${error}`
+            `[refreshExpertApp] Unable to update expert app "${this.appDefinition.name}": ${error}`
           );
         });
         refreshed = true;

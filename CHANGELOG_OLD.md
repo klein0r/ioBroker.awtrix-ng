@@ -1,4 +1,9 @@
 # Older changes
+## 0.0.6 (2026-08-04)
+
+* (@klein0r) Renamed visible to enabled
+* (@klein0r) Added slot positions
+
 ## 0.0.4 (2026-07-30)
 
 * (@klein0r) Added weather overlays to expert apps

@@ -135,7 +135,7 @@ var AppType;
             "zh-cn": "Position in loop"
           },
           type: "number",
-          role: "value",
+          role: "level",
           read: true,
           write: this.isMainInstance()
         },
