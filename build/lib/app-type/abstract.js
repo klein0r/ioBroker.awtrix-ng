@@ -46,11 +46,11 @@ var AppType;
     }
     async init(orderDefinition) {
       var _a, _b;
-      const appName = this.getName();
+      const appNameClean = this.getNameClean();
       const appEnabledState = await this.adapter.getForeignStateAsync(
-        `${this.objPrefix}.apps.${appName}.enabled`
+        `${this.objPrefix}.apps.${appNameClean}.enabled`
       );
-      const appSlotState = await this.adapter.getForeignStateAsync(`${this.objPrefix}.apps.${appName}.slot`);
+      const appSlotState = await this.adapter.getForeignStateAsync(`${this.objPrefix}.apps.${appNameClean}.slot`);
       if (orderDefinition) {
         this.isEnabled = (_a = orderDefinition == null ? void 0 : orderDefinition.enabled) != null ? _a : true;
         this.slot = (_b = orderDefinition == null ? void 0 : orderDefinition.slot) != null ? _b : null;
@@ -59,10 +59,10 @@ var AppType;
         this.slot = appSlotState && typeof (appSlotState == null ? void 0 : appSlotState.val) === "number" ? appSlotState.val : null;
       }
       if (!appEnabledState || !(appEnabledState == null ? void 0 : appEnabledState.ack) || (appEnabledState == null ? void 0 : appEnabledState.val) !== this.isEnabled) {
-        await this.adapter.setState(`apps.${appName}.enabled`, { val: this.isEnabled, ack: true, c: "init" });
+        await this.adapter.setState(`apps.${appNameClean}.enabled`, { val: this.isEnabled, ack: true, c: "init" });
       }
       if (!appSlotState || !(appSlotState == null ? void 0 : appSlotState.ack) || (appSlotState == null ? void 0 : appSlotState.val) !== this.slot) {
-        await this.adapter.setState(`apps.${appName}.slot`, { val: this.slot, ack: true, c: "init" });
+        await this.adapter.setState(`apps.${appNameClean}.slot`, { val: this.slot, ack: true, c: "init" });
       }
     }
     // eslint-disable-next-line @typescript-eslint/require-await
@@ -71,6 +71,10 @@ var AppType;
     }
     getName() {
       return this.name;
+    }
+    getNameClean() {
+      var _a;
+      return ((_a = this.name) != null ? _a : "").replace(this.adapter.FORBIDDEN_CHARS, "_").replace(/[.\s/]+/g, "_").replace(/_{2,}/g, "_").replace(/^_+|_+$/g, "");
     }
     enabled() {
       return this.isEnabled;
@@ -91,10 +95,11 @@ var AppType;
     }
     async createObjects() {
       const appName = this.getName();
+      const appNameClean = this.getNameClean();
       this.adapter.log.debug(
         `[createObjects] Creating objects for app "${appName}" (${this.isMainInstance() ? "main" : this.objPrefix})`
       );
-      await this.adapter.extendObject(`apps.${appName}.enabled`, {
+      await this.adapter.extendObject(`apps.${appNameClean}.enabled`, {
         type: "state",
         common: {
           name: {
@@ -118,7 +123,7 @@ var AppType;
         },
         native: {}
       });
-      await this.adapter.extendObject(`apps.${appName}.slot`, {
+      await this.adapter.extendObject(`apps.${appNameClean}.slot`, {
         type: "state",
         common: {
           name: {
@@ -142,11 +147,11 @@ var AppType;
         native: {}
       });
       if (!this.isMainInstance()) {
-        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.enabled`);
-        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.slot`);
+        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.enabled`);
+        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.slot`);
       }
       if (this.hasOwnActivateState()) {
-        await this.adapter.extendObject(`apps.${appName}.activate`, {
+        await this.adapter.extendObject(`apps.${appNameClean}.activate`, {
           type: "state",
           common: {
             name: {
@@ -170,15 +175,16 @@ var AppType;
           native: {}
         });
       } else {
-        await this.adapter.delObjectAsync(`apps.${appName}.activate`);
-        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.activate`);
+        await this.adapter.delObjectAsync(`apps.${appNameClean}.activate`);
+        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.activate`);
       }
     }
     async onStateChange(id, state) {
       const appName = this.getName();
+      const appNameClean = this.getNameClean();
       if (id) {
         if (state && !state.ack) {
-          if (id === `${this.hasOwnActivateState() ? this.adapter.namespace : this.objPrefix}.apps.${appName}.activate`) {
+          if (id === `${this.hasOwnActivateState() ? this.adapter.namespace : this.objPrefix}.apps.${appNameClean}.activate`) {
             if (state.val) {
               if (this.isEnabled) {
                 this.apiClient.requestAsync("apps/active", "PUT", { name: appName }).then(async (response) => {

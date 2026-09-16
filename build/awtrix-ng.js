@@ -62,7 +62,7 @@ class AwtrixNg extends utils.Adapter {
     });
     this._isMainInstance = true;
     this.currentVersion = void 0;
-    this.supportedVersion = "1.1.0";
+    this.supportedVersion = "1.1.1";
     this.displayedVersionWarning = false;
     this.apiClient = null;
     this.apiConnected = false;
@@ -426,6 +426,7 @@ class AwtrixNg extends utils.Adapter {
             this.log.debug(
               `[setApiConnected] Downloading screen contents every ${this.config.downloadScreenContentInterval} seconds`
             );
+            const downloadInterval = Math.min(this.config.downloadScreenContentInterval, 86400) * 1e3;
             this.downloadScreenContentInterval = this.setInterval(() => {
               if (this.apiClient.isConnected()) {
                 this.apiClient.requestAsync("display/screen", "GET").then(async (response) => {
@@ -451,7 +452,7 @@ class AwtrixNg extends utils.Adapter {
                   this.log.debug(`(display/screen) received error: ${JSON.stringify(error)}`);
                 });
               }
-            }, this.config.downloadScreenContentInterval * 1e3);
+            }, downloadInterval);
           } else {
             await this.setState("display.content", {
               val: `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="160"/>`,
@@ -596,12 +597,8 @@ class AwtrixNg extends utils.Adapter {
         this.apiClient.requestAsync("apps", "GET").then(async (response) => {
           if (response.status === 200) {
             const content = response.data;
-            const existingApps = content.map((a) => a.name);
             const builtinApps = content.filter((a) => a.origin === "builtin").map((a) => a.name);
             const scriptApps = content.filter((a) => a.origin === "script").map((a) => a.name);
-            this.log.debug(
-              `[createAppObjects] existing apps on awtrix light: ${JSON.stringify(existingApps)}`
-            );
             for (const builtinAppName of builtinApps) {
               if (!this.findAppWithName(builtinAppName)) {
                 this.apps.push(new import_builtin.AppType.Builtin(this.apiClient, this, builtinAppName));
@@ -661,8 +658,6 @@ class AwtrixNg extends utils.Adapter {
               }
             }
             for (const name of allApps) {
-              appsKeep.push(`apps.${name}`);
-              this.log.debug(`[createAppObjects] found (keep): apps.${name}`);
               const isBuiltinApp = builtinApps.includes(name);
               const isScriptApp = scriptApps.includes(name);
               const isCustomApp = customApps.includes(name);
@@ -670,25 +665,29 @@ class AwtrixNg extends utils.Adapter {
               const isExpertApp = expertApps.includes(name);
               const app = this.findAppWithName(name);
               if (app) {
-                await this.extendObject(`apps.${name}`, {
-                  type: "channel",
-                  common: {
-                    name: `App ${name}`,
-                    desc: `${app.getDescription()} app`,
-                    icon: app.getIconForObjectTree()
-                  },
-                  native: {
-                    isBuiltinApp,
-                    isScriptApp,
-                    isCustomApp,
-                    isHistoryApp,
-                    isExpertApp
-                  }
-                });
-                const orderDefinition = content.find((a) => a.name === app.getName());
-                await app.createObjects();
-                await app.init(orderDefinition);
-                await app.refresh();
+                this.log.debug(`[createAppObjects] found (keep): apps.${app.getNameClean()}`);
+                appsKeep.push(`apps.${app.getNameClean()}`);
+                if (app) {
+                  await this.extendObject(`apps.${app.getNameClean()}`, {
+                    type: "channel",
+                    common: {
+                      name: `App ${name}`,
+                      desc: `${app.getDescription()} app`,
+                      icon: app.getIconForObjectTree()
+                    },
+                    native: {
+                      isBuiltinApp,
+                      isScriptApp,
+                      isCustomApp,
+                      isHistoryApp,
+                      isExpertApp
+                    }
+                  });
+                  const orderDefinition = content.find((a) => a.name === app.getName());
+                  await app.createObjects();
+                  await app.init(orderDefinition);
+                  await app.refresh();
+                }
               }
             }
             for (const app of appsAll) {
@@ -814,26 +813,6 @@ class AwtrixNg extends utils.Adapter {
       }
     }
     return false;
-  }
-  getSentryObject() {
-    if (this.supportsFeature && this.supportsFeature("PLUGINS")) {
-      const sentryInstance = this.getPluginInstance("sentry");
-      if (sentryInstance) {
-        return sentryInstance.getSentryObject();
-      }
-    }
-    return void 0;
-  }
-  addSentryMessage(msg) {
-    const sentryObj = this.getSentryObject();
-    if (sentryObj) {
-      sentryObj.withScope((scope) => {
-        if (this.currentVersion) {
-          scope.setTag("firmwareVersion", this.currentVersion || "unknown");
-        }
-        sentryObj.captureMessage(msg, "info");
-      });
-    }
   }
 }
 // Annotate the CommonJS export names for ESM import in node:

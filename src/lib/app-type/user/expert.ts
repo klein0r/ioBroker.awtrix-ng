@@ -31,11 +31,11 @@ export namespace AppType {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         public override async init(orderDefinition?: AwtrixApi.AppOrderDefinition): Promise<void> {
             const appName = this.getName();
-            const appNameClean = this.getNameClean();
+            const appNameC = this.getNameClean();
 
             const appObjects = await this.adapter.getObjectViewAsync('system', 'state', {
-                startkey: `${this.objPrefix}.apps.${appNameClean}.`,
-                endkey: `${this.objPrefix}.apps.${appNameClean}.\u9999`,
+                startkey: `${this.objPrefix}.apps.${appNameC}.`,
+                endkey: `${this.objPrefix}.apps.${appNameC}.\u9999`,
             });
 
             // Find all available settings objects with settingsKey
@@ -141,9 +141,9 @@ export namespace AppType {
             await super.createObjects();
 
             const appName = this.getName();
-            const appNameClean = this.getNameClean();
+            const appNameC = this.getNameClean();
 
-            await this.adapter.extendObject(`apps.${appNameClean}.baseObject`, {
+            await this.adapter.extendObject(`apps.${appNameC}.baseObject`, {
                 type: 'state',
                 common: {
                     name: {
@@ -170,7 +170,7 @@ export namespace AppType {
                 },
             });
 
-            await this.adapter.extendObject(`apps.${appNameClean}.text`, {
+            await this.adapter.extendObject(`apps.${appNameC}.text`, {
                 type: 'state',
                 common: {
                     name: {
@@ -197,7 +197,7 @@ export namespace AppType {
                 },
             });
 
-            await this.adapter.extendObject(`apps.${appNameClean}.textColor`, {
+            await this.adapter.extendObject(`apps.${appNameC}.textColor`, {
                 type: 'state',
                 common: {
                     name: {
@@ -224,7 +224,7 @@ export namespace AppType {
                 },
             });
 
-            await this.adapter.extendObject(`apps.${appNameClean}.backgroundColor`, {
+            await this.adapter.extendObject(`apps.${appNameC}.backgroundColor`, {
                 type: 'state',
                 common: {
                     name: {
@@ -251,7 +251,7 @@ export namespace AppType {
                 },
             });
 
-            await this.adapter.extendObject(`apps.${appNameClean}.icon`, {
+            await this.adapter.extendObject(`apps.${appNameC}.icon`, {
                 type: 'state',
                 common: {
                     name: {
@@ -278,7 +278,7 @@ export namespace AppType {
                 },
             });
 
-            await this.adapter.extendObject(`apps.${appNameClean}.durationMs`, {
+            await this.adapter.extendObject(`apps.${appNameC}.durationMs`, {
                 type: 'state',
                 common: {
                     name: {
@@ -306,7 +306,7 @@ export namespace AppType {
                 },
             });
 
-            await this.adapter.extendObject(`apps.${appNameClean}.overlay`, {
+            await this.adapter.extendObject(`apps.${appNameC}.overlay`, {
                 type: 'state',
                 common: {
                     name: {
@@ -336,7 +336,7 @@ export namespace AppType {
                 },
             });
 
-            await this.adapter.extendObject(`apps.${appNameClean}.scrollSpeed`, {
+            await this.adapter.extendObject(`apps.${appNameC}.scrollSpeed`, {
                 type: 'state',
                 common: {
                     name: {
@@ -366,7 +366,7 @@ export namespace AppType {
                 },
             });
 
-            await this.adapter.extendObject(`apps.${appNameClean}.progress`, {
+            await this.adapter.extendObject(`apps.${appNameC}.progress`, {
                 type: 'folder',
                 common: {
                     name: {
@@ -385,7 +385,7 @@ export namespace AppType {
                 },
             });
 
-            await this.adapter.extendObject(`apps.${appNameClean}.progress.percent`, {
+            await this.adapter.extendObject(`apps.${appNameC}.progress.percent`, {
                 type: 'state',
                 common: {
                     name: {
@@ -415,7 +415,7 @@ export namespace AppType {
                 },
             });
 
-            await this.adapter.extendObject(`apps.${appNameClean}.progress.color`, {
+            await this.adapter.extendObject(`apps.${appNameC}.progress.color`, {
                 type: 'state',
                 common: {
                     name: {
@@ -442,7 +442,7 @@ export namespace AppType {
                 },
             });
 
-            await this.adapter.extendObject(`apps.${appNameClean}.progress.trackColor`, {
+            await this.adapter.extendObject(`apps.${appNameC}.progress.trackColor`, {
                 type: 'state',
                 common: {
                     name: {
@@ -470,22 +470,18 @@ export namespace AppType {
             });
 
             if (!this.isMainInstance()) {
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.baseObject`);
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.text`);
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.textColor`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameC}.baseObject`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameC}.text`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameC}.textColor`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameC}.backgroundColor`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameC}.icon`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameC}.durationMs`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameC}.overlay`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameC}.scrollSpeed`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameC}.progress.percent`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameC}.progress.color`);
                 await this.adapter.subscribeForeignStatesAsync(
-                    `${this.objPrefix}.apps.${appNameClean}.backgroundColor`,
-                );
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.icon`);
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.durationMs`);
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.overlay`);
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.scrollSpeed`);
-                await this.adapter.subscribeForeignStatesAsync(
-                    `${this.objPrefix}.apps.${appNameClean}.progress.percent`,
-                );
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.progress.color`);
-                await this.adapter.subscribeForeignStatesAsync(
-                    `${this.objPrefix}.apps.${appNameClean}.progress.trackColor`,
+                    `${this.objPrefix}.apps.${appNameC}.progress.trackColor`,
                 );
             }
         }
@@ -496,11 +492,11 @@ export namespace AppType {
             // Handle default states for all apps
             if (id && state && !state.ack) {
                 const appName = this.getName();
-                const appNameClean = this.getNameClean();
+                const appNameC = this.getNameClean();
 
                 const idOwnNamespace = this.getObjIdOwnNamespace(id);
 
-                if (id.startsWith(`${this.objPrefix}.apps.${appNameClean}.`)) {
+                if (id.startsWith(`${this.objPrefix}.apps.${appNameC}.`)) {
                     const obj = await this.adapter.getForeignObjectAsync(id);
 
                     if (obj && obj?.native?.attribute) {

@@ -30,7 +30,7 @@ var AppType;
     constructor(apiClient, adapter, definition) {
       super(apiClient, adapter, definition.name);
       this.definition = definition;
-      this.ignoreNewValueForAppInTimeRange = adapter.config.ignoreNewValueForAppInTimeRange;
+      this.ignoreNewValueForAppInTimeRange = Math.min(adapter.config.ignoreNewValueForAppInTimeRange, 10);
     }
     async unloadAsync() {
       if (this.adapter.config.removeAppsOnStop) {

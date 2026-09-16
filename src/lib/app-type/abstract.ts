@@ -39,12 +39,12 @@ export namespace AppType {
         }
 
         public async init(orderDefinition?: AwtrixApi.AppOrderDefinition): Promise<void> {
-            const appNameClean = this.getNameClean();
+            const appNameC = this.getNameClean();
 
             const appEnabledState = await this.adapter.getForeignStateAsync(
-                `${this.objPrefix}.apps.${appNameClean}.enabled`,
+                `${this.objPrefix}.apps.${appNameC}.enabled`,
             );
-            const appSlotState = await this.adapter.getForeignStateAsync(`${this.objPrefix}.apps.${appNameClean}.slot`);
+            const appSlotState = await this.adapter.getForeignStateAsync(`${this.objPrefix}.apps.${appNameC}.slot`);
 
             if (orderDefinition) {
                 this.isEnabled = orderDefinition?.enabled ?? true;
@@ -57,7 +57,7 @@ export namespace AppType {
 
             // Ack if changed while instance was stopped
             if (!appEnabledState || !appEnabledState?.ack || appEnabledState?.val !== this.isEnabled) {
-                await this.adapter.setState(`apps.${appNameClean}.enabled`, {
+                await this.adapter.setState(`apps.${appNameC}.enabled`, {
                     val: this.isEnabled,
                     ack: true,
                     c: 'init',
@@ -65,7 +65,7 @@ export namespace AppType {
             }
 
             if (!appSlotState || !appSlotState?.ack || appSlotState?.val !== this.slot) {
-                await this.adapter.setState(`apps.${appNameClean}.slot`, { val: this.slot, ack: true, c: 'init' });
+                await this.adapter.setState(`apps.${appNameC}.slot`, { val: this.slot, ack: true, c: 'init' });
             }
         }
 
@@ -110,13 +110,13 @@ export namespace AppType {
 
         public async createObjects(): Promise<void> {
             const appName = this.getName();
-            const appNameClean = this.getNameClean();
+            const appNameC = this.getNameClean();
 
             this.adapter.log.debug(
                 `[createObjects] Creating objects for app "${appName}" (${this.isMainInstance() ? 'main' : this.objPrefix})`,
             );
 
-            await this.adapter.extendObject(`apps.${appNameClean}.enabled`, {
+            await this.adapter.extendObject(`apps.${appNameC}.enabled`, {
                 type: 'state',
                 common: {
                     name: {
@@ -141,7 +141,7 @@ export namespace AppType {
                 native: {},
             });
 
-            await this.adapter.extendObject(`apps.${appNameClean}.slot`, {
+            await this.adapter.extendObject(`apps.${appNameC}.slot`, {
                 type: 'state',
                 common: {
                     name: {
@@ -166,12 +166,12 @@ export namespace AppType {
             });
 
             if (!this.isMainInstance()) {
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.enabled`);
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.slot`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameC}.enabled`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameC}.slot`);
             }
 
             if (this.hasOwnActivateState()) {
-                await this.adapter.extendObject(`apps.${appNameClean}.activate`, {
+                await this.adapter.extendObject(`apps.${appNameC}.activate`, {
                     type: 'state',
                     common: {
                         name: {
@@ -195,14 +195,14 @@ export namespace AppType {
                     native: {},
                 });
             } else {
-                await this.adapter.delObjectAsync(`apps.${appNameClean}.activate`);
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.activate`);
+                await this.adapter.delObjectAsync(`apps.${appNameC}.activate`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameC}.activate`);
             }
         }
 
         private async onStateChange(id: string, state: ioBroker.State | null | undefined): Promise<void> {
             const appName = this.getName();
-            const appNameClean = this.getNameClean();
+            const appNameC = this.getNameClean();
 
             if (id) {
                 // Handle default states for all apps
@@ -210,7 +210,7 @@ export namespace AppType {
                     // activate app
                     if (
                         id ===
-                        `${this.hasOwnActivateState() ? this.adapter.namespace : this.objPrefix}.apps.${appNameClean}.activate`
+                        `${this.hasOwnActivateState() ? this.adapter.namespace : this.objPrefix}.apps.${appNameC}.activate`
                     ) {
                         if (state.val) {
                             if (this.isEnabled) {
@@ -246,11 +246,11 @@ export namespace AppType {
             // Handle all states for user apps
             if (id && state && !state.ack) {
                 const appName = this.getName();
-                const appNameClean = this.getNameClean();
+                const appNameC = this.getNameClean();
 
                 const idOwnNamespace = this.getObjIdOwnNamespace(id);
 
-                if (id === `${this.objPrefix}.apps.${appNameClean}.enabled`) {
+                if (id === `${this.objPrefix}.apps.${appNameC}.enabled`) {
                     if (state.val !== this.isEnabled) {
                         this.adapter.log.debug(
                             `[onStateChange] ${appName}: Enabled of app ${appName} changed to ${state.val}`,
@@ -275,7 +275,7 @@ export namespace AppType {
                             c: `onStateChange ${this.objPrefix} (unchanged)`,
                         });
                     }
-                } else if (id === `${this.objPrefix}.apps.${appNameClean}.slot` && typeof state.val === 'number') {
+                } else if (id === `${this.objPrefix}.apps.${appNameC}.slot` && typeof state.val === 'number') {
                     if (state.val !== this.slot) {
                         this.adapter.log.debug(
                             `[onStateChange] ${appName}: Slot of app ${appName} changed to ${state.val}`,
