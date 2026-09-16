@@ -31,10 +31,11 @@ export namespace AppType {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         public override async init(orderDefinition?: AwtrixApi.AppOrderDefinition): Promise<void> {
             const appName = this.getName();
+            const appNameClean = this.getNameClean();
 
             const appObjects = await this.adapter.getObjectViewAsync('system', 'state', {
-                startkey: `${this.objPrefix}.apps.${appName}.`,
-                endkey: `${this.objPrefix}.apps.${appName}.\u9999`,
+                startkey: `${this.objPrefix}.apps.${appNameClean}.`,
+                endkey: `${this.objPrefix}.apps.${appNameClean}.\u9999`,
             });
 
             // Find all available settings objects with settingsKey
@@ -140,8 +141,9 @@ export namespace AppType {
             await super.createObjects();
 
             const appName = this.getName();
+            const appNameClean = this.getNameClean();
 
-            await this.adapter.extendObject(`apps.${appName}.baseObject`, {
+            await this.adapter.extendObject(`apps.${appNameClean}.baseObject`, {
                 type: 'state',
                 common: {
                     name: {
@@ -168,7 +170,7 @@ export namespace AppType {
                 },
             });
 
-            await this.adapter.extendObject(`apps.${appName}.text`, {
+            await this.adapter.extendObject(`apps.${appNameClean}.text`, {
                 type: 'state',
                 common: {
                     name: {
@@ -195,7 +197,7 @@ export namespace AppType {
                 },
             });
 
-            await this.adapter.extendObject(`apps.${appName}.textColor`, {
+            await this.adapter.extendObject(`apps.${appNameClean}.textColor`, {
                 type: 'state',
                 common: {
                     name: {
@@ -222,7 +224,7 @@ export namespace AppType {
                 },
             });
 
-            await this.adapter.extendObject(`apps.${appName}.backgroundColor`, {
+            await this.adapter.extendObject(`apps.${appNameClean}.backgroundColor`, {
                 type: 'state',
                 common: {
                     name: {
@@ -249,7 +251,7 @@ export namespace AppType {
                 },
             });
 
-            await this.adapter.extendObject(`apps.${appName}.icon`, {
+            await this.adapter.extendObject(`apps.${appNameClean}.icon`, {
                 type: 'state',
                 common: {
                     name: {
@@ -276,7 +278,7 @@ export namespace AppType {
                 },
             });
 
-            await this.adapter.extendObject(`apps.${appName}.durationMs`, {
+            await this.adapter.extendObject(`apps.${appNameClean}.durationMs`, {
                 type: 'state',
                 common: {
                     name: {
@@ -304,7 +306,7 @@ export namespace AppType {
                 },
             });
 
-            await this.adapter.extendObject(`apps.${appName}.overlay`, {
+            await this.adapter.extendObject(`apps.${appNameClean}.overlay`, {
                 type: 'state',
                 common: {
                     name: {
@@ -334,7 +336,7 @@ export namespace AppType {
                 },
             });
 
-            await this.adapter.extendObject(`apps.${appName}.scrollSpeed`, {
+            await this.adapter.extendObject(`apps.${appNameClean}.scrollSpeed`, {
                 type: 'state',
                 common: {
                     name: {
@@ -364,7 +366,7 @@ export namespace AppType {
                 },
             });
 
-            await this.adapter.extendObject(`apps.${appName}.progress`, {
+            await this.adapter.extendObject(`apps.${appNameClean}.progress`, {
                 type: 'folder',
                 common: {
                     name: {
@@ -383,7 +385,7 @@ export namespace AppType {
                 },
             });
 
-            await this.adapter.extendObject(`apps.${appName}.progress.percent`, {
+            await this.adapter.extendObject(`apps.${appNameClean}.progress.percent`, {
                 type: 'state',
                 common: {
                     name: {
@@ -413,7 +415,7 @@ export namespace AppType {
                 },
             });
 
-            await this.adapter.extendObject(`apps.${appName}.progress.color`, {
+            await this.adapter.extendObject(`apps.${appNameClean}.progress.color`, {
                 type: 'state',
                 common: {
                     name: {
@@ -440,7 +442,7 @@ export namespace AppType {
                 },
             });
 
-            await this.adapter.extendObject(`apps.${appName}.progress.trackColor`, {
+            await this.adapter.extendObject(`apps.${appNameClean}.progress.trackColor`, {
                 type: 'state',
                 common: {
                     name: {
@@ -468,17 +470,17 @@ export namespace AppType {
             });
 
             if (!this.isMainInstance()) {
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.baseObject`);
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.text`);
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.textColor`);
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.backgroundColor`);
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.icon`);
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.durationMs`);
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.overlay`);
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.scrollSpeed`);
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.progress.percent`);
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.progress.color`);
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appName}.progress.trackColor`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.baseObject`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.text`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.textColor`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.backgroundColor`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.icon`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.durationMs`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.overlay`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.scrollSpeed`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.progress.percent`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.progress.color`);
+                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.progress.trackColor`);
             }
         }
 
@@ -488,9 +490,11 @@ export namespace AppType {
             // Handle default states for all apps
             if (id && state && !state.ack) {
                 const appName = this.getName();
+                const appNameClean = this.getNameClean();
+
                 const idOwnNamespace = this.getObjIdOwnNamespace(id);
 
-                if (id.startsWith(`${this.objPrefix}.apps.${appName}.`)) {
+                if (id.startsWith(`${this.objPrefix}.apps.${appNameClean}.`)) {
                     const obj = await this.adapter.getForeignObjectAsync(id);
 
                     if (obj && obj?.native?.attribute) {

@@ -781,13 +781,8 @@ export class AwtrixNg extends utils.Adapter {
                         if (response.status === 200) {
                             const content = response.data as Array<AwtrixApi.AppOrderDefinition>;
 
-                            const existingApps = content.map(a => a.name);
                             const builtinApps = content.filter(a => a.origin === 'builtin').map(a => a.name);
                             const scriptApps = content.filter(a => a.origin === 'script').map(a => a.name);
-
-                            this.log.debug(
-                                `[createAppObjects] existing apps on awtrix light: ${JSON.stringify(existingApps)}`,
-                            );
 
                             // Init all apps
                             for (const builtinAppName of builtinApps) {
@@ -861,9 +856,6 @@ export class AwtrixNg extends utils.Adapter {
 
                             // Create new app structure for all existing apps and apps of instance configuration
                             for (const name of allApps) {
-                                appsKeep.push(`apps.${name}`);
-                                this.log.debug(`[createAppObjects] found (keep): apps.${name}`);
-
                                 const isBuiltinApp = builtinApps.includes(name);
                                 const isScriptApp = scriptApps.includes(name);
                                 const isCustomApp = customApps.includes(name);
@@ -871,28 +863,35 @@ export class AwtrixNg extends utils.Adapter {
                                 const isExpertApp = expertApps.includes(name);
 
                                 const app = this.findAppWithName(name);
+
                                 if (app) {
-                                    await this.extendObject(`apps.${name}`, {
-                                        type: 'channel',
-                                        common: {
-                                            name: `App ${name}`,
-                                            desc: `${app.getDescription()} app`,
-                                            icon: app.getIconForObjectTree(),
-                                        },
-                                        native: {
-                                            isBuiltinApp,
-                                            isScriptApp,
-                                            isCustomApp,
-                                            isHistoryApp,
-                                            isExpertApp,
-                                        },
-                                    });
+                                    this.log.debug(`[createAppObjects] found (keep): apps.${app.getNameClean()}`);
 
-                                    const orderDefinition = content.find(a => a.name === app.getName());
+                                    appsKeep.push(`apps.${app.getNameClean()}`);
 
-                                    await app.createObjects();
-                                    await app.init(orderDefinition);
-                                    await app.refresh();
+                                    if (app) {
+                                        await this.extendObject(`apps.${app.getNameClean()}`, {
+                                            type: 'channel',
+                                            common: {
+                                                name: `App ${name}`,
+                                                desc: `${app.getDescription()} app`,
+                                                icon: app.getIconForObjectTree(),
+                                            },
+                                            native: {
+                                                isBuiltinApp,
+                                                isScriptApp,
+                                                isCustomApp,
+                                                isHistoryApp,
+                                                isExpertApp,
+                                            },
+                                        });
+
+                                        const orderDefinition = content.find(a => a.name === app.getName());
+
+                                        await app.createObjects();
+                                        await app.init(orderDefinition);
+                                        await app.refresh();
+                                    }
                                 }
                             }
 
