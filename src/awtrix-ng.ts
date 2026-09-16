@@ -1042,29 +1042,4 @@ export class AwtrixNg extends utils.Adapter {
         }
         return false;
     }
-
-    private getSentryObject(): any {
-        if (this.supportsFeature && this.supportsFeature('PLUGINS')) {
-            const sentryInstance = this.getPluginInstance('sentry');
-            if (sentryInstance) {
-                return sentryInstance.getSentryObject();
-            }
-        }
-
-        return undefined;
-    }
-
-    public addSentryMessage(msg: string): void {
-        const sentryObj = this.getSentryObject();
-
-        if (sentryObj) {
-            sentryObj.withScope((scope: any) => {
-                if (this.currentVersion) {
-                    scope.setTag('firmwareVersion', this.currentVersion || 'unknown');
-                }
-
-                sentryObj.captureMessage(msg, 'info');
-            });
-        }
-    }
 }
