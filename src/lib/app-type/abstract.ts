@@ -15,6 +15,9 @@ export namespace AppType {
         protected slot: number | null;
 
         public constructor(apiClient: AwtrixApi.Client, adapter: AwtrixNg, name: string) {
+            this.apiClient = apiClient;
+            this.adapter = adapter;
+
             this.name = name;
             this.nameClean = name
                 .replace(this.adapter.FORBIDDEN_CHARS, '_')
@@ -24,9 +27,6 @@ export namespace AppType {
 
             this.isEnabled = false;
             this.slot = null;
-
-            this.apiClient = apiClient;
-            this.adapter = adapter;
 
             if (this.adapter.isMainInstance()) {
                 this.objPrefix = this.adapter.namespace;
