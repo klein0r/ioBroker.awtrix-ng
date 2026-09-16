@@ -57,7 +57,11 @@ export namespace AppType {
 
             // Ack if changed while instance was stopped
             if (!appEnabledState || !appEnabledState?.ack || appEnabledState?.val !== this.isEnabled) {
-                await this.adapter.setState(`apps.${appNameClean}.enabled`, { val: this.isEnabled, ack: true, c: 'init' });
+                await this.adapter.setState(`apps.${appNameClean}.enabled`, {
+                    val: this.isEnabled,
+                    ack: true,
+                    c: 'init',
+                });
             }
 
             if (!appSlotState || !appSlotState?.ack || appSlotState?.val !== this.slot) {

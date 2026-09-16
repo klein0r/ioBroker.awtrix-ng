@@ -473,14 +473,20 @@ export namespace AppType {
                 await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.baseObject`);
                 await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.text`);
                 await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.textColor`);
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.backgroundColor`);
+                await this.adapter.subscribeForeignStatesAsync(
+                    `${this.objPrefix}.apps.${appNameClean}.backgroundColor`,
+                );
                 await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.icon`);
                 await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.durationMs`);
                 await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.overlay`);
                 await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.scrollSpeed`);
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.progress.percent`);
+                await this.adapter.subscribeForeignStatesAsync(
+                    `${this.objPrefix}.apps.${appNameClean}.progress.percent`,
+                );
                 await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.progress.color`);
-                await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.progress.trackColor`);
+                await this.adapter.subscribeForeignStatesAsync(
+                    `${this.objPrefix}.apps.${appNameClean}.progress.trackColor`,
+                );
             }
         }
 
