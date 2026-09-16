@@ -140,7 +140,6 @@ export namespace AppType {
         public async createObjects(): Promise<void> {
             await super.createObjects();
 
-            const appName = this.getName();
             const appNameC = this.getNameClean();
 
             await this.adapter.extendObject(`apps.${appNameC}.baseObject`, {
