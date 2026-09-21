@@ -42,7 +42,7 @@ Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amaz
 
 ### **WORK IN PROGRESS**
 
-* (@klein0r) Recommended Awtrix NG version is now 1.1.1
+* (@klein0r) Recommended Awtrix NG version is now 1.1.2
 * (ioBroker-Bot) Adapter requires admin >= 7.8.23 now.
 
 ### 0.1.0 (2026-08-11)
