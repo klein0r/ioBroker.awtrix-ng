@@ -1131,6 +1131,54 @@
       "native": {}
     },
     {
+      "_id": "meta.boardType",
+      "type": "state",
+      "common": {
+        "name": {
+            "en": "Hardware type",
+            "de": "Hardwaretyp",
+            "ru": "Тип аппаратного обеспечения",
+            "pt": "Tipo de hardware",
+            "nl": "Soort hardware",
+            "fr": "Type de matériel",
+            "it": "Tipo hardware",
+            "es": "Tipo hardware",
+            "pl": "Typ sprzętu",
+            "uk": "Тип апаратного забезпечення",
+            "zh-cn": "硬件类型"
+        },
+        "type": "string",
+        "role": "text",
+        "read": true,
+        "write": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "meta.soc",
+      "type": "state",
+      "common": {
+        "name": {
+            "en": "SoC",
+            "de": "SoC",
+            "ru": "SoC",
+            "pt": "SoC",
+            "nl": "SoC",
+            "fr": "SoC",
+            "it": "SoC",
+            "es": "SoC",
+            "pl": "SoC",
+            "uk": "SoC",
+            "zh-cn": "SoC"
+        },
+        "type": "string",
+        "role": "text",
+        "read": true,
+        "write": false
+      },
+      "native": {}
+    },
+    {
       "_id": "device",
       "type": "channel",
       "common": {

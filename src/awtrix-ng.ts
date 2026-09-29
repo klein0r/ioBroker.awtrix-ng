@@ -633,6 +633,8 @@ export class AwtrixNg extends utils.Adapter {
 
                 await this.setStateChangedAsync('meta.uid', { val: content.uid, ack: true });
                 await this.setStateChangedAsync('meta.version', { val: content.version, ack: true });
+                await this.setStateChangedAsync('meta.boardType', { val: content.boardType, ack: true });
+                await this.setStateChangedAsync('meta.soc', { val: content.soc, ack: true });
 
                 await this.setStateChangedAsync('sensor.lux', { val: content.lightLevel, ack: true });
                 await this.setStateChangedAsync('sensor.temp', { val: content.temperature, ack: true });
@@ -869,29 +871,27 @@ export class AwtrixNg extends utils.Adapter {
 
                                     appsKeep.push(`apps.${app.getNameClean()}`);
 
-                                    if (app) {
-                                        await this.extendObject(`apps.${app.getNameClean()}`, {
-                                            type: 'channel',
-                                            common: {
-                                                name: `App ${name}`,
-                                                desc: `${app.getDescription()} app`,
-                                                icon: app.getIconForObjectTree(),
-                                            },
-                                            native: {
-                                                isBuiltinApp,
-                                                isScriptApp,
-                                                isCustomApp,
-                                                isHistoryApp,
-                                                isExpertApp,
-                                            },
-                                        });
+                                    await this.extendObject(`apps.${app.getNameClean()}`, {
+                                        type: 'channel',
+                                        common: {
+                                            name: `App ${name}`,
+                                            desc: `${app.getDescription()} app`,
+                                            icon: app.getIconForObjectTree(),
+                                        },
+                                        native: {
+                                            isBuiltinApp,
+                                            isScriptApp,
+                                            isCustomApp,
+                                            isHistoryApp,
+                                            isExpertApp,
+                                        },
+                                    });
 
-                                        const orderDefinition = content.find(a => a.name === app.getName());
+                                    const orderDefinition = content.find(a => a.name === app.getName());
 
-                                        await app.createObjects();
-                                        await app.init(orderDefinition);
-                                        await app.refresh();
-                                    }
+                                    await app.createObjects();
+                                    await app.init(orderDefinition);
+                                    await app.refresh();
                                 }
                             }
 
