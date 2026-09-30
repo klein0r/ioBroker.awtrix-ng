@@ -41,6 +41,10 @@ Buy TC002 here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC002) or here: [u
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+
+* (@klein0r) Added playback of MP3 files (`audio.mp3.*`) for devices which support it (e.g. TC002)
+
 ### 0.2.0 (2026-09-30)
 
 * (@klein0r) Port of the device is configurable now (default: 80)

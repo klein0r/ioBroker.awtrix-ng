@@ -16,14 +16,15 @@ import type {
 import { AwtrixApiError, AwtrixClient, AwtrixConnectionError, isValidAppName, toHexColor } from 'awtrix-ng-api';
 
 import type { AppType as AppTypeAbstract } from './lib/app-type/abstract';
-import { Radio } from './lib/radio';
+import { Mp3 } from './lib/audio/mp3';
+import { Radio } from './lib/audio/radio';
 import { AppType as AppTypeBuiltin } from './lib/app-type/builtin';
 import { AppType as AppTypeScript } from './lib/app-type/script';
 import { AppType as AppTypeCustom } from './lib/app-type/user/custom';
 import { AppType as AppTypeExpert } from './lib/app-type/user/expert';
 import { AppType as AppTypeHistory } from './lib/app-type/user/history';
 
-type ResyncStep = 'settings' | 'capabilities' | 'radio' | 'apps' | 'indicators' | 'moodlight' | 'screenContent';
+type ResyncStep = 'settings' | 'capabilities' | 'audio' | 'apps' | 'indicators' | 'moodlight' | 'screenContent';
 
 /** Features of the connected device (defaults until the capabilities have been loaded) */
 type DeviceCapabilities = {
@@ -36,6 +37,8 @@ type DeviceCapabilities = {
     transitions: Array<string>;
     /** internet radio (e.g. TC002) */
     radio: boolean;
+    /** stored mp3 files (e.g. TC002) */
+    mp3: boolean;
 };
 
 const DEFAULT_CAPABILITIES: DeviceCapabilities = {
@@ -82,6 +85,7 @@ const DEFAULT_CAPABILITIES: DeviceCapabilities = {
     ],
     transitions: [],
     radio: false,
+    mp3: false,
 };
 
 type NestedObject = {
@@ -158,6 +162,7 @@ export class AwtrixNg extends utils.Adapter {
     private appOrderLock: Promise<void>;
     private appOrderSyncTimeout: ioBroker.Timeout | undefined;
     private radio: Radio | null;
+    private mp3: Mp3 | null;
     private capabilities: DeviceCapabilities;
     private refreshStateTimeout: ioBroker.Timeout | undefined;
     private downloadScreenContentInterval: ioBroker.Interval | undefined;
@@ -186,6 +191,7 @@ export class AwtrixNg extends utils.Adapter {
         this.appOrderLock = Promise.resolve();
         this.appOrderSyncTimeout = undefined;
         this.radio = null;
+        this.mp3 = null;
         this.capabilities = { ...DEFAULT_CAPABILITIES };
 
         this.refreshStateTimeout = undefined;
@@ -227,6 +233,7 @@ export class AwtrixNg extends utils.Adapter {
         this.log.info(`Starting - connecting to ${this.apiClient.baseUrl}/`);
 
         this.radio = new Radio(this, this.apiClient);
+        this.mp3 = new Mp3(this, this.apiClient);
 
         if (this.config.foreignSettingsInstance !== '' && this.config.foreignSettingsInstance !== this.namespace) {
             this._isMainInstance = false;
@@ -345,6 +352,10 @@ export class AwtrixNg extends utils.Adapter {
                 } else if (idNoNamespace.startsWith('audio.radio.')) {
                     this.radio!.onStateChange(idNoNamespace, state).catch(error => {
                         this.log.warn(`(radio) Unable to execute action: ${error}`);
+                    });
+                } else if (idNoNamespace.startsWith('audio.mp3.')) {
+                    this.mp3!.onStateChange(idNoNamespace, state).catch(error => {
+                        this.log.warn(`(mp3) Unable to execute action: ${error}`);
                     });
                 } else if (idNoNamespace === 'device.reboot') {
                     this.apiClient.device
@@ -609,7 +620,7 @@ export class AwtrixNg extends utils.Adapter {
         const steps: Array<[ResyncStep, () => Promise<unknown>]> = [
             ['settings', () => this.refreshSettings()],
             ['capabilities', () => this.refreshCapabilities()],
-            ['radio', () => this.refreshRadio(true)],
+            ['audio', () => this.refreshAudio(true)],
             ['apps', () => this.createAppObjects()],
             ['indicators', () => this.updateAllIndicatorsByStates()],
             ['moodlight', () => this.updateMoodlightByStates()],
@@ -773,10 +784,10 @@ export class AwtrixNg extends utils.Adapter {
                 await this.setStateChangedAsync('device.freeRAM', { val: content.freeHeapBytes, ack: true });
                 await this.setStateChangedAsync('device.uptime', { val: content.uptimeSeconds, ack: true });
 
-                // Radio: playback state and station list (stations may be changed in the web interface)
-                if (this.capabilities.radio && !this.resyncFailedSteps.has('radio')) {
-                    await this.radio!.refresh(false).catch(error => {
-                        this.log.debug(`[refreshState] Unable to refresh radio: ${error}`);
+                // Audio: playback state and radio stations / mp3 files (may be changed in the web interface)
+                if (this.capabilities.loaded && !this.resyncFailedSteps.has('audio')) {
+                    await this.refreshAudio(false).catch(error => {
+                        this.log.debug(`[refreshState] Unable to refresh audio: ${error}`);
                     });
                 }
             })
@@ -873,6 +884,7 @@ export class AwtrixNg extends utils.Adapter {
             paletteEffects: capabilities.paletteEffects ?? DEFAULT_CAPABILITIES.paletteEffects,
             transitions: capabilities.transitions ?? DEFAULT_CAPABILITIES.transitions,
             radio: capabilities.audio?.radio === true,
+            mp3: capabilities.audio?.mp3 === true,
         };
 
         // Transistions
@@ -885,19 +897,42 @@ export class AwtrixNg extends utils.Adapter {
     }
 
     /**
-     * Radio stations and playback state (just if supported by the device - e.g. TC002)
+     * Radio stations, mp3 files and playback state (just if supported by the device - e.g. TC002).
+     * Objects of unsupported features are deleted.
      *
-     * @param forceObjectSync - create / check objects even if the station list is unchanged
+     * @param forceObjectSync - create / check objects even if the lists are unchanged
      */
-    private async refreshRadio(forceObjectSync: boolean): Promise<void> {
+    private async refreshAudio(forceObjectSync: boolean): Promise<void> {
         if (!this.capabilities.loaded) {
             throw new Error('capabilities of device unknown');
         }
 
-        if (this.capabilities.radio) {
-            await this.radio!.refresh(forceObjectSync);
-        } else {
-            await this.radio!.remove();
+        const players: Array<[Radio | Mp3, boolean]> = [
+            [this.radio!, this.capabilities.radio],
+            [this.mp3!, this.capabilities.mp3],
+        ];
+
+        // one request for all players
+        const audioState = players.some(([, supported]) => supported)
+            ? await this.apiClient!.audio.getState()
+            : undefined;
+
+        const errors: Array<string> = [];
+
+        for (const [player, supported] of players) {
+            try {
+                if (supported) {
+                    await player.refresh(forceObjectSync, audioState);
+                } else {
+                    await player.remove();
+                }
+            } catch (error) {
+                errors.push(this.errorToString(error));
+            }
+        }
+
+        if (errors.length > 0) {
+            throw new Error(errors.join(', '));
         }
     }
 
@@ -1364,6 +1399,7 @@ export class AwtrixNg extends utils.Adapter {
             }
 
             this.radio?.unload();
+            this.mp3?.unload();
 
             callback();
         } catch (e) {

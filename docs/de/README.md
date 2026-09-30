@@ -141,6 +141,17 @@ Geräte mit Internetradio (z.B. Ulanzi TC002) erhalten den Kanal `audio.radio`. 
 
 Die Sender werden in der Weboberfläche des Gerätes gepflegt. Werden dort Sender hinzugefügt oder entfernt, werden die Objekte automatisch angelegt bzw. gelöscht (Prüfung alle 60 Sekunden). In ioBroker können keine Sender hinzugefügt oder entfernt werden.
 
+## MP3-Dateien
+
+Geräte, die MP3-Dateien abspielen können (z.B. Ulanzi TC002), erhalten den Kanal `audio.mp3`. Die Funktion wird automatisch erkannt (Capabilities des Gerätes).
+
+- `audio.mp3.<Datei>.playing` - `true` spielt die Datei ab, `false` stoppt sie (falls diese Datei gerade läuft). Der Zustand zeigt außerdem an, ob die Datei gerade abgespielt wird.
+- `audio.mp3.<Datei>.size` - Dateigröße in Bytes (nur lesend)
+- `audio.mp3.playing` / `audio.mp3.file` - aktueller Wiedergabestatus (nur lesend)
+- `audio.mp3.stop` - stoppt die Wiedergabe
+
+Die Dateien werden in der Weboberfläche des Gerätes hochgeladen und gelöscht. Die Objekte werden automatisch angelegt bzw. gelöscht (Prüfung alle 60 Sekunden). Töne von Skripten werden nicht aufgelistet.
+
 ## Apps
 
 **App-Namen müssen eindeutig sein und dürfen Buchstaben (A-Z, a-z), Ziffern (0-9), `_` und `-` enthalten (max. 32 Zeichen). Keine Leerzeichen oder andere Sonderzeichen.**

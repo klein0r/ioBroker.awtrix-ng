@@ -141,6 +141,17 @@ Devices with internet radio (e.g. Ulanzi TC002) get the channel `audio.radio`. T
 
 The stations are maintained in the web interface of the device. The objects are created and deleted automatically when stations are added or removed there (checked every 60 seconds). Stations cannot be added or removed in ioBroker.
 
+## MP3 files
+
+Devices which can play MP3 files (e.g. Ulanzi TC002) get the channel `audio.mp3`. The feature is detected automatically (capabilities of the device).
+
+- `audio.mp3.<file>.playing` - `true` plays the file, `false` stops it (if this file is playing). The state also shows if the file is currently playing.
+- `audio.mp3.<file>.size` - file size in bytes (read only)
+- `audio.mp3.playing` / `audio.mp3.file` - current playback state (read only)
+- `audio.mp3.stop` - stops the playback
+
+The files are uploaded and deleted in the web interface of the device. The objects are created and deleted automatically (checked every 60 seconds). Sounds of scripts are not listed.
+
 ## Apps
 
 **App names must be unique and may contain letters (A-Z, a-z), digits (0-9), `_` and `-` (max. 32 characters). No whitespaces or other special characters.**
