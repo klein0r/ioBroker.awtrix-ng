@@ -21,7 +21,7 @@ npm run release-patch  # @alcalzone/release-script (runs lint before, build befo
 
 Single TS test file: `npx mocha --config test/mocharc.custom.json src/path/to/file.test.ts`. There are currently no real unit tests (`src/main.test.ts` is a placeholder).
 
-`build/` is committed to git — the release script rebuilds before committing, so keep it in sync when changing `src/`.
+`build/` is committed to git, but only updated by the release script (it rebuilds before its release commit). Run `npm run build` to verify changes, but roll back `build/` before committing (`git checkout -- build`) — normal commits must not contain changes in `build/`.
 
 ## Architecture
 
