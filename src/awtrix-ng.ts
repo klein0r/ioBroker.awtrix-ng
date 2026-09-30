@@ -13,7 +13,7 @@ import type {
     OkResponse,
     SettingsUpdate,
 } from 'awtrix-ng-api';
-import { AwtrixApiError, AwtrixClient, AwtrixConnectionError, toHexColor } from 'awtrix-ng-api';
+import { AwtrixApiError, AwtrixClient, AwtrixConnectionError, isValidAppName, toHexColor } from 'awtrix-ng-api';
 
 import type { AppType as AppTypeAbstract } from './lib/app-type/abstract';
 import { AppType as AppTypeBuiltin } from './lib/app-type/builtin';
@@ -246,6 +246,10 @@ export class AwtrixNg extends utils.Adapter {
 
     public isMainInstance(): boolean {
         return this._isMainInstance;
+    }
+
+    public isApiConnected(): boolean {
+        return this.apiConnected;
     }
 
     private async onStateChange(id: string, state: ioBroker.State | null | undefined): Promise<void> {
@@ -793,6 +797,28 @@ export class AwtrixNg extends utils.Adapter {
         await this.extendObject('settings.apps.transitionEffect', { common: { states } });
     }
 
+    private isValidUserAppName(name: string): boolean {
+        // same list as the validator in admin/jsonConfig.json
+        const reservedNames = [
+            // builtin apps
+            'time',
+            'date',
+            'temperature',
+            'humidity',
+            'battery',
+            'status',
+            // reserved by the device (routes)
+            'active',
+            'next',
+            'previous',
+            'order',
+            // would collide with the state apps.prev
+            'prev',
+        ];
+
+        return isValidAppName(name) && !reservedNames.includes(name.toLowerCase());
+    }
+
     private findAppWithName(name: string): AppTypeAbstract.AbstractApp | undefined {
         return this.apps.find(app => app.getName() === name);
     }
@@ -829,7 +855,11 @@ export class AwtrixNg extends utils.Adapter {
         }
 
         for (const customApp of this.config.customApps) {
-            if (!this.findAppWithName(customApp.name)) {
+            if (!this.isValidUserAppName(customApp.name)) {
+                this.log.warn(
+                    `App name "${customApp.name}" is invalid or reserved (allowed: A-Z, a-z, 0-9, _ and -, max. 32 characters). Skipping custom app!`,
+                );
+            } else if (!this.findAppWithName(customApp.name)) {
                 this.apps.push(new AppTypeCustom.Custom(apiClient, this, customApp));
             } else {
                 this.log.warn(`App with name ${customApp.name} already exists. Skipping custom app!`);
@@ -837,7 +867,11 @@ export class AwtrixNg extends utils.Adapter {
         }
 
         for (const historyApp of this.config.historyApps) {
-            if (!this.findAppWithName(historyApp.name)) {
+            if (!this.isValidUserAppName(historyApp.name)) {
+                this.log.warn(
+                    `App name "${historyApp.name}" is invalid or reserved (allowed: A-Z, a-z, 0-9, _ and -, max. 32 characters). Skipping history app!`,
+                );
+            } else if (!this.findAppWithName(historyApp.name)) {
                 this.apps.push(new AppTypeHistory.History(apiClient, this, historyApp));
             } else {
                 this.log.warn(`App with name ${historyApp.name} already exists. Skipping history app!`);
@@ -845,7 +879,11 @@ export class AwtrixNg extends utils.Adapter {
         }
 
         for (const expertApp of this.config.expertApps) {
-            if (!this.findAppWithName(expertApp.name)) {
+            if (!this.isValidUserAppName(expertApp.name)) {
+                this.log.warn(
+                    `App name "${expertApp.name}" is invalid or reserved (allowed: A-Z, a-z, 0-9, _ and -, max. 32 characters). Skipping expert app!`,
+                );
+            } else if (!this.findAppWithName(expertApp.name)) {
                 this.apps.push(new AppTypeExpert.Expert(apiClient, this, expertApp));
             } else {
                 this.log.warn(`App with name ${expertApp.name} already exists. Skipping expert app!`);

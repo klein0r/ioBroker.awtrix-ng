@@ -50,6 +50,9 @@ Buy TC002 here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC002) or here: [u
 * (@klein0r) Custom apps are transferred even if disabled (visibility is controlled by the device)
 * (@klein0r) Fixed custom apps with invalid object ID being transferred as background-only apps
 * (@klein0r) History apps keep refreshing after errors and retry if the history instance was unavailable
+* (@klein0r) Custom and expert apps get a lifetime if "Delete apps when instance is stopped" is enabled (removed from device if the adapter is not running anymore)
+* (@klein0r) App names may contain digits, `_` and `-` now
+* (@klein0r) Added states `apps.<name>.present` and `apps.<name>.lastError`
 * (@klein0r) Migrated all HTTP requests to the new library [awtrix-ng-api](https://www.npmjs.com/package/awtrix-ng-api)
 * (@klein0r) Fixed screen content download (`display.content`)
 * (@klein0r) Added additional meta information (soc and board type)

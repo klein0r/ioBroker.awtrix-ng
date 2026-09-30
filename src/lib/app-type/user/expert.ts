@@ -81,6 +81,7 @@ export namespace AppType {
                 );
 
                 const app: ClassicAppPayload = {
+                    ...this.getLifetimeOptions(), // can be overwritten by base object
                     ...this.baseObject,
                     text: typeof this.appStates.text === 'string' ? this.appStates.text : '',
                     textCase: 'asTyped', // show as sent
@@ -125,13 +126,10 @@ export namespace AppType {
                     }
                 }
 
-                await this.apiClient.apps.push(this.appDefinition.name, app).catch(error => {
-                    this.adapter.log.warn(
-                        `[refreshExpertApp] Unable to update expert app "${this.appDefinition.name}": ${error}`,
-                    );
-                });
+                await this.pushApp(app, 'expert app');
 
                 refreshed = true;
+                this.scheduleKeepAlive();
             }
 
             return refreshed;

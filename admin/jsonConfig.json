@@ -246,9 +246,9 @@
                             "lg": 4,
                             "xl": 4,
                             "default": "custom",
-                            "help": "Just letters, max. 32 characters",
-                            "validator": "/^([A-Za-z]{1,32})$/.test(data.name) && !['time', 'date', 'temperature', 'humidity', 'battery'].includes(data.name) && [...globalData.customApps, ...globalData.historyApps, ...globalData.expertApps].filter(app => app.name === data.name).length === 1",
-                            "validatorErrorText": "Just letters, max. 32 characters",
+                            "help": "Letters, digits, _ and -, max. 32 characters (unique)",
+                            "validator": "/^[A-Za-z0-9_-]{1,32}$/.test(data.name) && !['time', 'date', 'temperature', 'humidity', 'battery', 'status', 'active', 'next', 'prev', 'previous', 'order'].includes(String(data.name).toLowerCase()) && [...globalData.customApps, ...globalData.historyApps, ...globalData.expertApps].filter(app => app.name === data.name).length === 1",
+                            "validatorErrorText": "Letters, digits, _ and -, max. 32 characters (unique)",
                             "validatorNoSaveOnError": true
                         },
                         {
@@ -654,9 +654,9 @@
                             "lg": 4,
                             "xl": 4,
                             "default": "history",
-                            "help": "Just letters, max. 32 characters",
-                            "validator": "/^([A-Za-z]{1,32})$/.test(data.name) && !['time', 'date', 'temperature', 'humidity', 'battery'].includes(data.name) && [...globalData.customApps, ...globalData.historyApps, ...globalData.expertApps].filter(app => app.name === data.name).length === 1",
-                            "validatorErrorText": "Just letters, max. 32 characters",
+                            "help": "Letters, digits, _ and -, max. 32 characters (unique)",
+                            "validator": "/^[A-Za-z0-9_-]{1,32}$/.test(data.name) && !['time', 'date', 'temperature', 'humidity', 'battery', 'status', 'active', 'next', 'prev', 'previous', 'order'].includes(String(data.name).toLowerCase()) && [...globalData.customApps, ...globalData.historyApps, ...globalData.expertApps].filter(app => app.name === data.name).length === 1",
+                            "validatorErrorText": "Letters, digits, _ and -, max. 32 characters (unique)",
                             "validatorNoSaveOnError": true
                         },
                         {
@@ -954,9 +954,9 @@
                             "lg": 4,
                             "xl": 4,
                             "default": "expert",
-                            "help": "Just letters, max. 32 characters",
-                            "validator": "/^([A-Za-z]{1,32})$/.test(data.name) && !['time', 'date', 'temperature', 'humidity', 'battery'].includes(data.name) && [...globalData.customApps, ...globalData.historyApps, ...globalData.expertApps].filter(app => app.name === data.name).length === 1",
-                            "validatorErrorText": "Just letters, max. 32 characters",
+                            "help": "Letters, digits, _ and -, max. 32 characters (unique)",
+                            "validator": "/^[A-Za-z0-9_-]{1,32}$/.test(data.name) && !['time', 'date', 'temperature', 'humidity', 'battery', 'status', 'active', 'next', 'prev', 'previous', 'order'].includes(String(data.name).toLowerCase()) && [...globalData.customApps, ...globalData.historyApps, ...globalData.expertApps].filter(app => app.name === data.name).length === 1",
+                            "validatorErrorText": "Letters, digits, _ and -, max. 32 characters (unique)",
                             "validatorNoSaveOnError": true
                         }
                     ]

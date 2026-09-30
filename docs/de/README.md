@@ -132,14 +132,19 @@ sendTo('awtrix-ng.0', 'audio', { rtttl: 'beep:d=4,o=5,b=120:c,e,g' }, (res) => {
 
 ## Apps
 
-**App-Namen dürfen nur Kleinbuchstaben (a-z) enthalten und müssen eindeutig sein. Keine Zahlen, keine Sonderzeichen, keine Leerzeichen.**
+**App-Namen müssen eindeutig sein und dürfen Buchstaben (A-Z, a-z), Ziffern (0-9), `_` und `-` enthalten (max. 32 Zeichen). Keine Leerzeichen oder andere Sonderzeichen.**
 
-Die folgenden App-Namen sind von den internen apps reserviert und können nicht verwendet werden: `Time`, `Date`, `Temperature`, `Humidity`, `Battery`.
+Die folgenden Namen sind von internen Apps oder dem Gerät reserviert und können nicht verwendet werden: `Time`, `Date`, `Temperature`, `Humidity`, `Battery`, `Status`, `active`, `next`, `prev`, `previous`, `order`.
 
-- Mit dem `activate`-Zustand jeder App kann diese in den Vordergrund geholt werden
-- Diese Zustände haben die Rolle `button` und erlauben nur den boolschen Wert `true` (andere Werte führen zu einer Warnung im Log)
+Jede App hat die folgenden Zustände:
 
-Jede selbst angelegte App hat einen Zustand mit der ID `apps.<name>.visible`. Wenn dieser Zustand auf `false` (falsch) gesetzt wird, wird die App vom Gerät entfernt und nicht mehr dargestellt. Dies ist nützlich, um bestimmte Apps z.B. nur tagsüber oder in bestimmten Zeiträumen darzustellen.
+- `apps.<name>.enabled` - wenn dieser Zustand auf `false` (falsch) gesetzt wird, wird die App auf dem Gerät deaktiviert und nicht mehr dargestellt. Dies ist nützlich, um bestimmte Apps z.B. nur tagsüber oder in bestimmten Zeiträumen darzustellen.
+- `apps.<name>.slot` - Position der App in der Schleife
+- `apps.<name>.activate` - holt die App in den Vordergrund. Dieser Zustand hat die Rolle `button` und erlaubt nur den boolschen Wert `true` (andere Werte führen zu einer Warnung im Log)
+- `apps.<name>.present` - `true`, wenn die App auf dem Gerät vorhanden ist (nur lesend)
+- `apps.<name>.lastError` - letzte Fehlermeldung des Gerätes beim Übertragen oder Entfernen der App (nur lesend)
+
+Ist die Option "Apps löschen, wenn die Instanz gestoppt wird" aktiviert, werden benutzerdefinierte Apps und Experten-Apps mit einer Lebensdauer übertragen und alle 5 Minuten erneut gesendet. So verschwinden diese Apps auch dann vom Gerät, wenn die Instanz nicht mehr läuft (z.B. nach einem Absturz).
 
 ### Benutzerdefinierte Apps
 

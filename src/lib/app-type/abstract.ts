@@ -1,5 +1,5 @@
 import type { AwtrixNg } from '../../awtrix-ng';
-import type { AppInfo, AwtrixClient } from 'awtrix-ng-api';
+import type { AppInfo, AwtrixClient, ClassicAppPayload } from 'awtrix-ng-api';
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace AppType {
@@ -66,6 +66,77 @@ export namespace AppType {
 
             if (!appSlotState || !appSlotState?.ack || appSlotState?.val !== this.slot) {
                 await this.adapter.setState(`apps.${appNameC}.slot`, { val: this.slot, ack: true, c: 'init' });
+            }
+
+            await this.setAppStatus(appInfo?.present ?? false);
+        }
+
+        /**
+         * Updates the status states of the app (own namespace - status of this device).
+         *
+         * @param present - app exists on the device (undefined = unchanged)
+         * @param lastError - last error message (null = no error, undefined = unchanged)
+         */
+        protected async setAppStatus(present?: boolean, lastError?: string | null): Promise<void> {
+            const appNameC = this.getNameClean();
+
+            try {
+                if (present !== undefined) {
+                    await this.adapter.setStateChangedAsync(`apps.${appNameC}.present`, { val: present, ack: true });
+                }
+                if (lastError !== undefined) {
+                    await this.adapter.setStateChangedAsync(`apps.${appNameC}.lastError`, {
+                        val: lastError,
+                        ack: true,
+                    });
+                }
+            } catch (error) {
+                this.adapter.log.debug(`[setAppStatus] Unable to update status of app "${this.getName()}": ${error}`);
+            }
+        }
+
+        /**
+         * Creates or replaces the app on the device (pushed app) and updates the status states.
+         *
+         * @param payload - app definition
+         * @param context - description for log messages
+         */
+        protected async pushApp(payload: ClassicAppPayload, context: string): Promise<boolean> {
+            const appName = this.getName();
+
+            try {
+                await this.apiClient.apps.push(appName, payload);
+                await this.setAppStatus(true, null);
+
+                return true;
+            } catch (error) {
+                this.adapter.log.warn(`[pushApp] Unable to update app "${appName}" (${context}): ${error}`);
+                await this.setAppStatus(undefined, error instanceof Error ? error.message : String(error));
+
+                return false;
+            }
+        }
+
+        /**
+         * Removes the app from the device and updates the status states.
+         *
+         * @param context - description for log messages
+         */
+        protected async removeApp(context: string): Promise<boolean> {
+            const appName = this.getName();
+
+            this.adapter.log.debug(`[removeApp] Going to remove app "${appName}" (${context})`);
+
+            try {
+                await this.apiClient.apps.delete(appName);
+                await this.setAppStatus(false, null);
+
+                return true;
+            } catch (error) {
+                this.adapter.log.warn(`[removeApp] Unable to remove app "${appName}" (${context}): ${error}`);
+                await this.setAppStatus(undefined, error instanceof Error ? error.message : String(error));
+
+                return false;
             }
         }
 
@@ -161,6 +232,55 @@ export namespace AppType {
                     role: 'level',
                     read: true,
                     write: this.isMainInstance(),
+                },
+                native: {},
+            });
+
+            await this.adapter.extendObject(`apps.${appNameC}.present`, {
+                type: 'state',
+                common: {
+                    name: {
+                        en: 'Present on device',
+                        de: 'Auf dem Gerät vorhanden',
+                        ru: 'Присутствует на устройстве',
+                        pt: 'Presente no dispositivo',
+                        nl: 'Aanwezig op apparaat',
+                        fr: "Présent sur l'appareil",
+                        it: 'Presente sul dispositivo',
+                        es: 'Presente en el dispositivo',
+                        pl: 'Obecna na urządzeniu',
+                        uk: 'Присутній на пристрої',
+                        'zh-cn': '存在于设备上',
+                    },
+                    type: 'boolean',
+                    role: 'indicator',
+                    read: true,
+                    write: false,
+                    def: false,
+                },
+                native: {},
+            });
+
+            await this.adapter.extendObject(`apps.${appNameC}.lastError`, {
+                type: 'state',
+                common: {
+                    name: {
+                        en: 'Last error',
+                        de: 'Letzter Fehler',
+                        ru: 'Последняя ошибка',
+                        pt: 'Último erro',
+                        nl: 'Laatste fout',
+                        fr: 'Dernière erreur',
+                        it: 'Ultimo errore',
+                        es: 'Último error',
+                        pl: 'Ostatni błąd',
+                        uk: 'Остання помилка',
+                        'zh-cn': '最后一个错误',
+                    },
+                    type: 'string',
+                    role: 'text',
+                    read: true,
+                    write: false,
                 },
                 native: {},
             });
