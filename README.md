@@ -56,6 +56,7 @@ Buy TC002 here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC002) or here: [u
 * (@klein0r) Failed steps when transferring data to the device (settings, apps, indicators, ...) are retried with the next refresh
 * (@klein0r) Apps which have been removed from the device (e.g. scripts) are cleaned up properly
 * (@klein0r) Apps are removed in parallel when the instance is stopped (and not at all if the device is not reachable)
+* (@klein0r) Changing `apps.<name>.slot` moves the app to the new position (other apps are shifted) - order and enabled state are managed by ioBroker
 * (@klein0r) Migrated all HTTP requests to the new library [awtrix-ng-api](https://www.npmjs.com/package/awtrix-ng-api)
 * (@klein0r) Fixed screen content download (`display.content`)
 * (@klein0r) Added additional meta information (soc and board type)

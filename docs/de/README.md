@@ -139,10 +139,12 @@ Die folgenden Namen sind von internen Apps oder dem Gerät reserviert und könne
 Jede App hat die folgenden Zustände:
 
 - `apps.<name>.enabled` - wenn dieser Zustand auf `false` (falsch) gesetzt wird, wird die App auf dem Gerät deaktiviert und nicht mehr dargestellt. Dies ist nützlich, um bestimmte Apps z.B. nur tagsüber oder in bestimmten Zeiträumen darzustellen.
-- `apps.<name>.slot` - Position der App in der Schleife
+- `apps.<name>.slot` - Position der App in der Schleife (0 = erste App). Um die Reihenfolge zu ändern, einfach die neue Position einer App setzen - alle anderen Apps werden automatisch verschoben (wie bei Drag & Drop). Die Positionen aller Apps sind immer fortlaufend nummeriert.
 - `apps.<name>.activate` - holt die App in den Vordergrund. Dieser Zustand hat die Rolle `button` und erlaubt nur den boolschen Wert `true` (andere Werte führen zu einer Warnung im Log)
 - `apps.<name>.present` - `true`, wenn die App auf dem Gerät vorhanden ist (nur lesend)
 - `apps.<name>.lastError` - letzte Fehlermeldung des Gerätes beim Übertragen oder Entfernen der App (nur lesend)
+
+Die Reihenfolge und der Aktiviert-Zustand der Apps werden von ioBroker verwaltet. Änderungen am Gerät (z.B. über die Weboberfläche) werden bei der nächsten Synchronisation überschrieben. Die Reihenfolge des Gerätes wird nur für neue Apps verwendet. Instanzen, welche die Einstellungen einer anderen Instanz verwenden, übernehmen deren Reihenfolge.
 
 Ist die Option "Apps löschen, wenn die Instanz gestoppt wird" aktiviert, werden benutzerdefinierte Apps und Experten-Apps mit einer Lebensdauer übertragen und alle 5 Minuten erneut gesendet. So verschwinden diese Apps auch dann vom Gerät, wenn die Instanz nicht mehr läuft (z.B. nach einem Absturz).
 

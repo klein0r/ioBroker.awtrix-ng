@@ -13,6 +13,7 @@ export namespace AppType {
         protected objPrefix: string;
         protected isEnabled: boolean;
         protected slot: number | null;
+        private deviceSlot: number | null;
 
         private readonly stateChangeHandler: (id: string, state: ioBroker.State | null | undefined) => Promise<void>;
         private readonly objectChangeHandler: (id: string, obj: ioBroker.Object | null | undefined) => Promise<void>;
@@ -30,6 +31,7 @@ export namespace AppType {
 
             this.isEnabled = false;
             this.slot = null;
+            this.deviceSlot = null;
 
             if (this.adapter.isMainInstance()) {
                 this.objPrefix = this.adapter.namespace;
@@ -63,14 +65,18 @@ export namespace AppType {
             );
             const appSlotState = await this.adapter.getForeignStateAsync(`${this.objPrefix}.apps.${appNameC}.slot`);
 
-            if (appInfo && appInfo.origin !== 'module') {
-                this.isEnabled = appInfo.enabled ?? true;
-                this.slot = appInfo.slot ?? null;
+            const appInfoDevice = appInfo && appInfo.origin !== 'module' ? appInfo : undefined;
+
+            // ioBroker is leading - the values of the device are just used for new apps (no state value yet)
+            if (appEnabledState && typeof appEnabledState.val === 'boolean') {
+                this.isEnabled = appEnabledState.val;
             } else {
-                this.isEnabled =
-                    appEnabledState && typeof appEnabledState?.val === 'boolean' ? !!appEnabledState.val : true;
-                this.slot = appSlotState && typeof appSlotState?.val === 'number' ? appSlotState.val : null;
+                this.isEnabled = appInfoDevice?.enabled ?? true;
             }
+
+            // Missing slots are assigned by the adapter (see AwtrixNg.normalizeAppOrder)
+            this.slot = appSlotState && typeof appSlotState.val === 'number' ? appSlotState.val : null;
+            this.deviceSlot = appInfoDevice?.slot ?? null;
 
             // Ack if changed while instance was stopped
             if (!appEnabledState || !appEnabledState?.ack || appEnabledState?.val !== this.isEnabled) {
@@ -79,10 +85,6 @@ export namespace AppType {
                     ack: true,
                     c: 'init',
                 });
-            }
-
-            if (!appSlotState || !appSlotState?.ack || appSlotState?.val !== this.slot) {
-                await this.adapter.setState(`apps.${appNameC}.slot`, { val: this.slot, ack: true, c: 'init' });
             }
 
             await this.setAppStatus(appInfo?.present ?? false);
@@ -180,6 +182,22 @@ export namespace AppType {
 
         public getSlot(): number | null {
             return this.slot;
+        }
+
+        /**
+         * Position of the app on the device (when it was initialized) - used to sort new apps
+         */
+        public getDeviceSlot(): number | null {
+            return this.deviceSlot;
+        }
+
+        /**
+         * Sets the position of the app - just called by the adapter, which keeps all slots dense (0 ... n-1)
+         *
+         * @param slot - new position
+         */
+        public setSlot(slot: number | null): void {
+            this.slot = slot;
         }
 
         public isMainInstance(): boolean {
@@ -378,6 +396,12 @@ export namespace AppType {
         }
 
         protected async stateChanged(id: string, state: ioBroker.State | null | undefined): Promise<void> {
+            // Slot changed in the main instance (moves of other apps are acknowledged) - follow the order of the main instance
+            if (id && state && !this.isMainInstance() && id === `${this.objPrefix}.apps.${this.getNameClean()}.slot`) {
+                this.adapter.scheduleAppOrderSync();
+                return;
+            }
+
             // Handle all states for user apps
             if (id && state && !state.ack) {
                 const appName = this.getName();
@@ -410,29 +434,21 @@ export namespace AppType {
                             c: `onStateChange ${this.objPrefix} (unchanged)`,
                         });
                     }
-                } else if (id === `${this.objPrefix}.apps.${appNameC}.slot` && typeof state.val === 'number') {
-                    if (state.val !== this.slot) {
-                        this.adapter.log.debug(
-                            `[onStateChange] ${appName}: Slot of app ${appName} changed to ${state.val}`,
-                        );
+                } else if (id === `${this.objPrefix}.apps.${appNameC}.slot`) {
+                    // Main instance: move app to the given position (other apps are shifted)
+                    if (typeof state.val === 'number' && Number.isFinite(state.val)) {
+                        this.adapter.log.debug(`[onStateChange] ${appName}: Moving app to position ${state.val}`);
 
-                        this.slot = state.val;
-                        await this.adapter.refreshAppOrder();
-
-                        await this.adapter.setState(idOwnNamespace, {
-                            val: state.val,
-                            ack: true,
-                            c: `onStateChange ${this.objPrefix}`,
-                        });
+                        await this.adapter.moveApp(this, state.val);
                     } else {
-                        this.adapter.log.debug(
-                            `[onStateChange] ${appName}: Slot of app "${appName}" IGNORED (not changed): ${state.val}`,
+                        this.adapter.log.warn(
+                            `[onStateChange] ${appName}: Invalid position "${state.val}" - expected a number`,
                         );
 
                         await this.adapter.setState(idOwnNamespace, {
-                            val: state.val,
+                            val: this.slot,
                             ack: true,
-                            c: `onStateChange ${this.objPrefix} (unchanged)`,
+                            c: 'invalid value',
                         });
                     }
                 }

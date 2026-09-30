@@ -95,6 +95,8 @@ export class AwtrixNg extends utils.Adapter {
     private lastUptimeSeconds: number | undefined;
     private welcomeSent: boolean;
     private resyncFailedSteps: Set<ResyncStep>;
+    private appOrderLock: Promise<void>;
+    private appOrderSyncTimeout: ioBroker.Timeout | undefined;
     private refreshStateTimeout: ioBroker.Timeout | undefined;
     private downloadScreenContentInterval: ioBroker.Interval | undefined;
 
@@ -123,6 +125,8 @@ export class AwtrixNg extends utils.Adapter {
         this.lastUptimeSeconds = undefined;
         this.welcomeSent = false;
         this.resyncFailedSteps = new Set();
+        this.appOrderLock = Promise.resolve();
+        this.appOrderSyncTimeout = undefined;
 
         this.refreshStateTimeout = undefined;
         this.downloadScreenContentInterval = undefined;
@@ -1019,7 +1023,8 @@ export class AwtrixNg extends utils.Adapter {
             }
         }
 
-        // Transfer enabled apps and slots (e.g. apps which have been disabled while the device was offline)
+        // Assign positions to new apps, remove gaps and transfer the order (ioBroker is leading)
+        await this.runAppOrderExclusive(() => this.normalizeAppOrder());
         await this.sendAppOrder();
 
         if (failedApps.length > 0) {
@@ -1039,9 +1044,125 @@ export class AwtrixNg extends utils.Adapter {
         }
     }
 
+    /**
+     * Operations on the app order are executed one after another (e.g. multiple slot changes at once)
+     *
+     * @param fn - operation
+     */
+    private async runAppOrderExclusive(fn: () => Promise<void>): Promise<void> {
+        const result = this.appOrderLock.then(fn);
+        this.appOrderLock = result.catch(() => undefined);
+
+        return result;
+    }
+
+    /**
+     * All apps sorted by their current position (apps without position at the end)
+     */
+    private getAppsSortedBySlot(): Array<AppTypeAbstract.AbstractApp> {
+        return [...this.apps].sort(
+            (a, b) =>
+                (a.getSlot() ?? Number.MAX_SAFE_INTEGER) - (b.getSlot() ?? Number.MAX_SAFE_INTEGER) ||
+                a.getName().localeCompare(b.getName()),
+        );
+    }
+
+    /**
+     * Brings the positions of all apps into a dense order (0 ... n-1). Apps without a position
+     * (new apps or first start) are appended - sorted by their position on the device.
+     */
+    private async normalizeAppOrder(): Promise<void> {
+        const appsWithSlot = this.apps.filter(a => a.getSlot() !== null);
+        const appsWithoutSlot = this.apps
+            .filter(a => a.getSlot() === null)
+            .sort(
+                (a, b) =>
+                    (a.getDeviceSlot() ?? Number.MAX_SAFE_INTEGER) - (b.getDeviceSlot() ?? Number.MAX_SAFE_INTEGER) ||
+                    a.getName().localeCompare(b.getName()),
+            );
+
+        const sorted = [
+            ...appsWithSlot.sort((a, b) => a.getSlot()! - b.getSlot()! || a.getName().localeCompare(b.getName())),
+            ...appsWithoutSlot,
+        ];
+
+        await this.applyAppSlots(sorted);
+    }
+
+    /**
+     * Sets the position of each app to its index in the given list and updates the slot states
+     *
+     * @param sorted - all apps in the new order
+     * @param movedApp - app which has been moved by the user (state is acknowledged even if unchanged)
+     */
+    private async applyAppSlots(
+        sorted: Array<AppTypeAbstract.AbstractApp>,
+        movedApp?: AppTypeAbstract.AbstractApp,
+    ): Promise<void> {
+        for (const [index, app] of sorted.entries()) {
+            const changed = app.getSlot() !== index;
+            app.setSlot(index);
+
+            if (changed || app === movedApp) {
+                await this.setState(`apps.${app.getNameClean()}.slot`, { val: index, ack: true, c: 'app order' });
+            } else {
+                await this.setStateChangedAsync(`apps.${app.getNameClean()}.slot`, { val: index, ack: true });
+            }
+        }
+    }
+
+    /**
+     * Moves the app to the given position - all other apps are shifted (main instance only)
+     *
+     * @param app - app to move
+     * @param position - new position (0 = first)
+     */
+    public async moveApp(app: AppTypeAbstract.AbstractApp, position: number): Promise<void> {
+        await this.runAppOrderExclusive(async () => {
+            const sorted = this.getAppsSortedBySlot().filter(a => a !== app);
+            const index = Math.max(0, Math.min(Math.round(position), sorted.length));
+
+            sorted.splice(index, 0, app);
+
+            await this.applyAppSlots(sorted, app);
+        });
+
+        await this.refreshAppOrder();
+    }
+
+    /**
+     * Follow the order of the main instance (other instances only) - debounced, because a move
+     * in the main instance changes the slots of multiple apps
+     */
+    public scheduleAppOrderSync(): void {
+        if (this.appOrderSyncTimeout) {
+            this.clearTimeout(this.appOrderSyncTimeout);
+        }
+
+        this.appOrderSyncTimeout = this.setTimeout(async () => {
+            this.appOrderSyncTimeout = undefined;
+
+            try {
+                await this.runAppOrderExclusive(async () => {
+                    for (const app of this.apps) {
+                        const slotState = await this.getForeignStateAsync(
+                            `${this.config.foreignSettingsInstance}.apps.${app.getNameClean()}.slot`,
+                        );
+                        app.setSlot(slotState && typeof slotState.val === 'number' ? slotState.val : null);
+                    }
+
+                    await this.normalizeAppOrder();
+                });
+
+                await this.refreshAppOrder();
+            } catch (error) {
+                this.log.warn(`[scheduleAppOrderSync] Unable to apply app order of main instance: ${error}`);
+            }
+        }, 500);
+    }
+
     private async sendAppOrder(): Promise<void> {
-        const appsEnabled = this.apps.filter(a => a.enabled());
-        appsEnabled.sort((a, b) => (a.getSlot() ?? 9999) - (b.getSlot() ?? 9999));
+        const appsEnabled = this.getAppsSortedBySlot().filter(a => a.enabled());
 
         await this.apiClient!.apps.setOrder({
             order: appsEnabled.map(a => a.getName()),
@@ -1176,6 +1297,11 @@ export class AwtrixNg extends utils.Adapter {
             if (this.downloadScreenContentInterval) {
                 this.clearInterval(this.downloadScreenContentInterval);
                 this.downloadScreenContentInterval = undefined;
+            }
+
+            if (this.appOrderSyncTimeout) {
+                this.clearTimeout(this.appOrderSyncTimeout);
+                this.appOrderSyncTimeout = undefined;
             }
 
             callback();

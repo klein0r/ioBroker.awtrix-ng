@@ -139,10 +139,12 @@ The following names are used by internal apps or the device and cannot be used: 
 Each app has the following states:
 
 - `apps.<name>.enabled` - if set to `false`, the app is disabled on the device and will not be displayed anymore. This is useful, if a certain app should only be displayed during day time or in a given time range.
-- `apps.<name>.slot` - position of the app in the loop
+- `apps.<name>.slot` - position of the app in the loop (0 = first app). To change the order, just set the new position of an app - all other apps are shifted automatically (like drag and drop). The positions of all apps are always numbered consecutively.
 - `apps.<name>.activate` - bring that app to front. This state has the role `button` and allows just the value `true` (other values will raise a warning)
 - `apps.<name>.present` - `true` if the app exists on the device (read only)
 - `apps.<name>.lastError` - last error message of the device when transferring or removing the app (read only)
+
+The order and the enabled state of the apps are managed by ioBroker. Changes made on the device (e.g. via web interface) are overwritten with the next synchronization. The order of the device is just used for new apps. Instances which use the settings of another instance follow the order of that instance.
 
 If the option "Delete apps when instance is stopped" is enabled, custom and expert apps are transferred with a lifetime and are transferred again every 5 minutes. So these apps will also disappear from the device if the instance is not running anymore (e.g. after a crash).
 
