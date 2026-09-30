@@ -53,6 +53,9 @@ Buy TC002 here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC002) or here: [u
 * (@klein0r) Custom and expert apps get a lifetime if "Delete apps when instance is stopped" is enabled (removed from device if the adapter is not running anymore)
 * (@klein0r) App names may contain digits, `_` and `-` now
 * (@klein0r) Added states `apps.<name>.present` and `apps.<name>.lastError`
+* (@klein0r) Failed steps when transferring data to the device (settings, apps, indicators, ...) are retried with the next refresh
+* (@klein0r) Apps which have been removed from the device (e.g. scripts) are cleaned up properly
+* (@klein0r) Apps are removed in parallel when the instance is stopped (and not at all if the device is not reachable)
 * (@klein0r) Migrated all HTTP requests to the new library [awtrix-ng-api](https://www.npmjs.com/package/awtrix-ng-api)
 * (@klein0r) Fixed screen content download (`display.content`)
 * (@klein0r) Added additional meta information (soc and board type)

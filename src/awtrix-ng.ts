@@ -18,10 +18,11 @@ import { AwtrixApiError, AwtrixClient, AwtrixConnectionError, isValidAppName, to
 import type { AppType as AppTypeAbstract } from './lib/app-type/abstract';
 import { AppType as AppTypeBuiltin } from './lib/app-type/builtin';
 import { AppType as AppTypeScript } from './lib/app-type/script';
-import { AppType as AppTypeUser } from './lib/app-type/user';
 import { AppType as AppTypeCustom } from './lib/app-type/user/custom';
 import { AppType as AppTypeExpert } from './lib/app-type/user/expert';
 import { AppType as AppTypeHistory } from './lib/app-type/user/history';
+
+type ResyncStep = 'settings' | 'capabilities' | 'apps' | 'indicators' | 'moodlight' | 'screenContent';
 
 type NestedObject = {
     [key: string]: any;
@@ -93,6 +94,7 @@ export class AwtrixNg extends utils.Adapter {
     private lastConnectionError: string | undefined;
     private lastUptimeSeconds: number | undefined;
     private welcomeSent: boolean;
+    private resyncFailedSteps: Set<ResyncStep>;
     private refreshStateTimeout: ioBroker.Timeout | undefined;
     private downloadScreenContentInterval: ioBroker.Interval | undefined;
 
@@ -120,6 +122,7 @@ export class AwtrixNg extends utils.Adapter {
         this.lastConnectionError = undefined;
         this.lastUptimeSeconds = undefined;
         this.welcomeSent = false;
+        this.resyncFailedSteps = new Set();
 
         this.refreshStateTimeout = undefined;
         this.downloadScreenContentInterval = undefined;
@@ -554,6 +557,7 @@ export class AwtrixNg extends utils.Adapter {
                 }
 
                 this.lastUptimeSeconds = undefined;
+                this.resyncFailedSteps.clear(); // full resync on reconnect
 
                 this.log.debug('API is offline');
             }
@@ -563,89 +567,124 @@ export class AwtrixNg extends utils.Adapter {
     /**
      * Transfers everything the device should know (settings, apps, app order, indicators, ...).
      * Called when the device comes online and when a reboot was detected (pushed apps are held in RAM only).
+     * Each step is executed on its own - failed steps are retried with the next state refresh.
+     *
+     * @param onlySteps - just execute these steps (retry of failed steps)
      */
-    private async resyncDevice(): Promise<void> {
-        try {
-            // welcome (ioBroker icon and adapter version) - just once after adapter start
-            if (!this.welcomeSent) {
-                this.apiClient!.notifications.send({
-                    durationMs: 2000,
-                    draw: [
-                        ['circle', 3, 4, 3, '#164477'], // ["circle", cx, cy, r, color]
-                        ['line', 3, 3, 3, 8, '#3399cc'], // ["line", x1, y1, x2, y2, color]
-                        ['pixel', 3, 1, '#3399cc'], // ["pixel", x, y, color]
-                        ['text', 10, 2, this.version ?? '', '#164477'], // ["text", x, y, "HI", color]
-                    ],
-                })
-                    .then(() => {
-                        this.welcomeSent = true;
-                    })
-                    .catch(error => {
-                        this.log.warn(`(welcome notification) Unable to send: ${error}`);
-                    });
+    private async resyncDevice(onlySteps?: ReadonlySet<ResyncStep>): Promise<void> {
+        if (!onlySteps) {
+            this.sendWelcomeNotification();
+        }
+
+        const steps: Array<[ResyncStep, () => Promise<unknown>]> = [
+            ['settings', () => this.refreshSettings()],
+            ['capabilities', () => this.refreshCapabilitiesLists()],
+            ['apps', () => this.createAppObjects()],
+            ['indicators', () => this.updateAllIndicatorsByStates()],
+            ['moodlight', () => this.updateMoodlightByStates()],
+            ['screenContent', () => this.initScreenContentDownload()],
+        ];
+
+        const failedSteps = new Set<ResyncStep>();
+
+        for (const [step, fn] of steps) {
+            if (onlySteps && !onlySteps.has(step)) {
+                continue;
             }
 
-            // settings
-            await this.refreshSettings();
-            await this.refreshCapabilitiesLists();
+            try {
+                await fn();
+            } catch (error) {
+                failedSteps.add(step);
+                this.log.debug(`[resyncDevice] Step "${step}" failed: ${error}`);
 
-            // apps
-            await this.createAppObjects();
-
-            // indicators
-            for (const i of [1, 2, 3] as const) {
-                await this.updateIndicatorByStates(i);
-            }
-
-            // moodlight
-            await this.updateMoodlightByStates();
-
-            if (this.config.downloadScreenContent) {
-                if (!this.downloadScreenContentInterval) {
-                    this.log.debug(
-                        `[resyncDevice] Downloading screen contents every ${this.config.downloadScreenContentInterval} seconds`,
-                    );
-
-                    const downloadInterval = Math.min(this.config.downloadScreenContentInterval, 86_400) * 1_000;
-
-                    this.downloadScreenContentInterval = this.setInterval(() => {
-                        if (this.apiClient && this.apiConnected) {
-                            this.apiClient.display
-                                .getScreen()
-                                .then(async screen => {
-                                    const { width, height, pixels } = screen;
-                                    const pixelSize = 20;
-
-                                    let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width * pixelSize}" height="${height * pixelSize}" viewBox="0 0 ${width * pixelSize} ${height * pixelSize}">`;
-
-                                    for (let y = 0; y < height; y++) {
-                                        for (let x = 0; x < width; x++) {
-                                            const color = toHexColor(pixels[y * width + x] ?? 0);
-                                            svg += `\n  <rect style="fill: ${color}; stroke: #000000; stroke-width: 2px;" `;
-                                            svg += `x="${x * pixelSize}" y="${y * pixelSize}" width="${pixelSize}" height="${pixelSize}"/>`;
-                                        }
-                                    }
-
-                                    svg += '\n</svg>';
-
-                                    await this.setState('display.content', { val: svg, ack: true });
-                                })
-                                .catch(error => {
-                                    this.log.debug(`(display/screen) received error: ${error}`);
-                                });
-                        }
-                    }, downloadInterval);
+                if (!this.apiConnected) {
+                    break; // device went offline - full resync on reconnect
                 }
-            } else {
-                await this.setState('display.content', {
-                    val: `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="160"/>`,
-                    ack: true,
-                    c: 'Feature disabled',
-                    q: 0x01,
-                });
             }
-        } catch (error) {
-            this.log.error(`[resyncDevice] Unable to refresh settings, apps or indicators: ${error}`);
+        }
+
+        if (failedSteps.size > 0) {
+            const msg = `[resyncDevice] Unable to transfer ${[...failedSteps].join(', ')} - retrying with next refresh`;
+
+            // avoid spamming the log if a step fails repeatedly
+            if (this.resyncFailedSteps.size === 0) {
+                this.log.warn(msg);
+            } else {
+                this.log.debug(msg);
+            }
+        } else if (this.resyncFailedSteps.size > 0) {
+            this.log.info('[resyncDevice] Transferred all remaining data successfully');
+        }
+
+        this.resyncFailedSteps = failedSteps;
+    }
+
+    private sendWelcomeNotification(): void {
+        // welcome (ioBroker icon and adapter version) - just once after adapter start
+        if (!this.welcomeSent) {
+            this.apiClient!.notifications.send({
+                durationMs: 2000,
+                draw: [
+                    ['circle', 3, 4, 3, '#164477'], // ["circle", cx, cy, r, color]
+                    ['line', 3, 3, 3, 8, '#3399cc'], // ["line", x1, y1, x2, y2, color]
+                    ['pixel', 3, 1, '#3399cc'], // ["pixel", x, y, color]
+                    ['text', 10, 2, this.version ?? '', '#164477'], // ["text", x, y, "HI", color]
+                ],
+            })
+                .then(() => {
+                    this.welcomeSent = true;
+                })
+                .catch(error => {
+                    this.log.warn(`(welcome notification) Unable to send: ${error}`);
+                });
+        }
+    }
+
+    private async initScreenContentDownload(): Promise<void> {
+        if (this.config.downloadScreenContent) {
+            if (!this.downloadScreenContentInterval) {
+                this.log.debug(
+                    `[initScreenContentDownload] Downloading screen contents every ${this.config.downloadScreenContentInterval} seconds`,
+                );
+
+                const downloadInterval = Math.min(this.config.downloadScreenContentInterval, 86_400) * 1_000;
+
+                this.downloadScreenContentInterval = this.setInterval(() => {
+                    if (this.apiClient && this.apiConnected) {
+                        this.apiClient.display
+                            .getScreen()
+                            .then(async screen => {
+                                const { width, height, pixels } = screen;
+                                const pixelSize = 20;
+
+                                let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width * pixelSize}" height="${height * pixelSize}" viewBox="0 0 ${width * pixelSize} ${height * pixelSize}">`;
+
+                                for (let y = 0; y < height; y++) {
+                                    for (let x = 0; x < width; x++) {
+                                        const color = toHexColor(pixels[y * width + x] ?? 0);
+                                        svg += `\n  <rect style="fill: ${color}; stroke: #000000; stroke-width: 2px;" `;
+                                        svg += `x="${x * pixelSize}" y="${y * pixelSize}" width="${pixelSize}" height="${pixelSize}"/>`;
+                                    }
+                                }
+
+                                svg += '\n</svg>';
+
+                                await this.setState('display.content', { val: svg, ack: true });
+                            })
+                            .catch(error => {
+                                this.log.debug(`(display/screen) received error: ${error}`);
+                            });
+                    }
+                }, downloadInterval);
+            }
+        } else {
+            await this.setState('display.content', {
+                val: `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="160"/>`,
+                ack: true,
+                c: 'Feature disabled',
+                q: 0x01,
+            });
         }
     }
 
@@ -666,6 +705,8 @@ export class AwtrixNg extends utils.Adapter {
                 if (rebootDetected) {
                     this.log.info('Device was rebooted - transferring apps and settings again');
                     await this.resyncDevice();
+                } else if (this.apiConnected && this.resyncFailedSteps.size > 0) {
+                    await this.resyncDevice(new Set(this.resyncFailedSteps));
                 } else {
                     await this.setApiConnected(true);
                 }
@@ -775,7 +816,7 @@ export class AwtrixNg extends utils.Adapter {
 
             this.log.debug(`[refreshSettings] Missing setting objects for keys: ${JSON.stringify(unknownSettings)}`);
         } catch (error) {
-            this.log.warn(`(settings) Received error: ${error}`);
+            this.log.debug(`(settings) Received error: ${error}`);
             throw error;
         }
     }
@@ -841,6 +882,20 @@ export class AwtrixNg extends utils.Adapter {
         const builtinApps = content.filter(a => a.origin === 'builtin').map(a => a.name);
         const scriptApps = content.filter(a => a.origin === 'script').map(a => a.name);
 
+        // Remove builtin / script apps which are not present on the device anymore (e.g. deleted script)
+        for (const app of [...this.apps]) {
+            const vanished =
+                (app instanceof AppTypeBuiltin.Builtin && !builtinApps.includes(app.getName())) ||
+                (app instanceof AppTypeScript.Script && !scriptApps.includes(app.getName()));
+
+            if (vanished) {
+                this.log.debug(`[createAppObjects] app "${app.getName()}" is not present on the device anymore`);
+
+                await app.unloadAsync(false);
+                this.apps.splice(this.apps.indexOf(app), 1);
+            }
+        }
+
         // Init all apps
         for (const builtinAppName of builtinApps) {
             if (!this.findAppWithName(builtinAppName)) {
@@ -897,6 +952,7 @@ export class AwtrixNg extends utils.Adapter {
 
         const appsAll = [];
         const appsKeep = [];
+        const failedApps: Array<string> = [];
 
         // Collect all existing apps from objects
         const existingChannels = await this.getChannelsOfAsync('apps');
@@ -926,27 +982,32 @@ export class AwtrixNg extends utils.Adapter {
 
                 appsKeep.push(`apps.${app.getNameClean()}`);
 
-                await this.extendObject(`apps.${app.getNameClean()}`, {
-                    type: 'channel',
-                    common: {
-                        name: `App ${name}`,
-                        desc: `${app.getDescription()} app`,
-                        icon: app.getIconForObjectTree(),
-                    },
-                    native: {
-                        isBuiltinApp,
-                        isScriptApp,
-                        isCustomApp,
-                        isHistoryApp,
-                        isExpertApp,
-                    },
-                });
+                try {
+                    await this.extendObject(`apps.${app.getNameClean()}`, {
+                        type: 'channel',
+                        common: {
+                            name: `App ${name}`,
+                            desc: `${app.getDescription()} app`,
+                            icon: app.getIconForObjectTree(),
+                        },
+                        native: {
+                            isBuiltinApp,
+                            isScriptApp,
+                            isCustomApp,
+                            isHistoryApp,
+                            isExpertApp,
+                        },
+                    });
 
-                const appInfo = content.find(a => a.name === app.getName());
+                    const appInfo = content.find(a => a.name === app.getName());
 
-                await app.createObjects();
-                await app.init(appInfo);
-                await app.refresh();
+                    await app.createObjects();
+                    await app.init(appInfo);
+                    await app.refresh();
+                } catch (error) {
+                    failedApps.push(name);
+                    this.log.warn(`[createAppObjects] Unable to initialize app "${name}": ${error}`);
+                }
             }
         }
 
@@ -959,7 +1020,11 @@ export class AwtrixNg extends utils.Adapter {
         }
 
         // Transfer enabled apps and slots (e.g. apps which have been disabled while the device was offline)
-        await this.refreshAppOrder();
+        await this.sendAppOrder();
+
+        if (failedApps.length > 0) {
+            throw new Error(`Unable to initialize apps: ${failedApps.join(', ')}`);
+        }
 
         return appsKeep.length;
     }
@@ -967,16 +1032,36 @@ export class AwtrixNg extends utils.Adapter {
     public async refreshAppOrder(): Promise<void> {
         if (this.apiClient && this.apiConnected) {
             try {
-                const appsEnabled = this.apps.filter(a => a.enabled());
-                appsEnabled.sort((a, b) => (a.getSlot() ?? 9999) - (b.getSlot() ?? 9999));
-
-                await this.apiClient.apps.setOrder({
-                    order: appsEnabled.map(a => a.getName()),
-                    disabled: this.apps.filter(a => !a.enabled()).map(a => a.getName()),
-                });
+                await this.sendAppOrder();
             } catch (err) {
                 this.log.error(`[refreshAppOrder] Failed to change app order: ${err}`);
             }
+        }
+    }
+
+    private async sendAppOrder(): Promise<void> {
+        const appsEnabled = this.apps.filter(a => a.enabled());
+        appsEnabled.sort((a, b) => (a.getSlot() ?? 9999) - (b.getSlot() ?? 9999));
+
+        await this.apiClient!.apps.setOrder({
+            order: appsEnabled.map(a => a.getName()),
+            disabled: this.apps.filter(a => !a.enabled()).map(a => a.getName()),
+        });
+    }
+
+    private async updateAllIndicatorsByStates(): Promise<void> {
+        const errors: Array<string> = [];
+
+        for (const i of [1, 2, 3] as const) {
+            try {
+                await this.updateIndicatorByStates(i);
+            } catch (error) {
+                errors.push(`indicator ${i}: ${this.errorToString(error)}`);
+            }
+        }
+
+        if (errors.length > 0) {
+            throw new Error(errors.join(', '));
         }
     }
 
@@ -1071,11 +1156,15 @@ export class AwtrixNg extends utils.Adapter {
 
     private async onUnload(callback: () => void): Promise<void> {
         try {
-            for (const app of this.apps) {
-                if (app instanceof AppTypeUser.UserApp) {
-                    await app.unloadAsync();
-                }
+            // Just try to remove apps if the device is reachable (avoids timeouts for each app)
+            const removeFromDevice = this.apiConnected;
+            if (!removeFromDevice && this.config.removeAppsOnStop) {
+                this.log.info('[onUnload] Device is not reachable - unable to remove apps');
             }
+
+            // Parallel - the instance has limited time to stop
+            await Promise.allSettled(this.apps.map(app => app.unloadAsync(removeFromDevice)));
+            this.apps = [];
 
             await this.setApiConnected(false);
 

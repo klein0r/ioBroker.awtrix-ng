@@ -412,13 +412,14 @@ export namespace AppType {
             }
         }
 
-        public override async unloadAsync(): Promise<void> {
+        public override async unloadAsync(removeFromDevice: boolean): Promise<void> {
             if (this.cooldownTimeout) {
                 this.adapter.log.debug(`clearing custom app cooldown timeout for "${this.getName()}"`);
                 this.adapter.clearTimeout(this.cooldownTimeout);
+                this.cooldownTimeout = undefined;
             }
 
-            await super.unloadAsync();
+            await super.unloadAsync(removeFromDevice);
         }
     }
 }

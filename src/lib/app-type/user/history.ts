@@ -243,13 +243,14 @@ export namespace AppType {
             return false;
         }
 
-        public override async unloadAsync(): Promise<void> {
+        public override async unloadAsync(removeFromDevice: boolean): Promise<void> {
             if (this.refreshTimeout) {
                 this.adapter.log.debug(`clearing history app timeout for "${this.getName()}"`);
                 this.adapter.clearTimeout(this.refreshTimeout);
+                this.refreshTimeout = undefined;
             }
 
-            await super.unloadAsync();
+            await super.unloadAsync(removeFromDevice);
         }
     }
 }

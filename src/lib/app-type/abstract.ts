@@ -14,6 +14,9 @@ export namespace AppType {
         protected isEnabled: boolean;
         protected slot: number | null;
 
+        private readonly stateChangeHandler: (id: string, state: ioBroker.State | null | undefined) => Promise<void>;
+        private readonly objectChangeHandler: (id: string, obj: ioBroker.Object | null | undefined) => Promise<void>;
+
         public constructor(apiClient: AwtrixClient, adapter: AwtrixNg, name: string) {
             this.apiClient = apiClient;
             this.adapter = adapter;
@@ -34,8 +37,22 @@ export namespace AppType {
                 this.objPrefix = this.adapter.config.foreignSettingsInstance;
             }
 
-            adapter.on('stateChange', this.onStateChange.bind(this));
-            adapter.on('objectChange', this.onObjectChange.bind(this));
+            this.stateChangeHandler = this.onStateChange.bind(this);
+            this.objectChangeHandler = this.onObjectChange.bind(this);
+
+            adapter.on('stateChange', this.stateChangeHandler);
+            adapter.on('objectChange', this.objectChangeHandler);
+        }
+
+        /**
+         * Stops all timers and event listeners of this app (e.g. instance stopped or app removed from device).
+         *
+         * @param removeFromDevice - remove the app from the device (if configured and supported by the app type)
+         */
+        // eslint-disable-next-line @typescript-eslint/require-await, @typescript-eslint/no-unused-vars
+        public async unloadAsync(removeFromDevice: boolean): Promise<void> {
+            this.adapter.removeListener('stateChange', this.stateChangeHandler);
+            this.adapter.removeListener('objectChange', this.objectChangeHandler);
         }
 
         public async init(appInfo?: AppInfo): Promise<void> {

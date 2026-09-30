@@ -483,6 +483,15 @@ export namespace AppType {
             }
         }
 
+        public override async unloadAsync(removeFromDevice: boolean): Promise<void> {
+            if (this.refreshTimeout) {
+                this.adapter.clearTimeout(this.refreshTimeout);
+                this.refreshTimeout = undefined;
+            }
+
+            await super.unloadAsync(removeFromDevice);
+        }
+
         protected override async stateChanged(id: string, state: ioBroker.State | null | undefined): Promise<void> {
             await super.stateChanged(id, state);
 

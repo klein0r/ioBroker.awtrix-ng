@@ -69,14 +69,16 @@ export namespace AppType {
             }
         }
 
-        public async unloadAsync(): Promise<void> {
+        public override async unloadAsync(removeFromDevice: boolean): Promise<void> {
             this.clearKeepAlive();
 
-            if (this.adapter.config.removeAppsOnStop) {
+            if (removeFromDevice && this.adapter.config.removeAppsOnStop) {
                 this.adapter.log.info(`[onUnload] Deleting app on awtrix light with name "${this.definition.name}"`);
 
                 await this.removeApp('instance stopped');
             }
+
+            await super.unloadAsync(removeFromDevice);
         }
     }
 }
