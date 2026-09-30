@@ -41,8 +41,7 @@ Buy TC002 here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC002) or here: [u
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-
-### **WORK IN PROGRESS**
+### 0.2.0 (2026-09-30)
 
 * (@klein0r) Port of the device is configurable now (default: 80)
 * (@klein0r) Apps are transferred again when a reboot of the device has been detected
@@ -87,12 +86,6 @@ Buy TC002 here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC002) or here: [u
 
 * (@klein0r) Added more settings
 * (@klein0r) Fixed Blockly code generation
-
-### 0.0.7 (2026-08-05)
-
-* (@klein0r) Removed device update state and notification
-* (@klein0r) Fixed rtttl endpoint
-* (@klein0r) Improved error handling
 
 [Older changelogs can be found there](CHANGELOG_OLD.md)
 

@@ -124,8 +124,8 @@ var AppType;
       if (this.appDefinition.noScroll) {
         app.scroll = { mode: "static" };
       } else {
-        if (this.appDefinition.scrollSpeed > 0 && this.appDefinition.scrollSpeed <= 100) {
-          app.scroll = { mode: "wrap", speed: this.appDefinition.scrollSpeed, whenFits: "scroll" };
+        if (this.appDefinition.scrollSpeed > 0) {
+          app.scroll = { speed: this.appDefinition.scrollSpeed };
         }
         if (this.appDefinition.repeat > 0) {
           app.repeat = this.appDefinition.repeat;
@@ -134,8 +134,8 @@ var AppType;
       if (this.appDefinition.icon) {
         app.icon = this.appDefinition.icon;
       }
-      if (this.appDefinition.durationMs > 0) {
-        app.durationMs = this.appDefinition.durationMs;
+      if (this.appDefinition.duration > 0) {
+        app.durationMs = this.appDefinition.duration * 1e3;
       }
       if (typeof val === "number") {
         if (this.appDefinition.thresholdLtActive && val < this.appDefinition.thresholdLtValue) {
@@ -335,12 +335,13 @@ var AppType;
         this.cooldownTimeout = void 0;
       }
     }
-    async unloadAsync() {
+    async unloadAsync(removeFromDevice) {
       if (this.cooldownTimeout) {
         this.adapter.log.debug(`clearing custom app cooldown timeout for "${this.getName()}"`);
         this.adapter.clearTimeout(this.cooldownTimeout);
+        this.cooldownTimeout = void 0;
       }
-      await super.unloadAsync();
+      await super.unloadAsync(removeFromDevice);
     }
   }
   AppType2.Custom = Custom;

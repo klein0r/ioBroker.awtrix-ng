@@ -175,8 +175,8 @@ var AppType;
       );
       if (graphData.length > 0) {
         const moreOptions = {};
-        if (this.appDefinition.durationMs > 0) {
-          moreOptions.durationMs = this.appDefinition.durationMs;
+        if (this.appDefinition.duration > 0) {
+          moreOptions.durationMs = this.appDefinition.duration * 1e3;
         }
         if (this.appDefinition.repeat > 0) {
           moreOptions.repeat = this.appDefinition.repeat;
@@ -203,12 +203,13 @@ var AppType;
       await this.removeApp("no history data");
       return false;
     }
-    async unloadAsync() {
+    async unloadAsync(removeFromDevice) {
       if (this.refreshTimeout) {
         this.adapter.log.debug(`clearing history app timeout for "${this.getName()}"`);
         this.adapter.clearTimeout(this.refreshTimeout);
+        this.refreshTimeout = void 0;
       }
-      await super.unloadAsync();
+      await super.unloadAsync(removeFromDevice);
     }
   }
   AppType2.History = History;

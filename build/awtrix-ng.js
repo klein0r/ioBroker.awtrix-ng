@@ -33,12 +33,57 @@ __export(awtrix_ng_exports, {
 module.exports = __toCommonJS(awtrix_ng_exports);
 var utils = __toESM(require("@iobroker/adapter-core"));
 var import_awtrix_ng_api = require("awtrix-ng-api");
+var import_radio = require("./lib/radio");
 var import_builtin = require("./lib/app-type/builtin");
 var import_script = require("./lib/app-type/script");
-var import_user = require("./lib/app-type/user");
 var import_custom = require("./lib/app-type/user/custom");
 var import_expert = require("./lib/app-type/user/expert");
 var import_history = require("./lib/app-type/user/history");
+const DEFAULT_CAPABILITIES = {
+  loaded: false,
+  effects: [
+    "BrickBreaker",
+    "Checkerboard",
+    "ColorWaves",
+    "Fade",
+    "Fireworks",
+    "LookingEyes",
+    "Matrix",
+    "MovingLine",
+    "Pacifica",
+    "PingPong",
+    "Plasma",
+    "PlasmaCloud",
+    "Radar",
+    "Ripple",
+    "Snake",
+    "SwirlIn",
+    "SwirlOut",
+    "TheaterChase",
+    "TwinklingStars"
+  ],
+  overlays: ["rain", "snow", "drizzle", "storm", "thunder", "frost"],
+  palettes: ["Cloud", "Lava", "Ocean", "Forest", "Stripe", "Party", "Heat", "Rainbow"],
+  paletteEffects: [
+    "Checkerboard",
+    "ColorWaves",
+    "Fade",
+    "Fireworks",
+    "MovingLine",
+    "Pacifica",
+    "Plasma",
+    "PlasmaCloud",
+    "Radar",
+    "Ripple",
+    "Snake",
+    "SwirlIn",
+    "SwirlOut",
+    "TheaterChase",
+    "TwinklingStars"
+  ],
+  transitions: [],
+  radio: false
+};
 class AwtrixNg extends utils.Adapter {
   _isMainInstance;
   currentVersion;
@@ -49,13 +94,14 @@ class AwtrixNg extends utils.Adapter {
   lastConnectionError;
   lastUptimeSeconds;
   welcomeSent;
+  resyncFailedSteps;
+  appOrderLock;
+  appOrderSyncTimeout;
+  radio;
+  capabilities;
   refreshStateTimeout;
   downloadScreenContentInterval;
   apps;
-  backgroundEffects;
-  weatherOverlays;
-  palettes;
-  paletteEffects;
   constructor(options = {}) {
     super({
       ...options,
@@ -71,49 +117,14 @@ class AwtrixNg extends utils.Adapter {
     this.lastConnectionError = void 0;
     this.lastUptimeSeconds = void 0;
     this.welcomeSent = false;
+    this.resyncFailedSteps = /* @__PURE__ */ new Set();
+    this.appOrderLock = Promise.resolve();
+    this.appOrderSyncTimeout = void 0;
+    this.radio = null;
+    this.capabilities = { ...DEFAULT_CAPABILITIES };
     this.refreshStateTimeout = void 0;
     this.downloadScreenContentInterval = void 0;
     this.apps = [];
-    this.backgroundEffects = [
-      "BrickBreaker",
-      "Checkerboard",
-      "ColorWaves",
-      "Fade",
-      "Fireworks",
-      "LookingEyes",
-      "Matrix",
-      "MovingLine",
-      "Pacifica",
-      "PingPong",
-      "Plasma",
-      "PlasmaCloud",
-      "Radar",
-      "Ripple",
-      "Snake",
-      "SwirlIn",
-      "SwirlOut",
-      "TheaterChase",
-      "TwinklingStars"
-    ];
-    this.weatherOverlays = ["rain", "snow", "drizzle", "storm", "thunder", "frost"];
-    this.palettes = ["Cloud", "Lava", "Ocean", "Forest", "Stripe", "Party", "Heat", "Rainbow"];
-    this.paletteEffects = [
-      "Checkerboard",
-      "ColorWaves",
-      "Fade",
-      "Fireworks",
-      "MovingLine",
-      "Pacifica",
-      "Plasma",
-      "PlasmaCloud",
-      "Radar",
-      "Ripple",
-      "Snake",
-      "SwirlIn",
-      "SwirlOut",
-      "TheaterChase",
-      "TwinklingStars"
-    ];
     this.on("ready", this.onReady.bind(this));
     this.on("stateChange", this.onStateChange.bind(this));
     this.on("objectChange", this.onObjectChange.bind(this));
@@ -139,6 +150,7 @@ class AwtrixNg extends utils.Adapter {
       return;
     }
     this.log.info(`Starting - connecting to ${this.apiClient.baseUrl}/`);
+    this.radio = new import_radio.Radio(this, this.apiClient);
     if (this.config.foreignSettingsInstance !== "" && this.config.foreignSettingsInstance !== this.namespace) {
       this._isMainInstance = false;
       await this.subscribeForeignObjectsAsync(`system.adapter.${this.config.foreignSettingsInstance}`);
@@ -226,6 +238,10 @@ class AwtrixNg extends utils.Adapter {
           }).catch((error) => {
             this.log.warn(`(moodlight) Unable to execute action: ${error}`);
           });
+        } else if (idNoNamespace.startsWith("audio.radio.")) {
+          this.radio.onStateChange(idNoNamespace, state).catch((error) => {
+            this.log.warn(`(radio) Unable to execute action: ${error}`);
+          });
         } else if (idNoNamespace === "device.reboot") {
           this.apiClient.device.reboot().then(async () => {
             this.log.info("rebooting device");
@@ -283,13 +299,13 @@ class AwtrixNg extends utils.Adapter {
     }
   }
   getWeatherOverlays() {
-    return ["none", ...this.weatherOverlays];
+    return ["none", ...this.capabilities.overlays];
   }
   getPalettes() {
-    return ["none", ...this.palettes];
+    return ["none", ...this.capabilities.palettes];
   }
   getPaletteEffects() {
-    return ["none", ...this.paletteEffects];
+    return ["none", ...this.capabilities.paletteEffects];
   }
   onMessage(obj) {
     this.log.debug(`[onMessage] received command "${obj.command}" with message: ${JSON.stringify(obj.message)}`);
@@ -298,7 +314,7 @@ class AwtrixNg extends utils.Adapter {
         this.sendTo(
           obj.from,
           obj.command,
-          this.backgroundEffects.map((v) => ({ value: v, label: v })),
+          this.capabilities.effects.map((v) => ({ value: v, label: v })),
           obj.callback
         );
       } else if (obj.command === "notification" && typeof obj.message === "object") {
@@ -407,6 +423,7 @@ class AwtrixNg extends utils.Adapter {
           this.downloadScreenContentInterval = void 0;
         }
         this.lastUptimeSeconds = void 0;
+        this.resyncFailedSteps.clear();
         this.log.debug("API is offline");
       }
     }
@@ -414,75 +431,109 @@ class AwtrixNg extends utils.Adapter {
   /**
    * Transfers everything the device should know (settings, apps, app order, indicators, ...).
    * Called when the device comes online and when a reboot was detected (pushed apps are held in RAM only).
+   * Each step is executed on its own - failed steps are retried with the next state refresh.
+   *
+   * @param onlySteps - just execute these steps (retry of failed steps)
    */
-  async resyncDevice() {
-    var _a;
-    try {
-      if (!this.welcomeSent) {
-        this.apiClient.notifications.send({
-          durationMs: 2e3,
-          draw: [
-            ["circle", 3, 4, 3, "#164477"],
-            // ["circle", cx, cy, r, color]
-            ["line", 3, 3, 3, 8, "#3399cc"],
-            // ["line", x1, y1, x2, y2, color]
-            ["pixel", 3, 1, "#3399cc"],
-            // ["pixel", x, y, color]
-            ["text", 10, 2, (_a = this.version) != null ? _a : "", "#164477"]
-            // ["text", x, y, "HI", color]
-          ]
-        }).then(() => {
-          this.welcomeSent = true;
-        }).catch((error) => {
-          this.log.warn(`(welcome notification) Unable to send: ${error}`);
-        });
+  async resyncDevice(onlySteps) {
+    if (!onlySteps) {
+      this.sendWelcomeNotification();
+    }
+    const steps = [
+      ["settings", () => this.refreshSettings()],
+      ["capabilities", () => this.refreshCapabilities()],
+      ["radio", () => this.refreshRadio(true)],
+      ["apps", () => this.createAppObjects()],
+      ["indicators", () => this.updateAllIndicatorsByStates()],
+      ["moodlight", () => this.updateMoodlightByStates()],
+      ["screenContent", () => this.initScreenContentDownload()]
+    ];
+    const failedSteps = /* @__PURE__ */ new Set();
+    for (const [step, fn] of steps) {
+      if (onlySteps && !onlySteps.has(step)) {
+        continue;
       }
-      await this.refreshSettings();
-      await this.refreshCapabilitiesLists();
-      await this.createAppObjects();
-      for (const i of [1, 2, 3]) {
-        await this.updateIndicatorByStates(i);
-      }
-      await this.updateMoodlightByStates();
-      if (this.config.downloadScreenContent) {
-        if (!this.downloadScreenContentInterval) {
-          this.log.debug(
-            `[resyncDevice] Downloading screen contents every ${this.config.downloadScreenContentInterval} seconds`
-          );
-          const downloadInterval = Math.min(this.config.downloadScreenContentInterval, 86400) * 1e3;
-          this.downloadScreenContentInterval = this.setInterval(() => {
-            if (this.apiClient && this.apiConnected) {
-              this.apiClient.display.getScreen().then(async (screen) => {
-                var _a2;
-                const { width, height, pixels } = screen;
-                const pixelSize = 20;
-                let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width * pixelSize}" height="${height * pixelSize}" viewBox="0 0 ${width * pixelSize} ${height * pixelSize}">`;
-                for (let y = 0; y < height; y++) {
-                  for (let x = 0; x < width; x++) {
-                    const color = (0, import_awtrix_ng_api.toHexColor)((_a2 = pixels[y * width + x]) != null ? _a2 : 0);
-                    svg += `
-  <rect style="fill: ${color}; stroke: #000000; stroke-width: 2px;" `;
-                    svg += `x="${x * pixelSize}" y="${y * pixelSize}" width="${pixelSize}" height="${pixelSize}"/>`;
-                  }
-                }
-                svg += "\n</svg>";
-                await this.setState("display.content", { val: svg, ack: true });
-              }).catch((error) => {
-                this.log.debug(`(display/screen) received error: ${error}`);
-              });
-            }
-          }, downloadInterval);
+      try {
+        await fn();
+      } catch (error) {
+        failedSteps.add(step);
+        this.log.debug(`[resyncDevice] Step "${step}" failed: ${error}`);
+        if (!this.apiConnected) {
+          break;
         }
-      } else {
-        await this.setState("display.content", {
-          val: `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="160"/>`,
-          ack: true,
-          c: "Feature disabled",
-          q: 1
-        });
       }
-    } catch (error) {
-      this.log.error(`[resyncDevice] Unable to refresh settings, apps or indicators: ${error}`);
+    }
+    if (failedSteps.size > 0) {
+      const msg = `[resyncDevice] Unable to transfer ${[...failedSteps].join(", ")} - retrying with next refresh`;
+      if (this.resyncFailedSteps.size === 0) {
+        this.log.warn(msg);
+      } else {
+        this.log.debug(msg);
+      }
+    } else if (this.resyncFailedSteps.size > 0) {
+      this.log.info("[resyncDevice] Transferred all remaining data successfully");
+    }
+    this.resyncFailedSteps = failedSteps;
+  }
+  sendWelcomeNotification() {
+    var _a;
+    if (!this.welcomeSent) {
+      this.apiClient.notifications.send({
+        durationMs: 2e3,
+        draw: [
+          ["circle", 3, 4, 3, "#164477"],
+          // ["circle", cx, cy, r, color]
+          ["line", 3, 3, 3, 8, "#3399cc"],
+          // ["line", x1, y1, x2, y2, color]
+          ["pixel", 3, 1, "#3399cc"],
+          // ["pixel", x, y, color]
+          ["text", 10, 2, (_a = this.version) != null ? _a : "", "#164477"]
+          // ["text", x, y, "HI", color]
+        ]
+      }).then(() => {
+        this.welcomeSent = true;
+      }).catch((error) => {
+        this.log.warn(`(welcome notification) Unable to send: ${error}`);
+      });
+    }
+  }
+  async initScreenContentDownload() {
+    if (this.config.downloadScreenContent) {
+      if (!this.downloadScreenContentInterval) {
+        this.log.debug(
+          `[initScreenContentDownload] Downloading screen contents every ${this.config.downloadScreenContentInterval} seconds`
+        );
+        const downloadInterval = Math.min(Math.max(this.config.downloadScreenContentInterval, 5), 86400) * 1e3;
+        this.downloadScreenContentInterval = this.setInterval(() => {
+          if (this.apiClient && this.apiConnected) {
+            this.apiClient.display.getScreen().then(async (screen) => {
+              var _a;
+              const { width, height, pixels } = screen;
+              const pixelSize = 20;
+              let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width * pixelSize}" height="${height * pixelSize}" viewBox="0 0 ${width * pixelSize} ${height * pixelSize}">`;
+              for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                  const color = (0, import_awtrix_ng_api.toHexColor)((_a = pixels[y * width + x]) != null ? _a : 0);
+                  svg += `
+  <rect style="fill: ${color}; stroke: #000000; stroke-width: 2px;" `;
+                  svg += `x="${x * pixelSize}" y="${y * pixelSize}" width="${pixelSize}" height="${pixelSize}"/>`;
+                }
+              }
+              svg += "\n</svg>";
+              await this.setState("display.content", { val: svg, ack: true });
+            }).catch((error) => {
+              this.log.debug(`(display/screen) received error: ${error}`);
+            });
+          }
+        }, downloadInterval);
+      }
+    } else {
+      await this.setState("display.content", {
+        val: `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="160"/>`,
+        ack: true,
+        c: "Feature disabled",
+        q: 1
+      });
     }
   }
   refreshState() {
@@ -495,6 +546,8 @@ class AwtrixNg extends utils.Adapter {
       if (rebootDetected) {
         this.log.info("Device was rebooted - transferring apps and settings again");
         await this.resyncDevice();
+      } else if (this.apiConnected && this.resyncFailedSteps.size > 0) {
+        await this.resyncDevice(new Set(this.resyncFailedSteps));
       } else {
         await this.setApiConnected(true);
       }
@@ -518,6 +571,11 @@ class AwtrixNg extends utils.Adapter {
       await this.setStateChangedAsync("device.wifiSignal", { val: content.wifiRssi, ack: true });
       await this.setStateChangedAsync("device.freeRAM", { val: content.freeHeapBytes, ack: true });
       await this.setStateChangedAsync("device.uptime", { val: content.uptimeSeconds, ack: true });
+      if (this.capabilities.radio && !this.resyncFailedSteps.has("radio")) {
+        await this.radio.refresh(false).catch((error) => {
+          this.log.debug(`[refreshState] Unable to refresh radio: ${error}`);
+        });
+      }
     }).catch((error) => {
       this.currentVersion = void 0;
       this.logRequestError(error);
@@ -578,20 +636,43 @@ class AwtrixNg extends utils.Adapter {
       }
       this.log.debug(`[refreshSettings] Missing setting objects for keys: ${JSON.stringify(unknownSettings)}`);
     } catch (error) {
-      this.log.warn(`(settings) Received error: ${error}`);
+      this.log.debug(`(settings) Received error: ${error}`);
       throw error;
     }
   }
-  async refreshCapabilitiesLists() {
+  async refreshCapabilities() {
+    var _a, _b, _c, _d, _e, _f;
     const capabilities = await this.apiClient.device.capabilities();
-    this.log.debug(`[refreshCapabilitiesLists] Existing capabilities "${JSON.stringify(capabilities)}"`);
-    this.backgroundEffects = capabilities.effects;
-    this.weatherOverlays = capabilities.overlays;
+    this.log.debug(`[refreshCapabilities] Existing capabilities "${JSON.stringify(capabilities)}"`);
+    this.capabilities = {
+      loaded: true,
+      effects: (_a = capabilities.effects) != null ? _a : DEFAULT_CAPABILITIES.effects,
+      overlays: (_b = capabilities.overlays) != null ? _b : DEFAULT_CAPABILITIES.overlays,
+      palettes: (_c = capabilities.palettes) != null ? _c : DEFAULT_CAPABILITIES.palettes,
+      paletteEffects: (_d = capabilities.paletteEffects) != null ? _d : DEFAULT_CAPABILITIES.paletteEffects,
+      transitions: (_e = capabilities.transitions) != null ? _e : DEFAULT_CAPABILITIES.transitions,
+      radio: ((_f = capabilities.audio) == null ? void 0 : _f.radio) === true
+    };
     const states = {};
-    for (const transition of capabilities.transitions) {
+    for (const transition of this.capabilities.transitions) {
       states[transition] = transition;
     }
     await this.extendObject("settings.apps.transitionEffect", { common: { states } });
+  }
+  /**
+   * Radio stations and playback state (just if supported by the device - e.g. TC002)
+   *
+   * @param forceObjectSync - create / check objects even if the station list is unchanged
+   */
+  async refreshRadio(forceObjectSync) {
+    if (!this.capabilities.loaded) {
+      throw new Error("capabilities of device unknown");
+    }
+    if (this.capabilities.radio) {
+      await this.radio.refresh(forceObjectSync);
+    } else {
+      await this.radio.remove();
+    }
   }
   isValidUserAppName(name) {
     const reservedNames = [
@@ -629,6 +710,14 @@ class AwtrixNg extends utils.Adapter {
     }
     const builtinApps = content.filter((a) => a.origin === "builtin").map((a) => a.name);
     const scriptApps = content.filter((a) => a.origin === "script").map((a) => a.name);
+    for (const app of [...this.apps]) {
+      const vanished = app instanceof import_builtin.AppType.Builtin && !builtinApps.includes(app.getName()) || app instanceof import_script.AppType.Script && !scriptApps.includes(app.getName());
+      if (vanished) {
+        this.log.debug(`[createAppObjects] app "${app.getName()}" is not present on the device anymore`);
+        await app.unloadAsync(false);
+        this.apps.splice(this.apps.indexOf(app), 1);
+      }
+    }
     for (const builtinAppName of builtinApps) {
       if (!this.findAppWithName(builtinAppName)) {
         this.apps.push(new import_builtin.AppType.Builtin(apiClient, this, builtinAppName));
@@ -678,6 +767,7 @@ class AwtrixNg extends utils.Adapter {
     const allApps = [...builtinApps, ...scriptApps, ...customApps, ...historyApps, ...expertApps];
     const appsAll = [];
     const appsKeep = [];
+    const failedApps = [];
     const existingChannels = await this.getChannelsOfAsync("apps");
     if (existingChannels) {
       for (const existingChannel of existingChannels) {
@@ -697,25 +787,30 @@ class AwtrixNg extends utils.Adapter {
       if (app) {
         this.log.debug(`[createAppObjects] found (keep): apps.${app.getNameClean()}`);
         appsKeep.push(`apps.${app.getNameClean()}`);
-        await this.extendObject(`apps.${app.getNameClean()}`, {
-          type: "channel",
-          common: {
-            name: `App ${name}`,
-            desc: `${app.getDescription()} app`,
-            icon: app.getIconForObjectTree()
-          },
-          native: {
-            isBuiltinApp,
-            isScriptApp,
-            isCustomApp,
-            isHistoryApp,
-            isExpertApp
-          }
-        });
-        const appInfo = content.find((a) => a.name === app.getName());
-        await app.createObjects();
-        await app.init(appInfo);
-        await app.refresh();
+        try {
+          await this.extendObject(`apps.${app.getNameClean()}`, {
+            type: "channel",
+            common: {
+              name: `App ${name}`,
+              desc: `${app.getDescription()} app`,
+              icon: app.getIconForObjectTree()
+            },
+            native: {
+              isBuiltinApp,
+              isScriptApp,
+              isCustomApp,
+              isHistoryApp,
+              isExpertApp
+            }
+          });
+          const appInfo = content.find((a) => a.name === app.getName());
+          await app.createObjects();
+          await app.init(appInfo);
+          await app.refresh();
+        } catch (error) {
+          failedApps.push(name);
+          this.log.warn(`[createAppObjects] Unable to initialize app "${name}": ${error}`);
+        }
       }
     }
     for (const app of appsAll) {
@@ -724,24 +819,137 @@ class AwtrixNg extends utils.Adapter {
         this.log.debug(`[createAppObjects] deleted: ${app}`);
       }
     }
-    await this.refreshAppOrder();
+    await this.runAppOrderExclusive(() => this.normalizeAppOrder());
+    await this.sendAppOrder();
+    if (failedApps.length > 0) {
+      throw new Error(`Unable to initialize apps: ${failedApps.join(", ")}`);
+    }
     return appsKeep.length;
   }
   async refreshAppOrder() {
     if (this.apiClient && this.apiConnected) {
       try {
-        const appsEnabled = this.apps.filter((a) => a.enabled());
-        appsEnabled.sort((a, b) => {
-          var _a, _b;
-          return ((_a = a.getSlot()) != null ? _a : 9999) - ((_b = b.getSlot()) != null ? _b : 9999);
-        });
-        await this.apiClient.apps.setOrder({
-          order: appsEnabled.map((a) => a.getName()),
-          disabled: this.apps.filter((a) => !a.enabled()).map((a) => a.getName())
-        });
+        await this.sendAppOrder();
       } catch (err) {
         this.log.error(`[refreshAppOrder] Failed to change app order: ${err}`);
       }
+    }
+  }
+  /**
+   * Operations on the app order are executed one after another (e.g. multiple slot changes at once)
+   *
+   * @param fn - operation
+   */
+  async runAppOrderExclusive(fn) {
+    const result = this.appOrderLock.then(fn);
+    this.appOrderLock = result.catch(() => void 0);
+    return result;
+  }
+  /**
+   * All apps sorted by their current position (apps without position at the end)
+   */
+  getAppsSortedBySlot() {
+    return [...this.apps].sort(
+      (a, b) => {
+        var _a, _b;
+        return ((_a = a.getSlot()) != null ? _a : Number.MAX_SAFE_INTEGER) - ((_b = b.getSlot()) != null ? _b : Number.MAX_SAFE_INTEGER) || a.getName().localeCompare(b.getName());
+      }
+    );
+  }
+  /**
+   * Brings the positions of all apps into a dense order (0 ... n-1). Apps without a position
+   * (new apps or first start) are appended - sorted by their position on the device.
+   */
+  async normalizeAppOrder() {
+    const appsWithSlot = this.apps.filter((a) => a.getSlot() !== null);
+    const appsWithoutSlot = this.apps.filter((a) => a.getSlot() === null).sort(
+      (a, b) => {
+        var _a, _b;
+        return ((_a = a.getDeviceSlot()) != null ? _a : Number.MAX_SAFE_INTEGER) - ((_b = b.getDeviceSlot()) != null ? _b : Number.MAX_SAFE_INTEGER) || a.getName().localeCompare(b.getName());
+      }
+    );
+    const sorted = [
+      ...appsWithSlot.sort((a, b) => a.getSlot() - b.getSlot() || a.getName().localeCompare(b.getName())),
+      ...appsWithoutSlot
+    ];
+    await this.applyAppSlots(sorted);
+  }
+  /**
+   * Sets the position of each app to its index in the given list and updates the slot states
+   *
+   * @param sorted - all apps in the new order
+   * @param movedApp - app which has been moved by the user (state is acknowledged even if unchanged)
+   */
+  async applyAppSlots(sorted, movedApp) {
+    for (const [index, app] of sorted.entries()) {
+      const changed = app.getSlot() !== index;
+      app.setSlot(index);
+      if (changed || app === movedApp) {
+        await this.setState(`apps.${app.getNameClean()}.slot`, { val: index, ack: true, c: "app order" });
+      } else {
+        await this.setStateChangedAsync(`apps.${app.getNameClean()}.slot`, { val: index, ack: true });
+      }
+    }
+  }
+  /**
+   * Moves the app to the given position - all other apps are shifted (main instance only)
+   *
+   * @param app - app to move
+   * @param position - new position (0 = first)
+   */
+  async moveApp(app, position) {
+    await this.runAppOrderExclusive(async () => {
+      const sorted = this.getAppsSortedBySlot().filter((a) => a !== app);
+      const index = Math.max(0, Math.min(Math.round(position), sorted.length));
+      sorted.splice(index, 0, app);
+      await this.applyAppSlots(sorted, app);
+    });
+    await this.refreshAppOrder();
+  }
+  /**
+   * Follow the order of the main instance (other instances only) - debounced, because a move
+   * in the main instance changes the slots of multiple apps
+   */
+  scheduleAppOrderSync() {
+    if (this.appOrderSyncTimeout) {
+      this.clearTimeout(this.appOrderSyncTimeout);
+    }
+    this.appOrderSyncTimeout = this.setTimeout(async () => {
+      this.appOrderSyncTimeout = void 0;
+      try {
+        await this.runAppOrderExclusive(async () => {
+          for (const app of this.apps) {
+            const slotState = await this.getForeignStateAsync(
+              `${this.config.foreignSettingsInstance}.apps.${app.getNameClean()}.slot`
+            );
+            app.setSlot(slotState && typeof slotState.val === "number" ? slotState.val : null);
+          }
+          await this.normalizeAppOrder();
+        });
+        await this.refreshAppOrder();
+      } catch (error) {
+        this.log.warn(`[scheduleAppOrderSync] Unable to apply app order of main instance: ${error}`);
+      }
+    }, 500);
+  }
+  async sendAppOrder() {
+    const appsEnabled = this.getAppsSortedBySlot().filter((a) => a.enabled());
+    await this.apiClient.apps.setOrder({
+      order: appsEnabled.map((a) => a.getName()),
+      disabled: this.apps.filter((a) => !a.enabled()).map((a) => a.getName())
+    });
+  }
+  async updateAllIndicatorsByStates() {
+    const errors = [];
+    for (const i of [1, 2, 3]) {
+      try {
+        await this.updateIndicatorByStates(i);
+      } catch (error) {
+        errors.push(`indicator ${i}: ${this.errorToString(error)}`);
+      }
+    }
+    if (errors.length > 0) {
+      throw new Error(errors.join(", "));
     }
   }
   async updateIndicatorByStates(index) {
@@ -820,12 +1028,14 @@ class AwtrixNg extends utils.Adapter {
     return id.replace(re, "");
   }
   async onUnload(callback) {
+    var _a;
     try {
-      for (const app of this.apps) {
-        if (app instanceof import_user.AppType.UserApp) {
-          await app.unloadAsync();
-        }
+      const removeFromDevice = this.apiConnected;
+      if (!removeFromDevice && this.config.removeAppsOnStop) {
+        this.log.info("[onUnload] Device is not reachable - unable to remove apps");
       }
+      await Promise.allSettled(this.apps.map((app) => app.unloadAsync(removeFromDevice)));
+      this.apps = [];
       await this.setApiConnected(false);
       if (this.refreshStateTimeout) {
         this.log.debug("clearing refresh state timeout");
@@ -835,6 +1045,11 @@ class AwtrixNg extends utils.Adapter {
         this.clearInterval(this.downloadScreenContentInterval);
         this.downloadScreenContentInterval = void 0;
       }
+      if (this.appOrderSyncTimeout) {
+        this.clearTimeout(this.appOrderSyncTimeout);
+        this.appOrderSyncTimeout = void 0;
+      }
+      (_a = this.radio) == null ? void 0 : _a.unload();
       callback();
     } catch (e) {
       callback();

@@ -452,6 +452,13 @@ var AppType;
         );
       }
     }
+    async unloadAsync(removeFromDevice) {
+      if (this.refreshTimeout) {
+        this.adapter.clearTimeout(this.refreshTimeout);
+        this.refreshTimeout = void 0;
+      }
+      await super.unloadAsync(removeFromDevice);
+    }
     async stateChanged(id, state) {
       var _a, _b, _c, _d;
       await super.stateChanged(id, state);

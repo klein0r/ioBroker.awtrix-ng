@@ -31,6 +31,9 @@ var AppType;
     objPrefix;
     isEnabled;
     slot;
+    deviceSlot;
+    stateChangeHandler;
+    objectChangeHandler;
     constructor(apiClient, adapter, name) {
       this.apiClient = apiClient;
       this.adapter = adapter;
@@ -38,13 +41,26 @@ var AppType;
       this.nameClean = name.replace(this.adapter.FORBIDDEN_CHARS, "_").replace(/[.\s/]+/g, "_").replace(/_{2,}/g, "_").replace(/^_+|_+$/g, "");
       this.isEnabled = false;
       this.slot = null;
+      this.deviceSlot = null;
       if (this.adapter.isMainInstance()) {
         this.objPrefix = this.adapter.namespace;
       } else {
         this.objPrefix = this.adapter.config.foreignSettingsInstance;
       }
-      adapter.on("stateChange", this.onStateChange.bind(this));
-      adapter.on("objectChange", this.onObjectChange.bind(this));
+      this.stateChangeHandler = this.onStateChange.bind(this);
+      this.objectChangeHandler = this.onObjectChange.bind(this);
+      adapter.on("stateChange", this.stateChangeHandler);
+      adapter.on("objectChange", this.objectChangeHandler);
+    }
+    /**
+     * Stops all timers and event listeners of this app (e.g. instance stopped or app removed from device).
+     *
+     * @param removeFromDevice - remove the app from the device (if configured and supported by the app type)
+     */
+    // eslint-disable-next-line @typescript-eslint/require-await, @typescript-eslint/no-unused-vars
+    async unloadAsync(removeFromDevice) {
+      this.adapter.removeListener("stateChange", this.stateChangeHandler);
+      this.adapter.removeListener("objectChange", this.objectChangeHandler);
     }
     async init(appInfo) {
       var _a, _b, _c;
@@ -53,22 +69,20 @@ var AppType;
         `${this.objPrefix}.apps.${appNameC}.enabled`
       );
       const appSlotState = await this.adapter.getForeignStateAsync(`${this.objPrefix}.apps.${appNameC}.slot`);
-      if (appInfo && appInfo.origin !== "module") {
-        this.isEnabled = (_a = appInfo.enabled) != null ? _a : true;
-        this.slot = (_b = appInfo.slot) != null ? _b : null;
+      const appInfoDevice = appInfo && appInfo.origin !== "module" ? appInfo : void 0;
+      if (appEnabledState && typeof appEnabledState.val === "boolean") {
+        this.isEnabled = appEnabledState.val;
       } else {
-        this.isEnabled = appEnabledState && typeof (appEnabledState == null ? void 0 : appEnabledState.val) === "boolean" ? !!appEnabledState.val : true;
-        this.slot = appSlotState && typeof (appSlotState == null ? void 0 : appSlotState.val) === "number" ? appSlotState.val : null;
+        this.isEnabled = (_a = appInfoDevice == null ? void 0 : appInfoDevice.enabled) != null ? _a : true;
       }
+      this.slot = appSlotState && typeof appSlotState.val === "number" ? appSlotState.val : null;
+      this.deviceSlot = (_b = appInfoDevice == null ? void 0 : appInfoDevice.slot) != null ? _b : null;
       if (!appEnabledState || !(appEnabledState == null ? void 0 : appEnabledState.ack) || (appEnabledState == null ? void 0 : appEnabledState.val) !== this.isEnabled) {
         await this.adapter.setState(`apps.${appNameC}.enabled`, {
           val: this.isEnabled,
           ack: true,
           c: "init"
         });
-      }
-      if (!appSlotState || !(appSlotState == null ? void 0 : appSlotState.ack) || (appSlotState == null ? void 0 : appSlotState.val) !== this.slot) {
-        await this.adapter.setState(`apps.${appNameC}.slot`, { val: this.slot, ack: true, c: "init" });
       }
       await this.setAppStatus((_c = appInfo == null ? void 0 : appInfo.present) != null ? _c : false);
     }
@@ -145,6 +159,20 @@ var AppType;
     }
     getSlot() {
       return this.slot;
+    }
+    /**
+     * Position of the app on the device (when it was initialized) - used to sort new apps
+     */
+    getDeviceSlot() {
+      return this.deviceSlot;
+    }
+    /**
+     * Sets the position of the app - just called by the adapter, which keeps all slots dense (0 ... n-1)
+     *
+     * @param slot - new position
+     */
+    setSlot(slot) {
+      this.slot = slot;
     }
     isMainInstance() {
       return this.adapter.isMainInstance();
@@ -320,6 +348,10 @@ var AppType;
       await this.stateChanged(id, state);
     }
     async stateChanged(id, state) {
+      if (id && state && !this.isMainInstance() && id === `${this.objPrefix}.apps.${this.getNameClean()}.slot`) {
+        this.adapter.scheduleAppOrderSync();
+        return;
+      }
       if (id && state && !state.ack) {
         const appName = this.getName();
         const appNameC = this.getNameClean();
@@ -346,26 +378,18 @@ var AppType;
               c: `onStateChange ${this.objPrefix} (unchanged)`
             });
           }
-        } else if (id === `${this.objPrefix}.apps.${appNameC}.slot` && typeof state.val === "number") {
-          if (state.val !== this.slot) {
-            this.adapter.log.debug(
-              `[onStateChange] ${appName}: Slot of app ${appName} changed to ${state.val}`
-            );
-            this.slot = state.val;
-            await this.adapter.refreshAppOrder();
-            await this.adapter.setState(idOwnNamespace, {
-              val: state.val,
-              ack: true,
-              c: `onStateChange ${this.objPrefix}`
-            });
+        } else if (id === `${this.objPrefix}.apps.${appNameC}.slot`) {
+          if (typeof state.val === "number" && Number.isFinite(state.val)) {
+            this.adapter.log.debug(`[onStateChange] ${appName}: Moving app to position ${state.val}`);
+            await this.adapter.moveApp(this, state.val);
           } else {
-            this.adapter.log.debug(
-              `[onStateChange] ${appName}: Slot of app "${appName}" IGNORED (not changed): ${state.val}`
+            this.adapter.log.warn(
+              `[onStateChange] ${appName}: Invalid position "${state.val}" - expected a number`
             );
             await this.adapter.setState(idOwnNamespace, {
-              val: state.val,
+              val: this.slot,
               ack: true,
-              c: `onStateChange ${this.objPrefix} (unchanged)`
+              c: "invalid value"
             });
           }
         }

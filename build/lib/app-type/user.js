@@ -76,12 +76,13 @@ var AppType;
         this.keepAliveTimeout = void 0;
       }
     }
-    async unloadAsync() {
+    async unloadAsync(removeFromDevice) {
       this.clearKeepAlive();
-      if (this.adapter.config.removeAppsOnStop) {
+      if (removeFromDevice && this.adapter.config.removeAppsOnStop) {
         this.adapter.log.info(`[onUnload] Deleting app on awtrix light with name "${this.definition.name}"`);
         await this.removeApp("instance stopped");
       }
+      await super.unloadAsync(removeFromDevice);
     }
   }
   AppType2.UserApp = UserApp;
