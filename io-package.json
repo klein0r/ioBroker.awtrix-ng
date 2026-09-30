@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "awtrix-ng",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "news": {
+      "0.3.0": {
+        "en": "Added playback of MP3 files (`audio.mp3.*`) for devices which support it (e.g. TC002)\nAdded playback of melodies (`audio.melody.*`)\nScreen content (`display.content`) is a much smaller SVG now (about 95 % less data) and just written when it has changed",
+        "de": "Wiedergabe von MP3-Dateien (`audio.mp3.*`) für Geräte hinzugefügt (z. B. TC002)\nMelodien (`audio.melody.*`) hinzugefügt\nBildschirminhalt (`display.content`) ist jetzt viel kleiner (95% weniger Daten) und wird nur geschrieben, wenn er sich ändert",
+        "ru": "Добавлено воспроизведение файлов MP3 (`audio.mp3.*`) на устройствах, которые его поддерживают (например, TC002)\nДобавлено воспроизведение мелодий (`audio.melody.*`)\nСодержимое экрана (`display.content`) теперь представляет собой формат SVG гораздо меньшего размера (примерно на 95% меньше данных) и записывается только тогда, когда оно изменилось",
+        "pt": "Foi adicionada a reprodução de MP3 (`audio.mp3.*`) em dispositivos compatíveis (ex. TC002)\nAdição da reprodução de melodias (`audio.melody.*`)\nO conteúdo da tela (`display.content`) é um SVG muito menor agora (cerca de 95% menos dados) e é gravado quando muda",
+        "nl": "Het afspelen van mp3-bestanden (`audio.mp3.*`) toegevoegd voor apparaten die dit ondersteunen (bijv. TC002)\nAfspelen van melodieën toegevoegd (`audio.melody.*`)\nDe scherminhoud (`display.content`) is nu een veel kleinere SVG (ongeveer 95% minder data) en is net geschreven toen de SVG werd gewijzigd",
+        "fr": "Ajout de la lecture de fichiers MP3 (`audio.mp3.*`) pour les appareils compatibles (par exemple TC002)\nAjout de mélodies (`audio.melody.*`)\nLe contenu de l'écran (`display.content`) est un SVG beaucoup plus petit (environ 95 % de données en moins), écrit quand il change",
+        "it": "Aggiunta la riproduzione di file MP3 (`audio.mp3.*`) per dispositivi (es. TC002)\nAggiunta la melodia (`audio.melody.*`)\nIl contenuto dello schermo (`display.content`) è un SVG molto più piccolo (circa il 95% in meno di dati)",
+        "es": "Se ha añadido la reproducción de archivos MP3 (`audio.mp3.*`) en los dispositivos que lo admiten (por ejemplo, TC002)\nSe ha añadido la reproducción de melodías (`audio.melodía.*`)\nEl contenido de la pantalla (`display.content`) es un SVG mucho más pequeño (un 95% menos de datos) y se escribe cuando ha cambiado",
+        "pl": "Dodano odtwarzanie plików MP3 (`audio.mp3.*`) dla urządzeń, które je obsługują (np. TC002)\nDodano odtwarzanie melodii (`audio.melody.*`)\nZawartość ekranu (`display.content`) jest teraz znacznie mniejszym SVG (około 95% mniej danych) i jest zapisywana po zmianie",
+        "uk": "Додано відтворення файлів MP3 (`audio.mp3.*`) для пристроїв, які підтримують його (наприклад, TC002)\nДодано відтворення мелодій (`audio.melody.*`)\nВміст екрана (`display.content`) зараз набагато менший SVG (приблизно на 95% менше даних) і просто записується, коли він змінився",
+        "zh-cn": "增加了支持 MP3 文件（例如 TC002）的播放 MP3 文件（`audio.mp3.*`）的功能\n增加了旋律的播放（`audio.melody.*`）\n屏幕内容（`display.content`）现在是小得多的 SVG（数据减少了大约 95%），只是在更改后写入"
+      },
       "0.2.0": {
         "en": "Port of the device is configurable now (default: 80)\nApps are transferred again when a reboot of the device has been detected\nApp order (enabled / slot) is transferred to the device on connect\nCustom apps are transferred even if disabled (visibility is controlled by the device)\nFixed custom apps with invalid object ID being transferred as background-only apps\nHistory apps keep refreshing after errors and retry if the history instance was unavailable\nCustom and expert apps get a lifetime if \"Delete apps when instance is stopped\" is enabled (removed from device if the adapter is not running anymore)\nApp names may contain digits, `_` and `-` now\nAdded states `apps.<name>.present` and `apps.<name>.lastError`\nFailed steps when transferring data to the device (settings, apps, indicators, ...) are retried with the next refresh\nApps which have been removed from the device (e.g. scripts) are cleaned up properly\nApps are removed in parallel when the instance is stopped (and not at all if the device is not reachable)\nChanging `apps.<name>.slot` moves the app to the new position (other apps are shifted) - order and enabled state are managed by ioBroker\nAdded internet radio (`audio.radio.*`) for devices which support it (e.g. TC002)\nFixed display duration of custom and history apps (setting was ignored)\nScroll speed of custom apps is a percentage of the default speed now (up to 500 %) and does not force scrolling of short texts anymore\nImproved instance configuration (dependencies between fields, validation, labels and help texts)\nMigrated all HTTP requests to the new library [awtrix-ng-api](https://www.npmjs.com/package/awtrix-ng-api)\nFixed screen content download (`display.content`)\nAdded additional meta information (soc and board type)\nRecommended Awtrix NG version is now 1.1.2\nAdapter requires admin >= 7.8.23 now.",
         "de": "Geräteport ist jetzt konfigurierbar (Standard: 80)\nApps werden erneut übertragen, wenn das Gerät neu gestartet wird\nApp-Bestellung (aktiviert/Slot) geht auf Connect\nEigene Apps werden übertragen, auch wenn sie deaktiviert sind (Sicht hängt vom Gerät ab)\nFehler behoben: Apps mit ungültiger Object-ID wurden nur im Hintergrund übertragen\nVerlaufs-Apps aktualisieren nach Fehlern und versuchen es erneut, falls sie nicht verfügbar ist\nEigene Apps und Experten-Apps sind lebenslang gültig, wenn „Apps löschen, wenn die Instanz beendet ist“\nApp-Namen können jetzt Ziffern enthalten\nApps hinzugefügt. <name>.Geschenk und `Apps. <name>. Letzter Fehler`\nFehlgeschlagene Daten auf das Gerät (Einstellungen, Apps, Anzeigen,...) werden beim nächsten Update wiederholt\nVom Gerät entfernte Apps (z. B. Skripte) werden ordnungsgemäß bereinigt\nApps werden parallel entfernt, wenn die Instanz gestoppt wird (und gar nicht, wenn das Gerät nicht erreichbar ist)\nApps ändern. <name>.slot verschiebt die App an die neue Position (andere Apps) — Bestellung und Status werden von ioBroker verwaltet\nInternetradio (`audio.radio.*`) für Geräte hinzugefügt, die es unterstützen (z. B. TC002)\nFeste Anzeigedauer von Custom- und History Apps (ignoriert)\nDie Scrollrate eigener Apps ist jetzt prozentual (bis zu 500%) und erzwingt das Scrollen von Kurztexten nicht mehr\nVerbesserte Instanzkonfiguration (Felder, Validierung, Labels und Hilfetexte)\nAlle HTTP-Anfragen zur neuen Bibliothek [awtrix-ng-api] migriert (https://www.npmjs.com/package/awtrix-ng-api)\nFixierter Download (`display.content`)\nWeitere Metainformationen hinzugefügt (Soc und Boardtyp)\nEmpfohlene Astrix NG Version ist jetzt 1.1.2\nAdapter benötigt jetzt admin >= 7.8.23.",
@@ -80,19 +93,6 @@
         "pl": "Usunięto stan aktualizacji urządzenia i powiadomienie\nNaprawiono punkt końcowy rtttl\nUlepszona obsługa błędów\nNaprawiono generowanie kodu Blockly",
         "uk": "Видалено стан оновлення пристрою та сповіщення\nВиправлена кінцева точка rtttl\nПокращена обробка помилок\nВиправлена генерація блочного коду",
         "zh-cn": "已移除设备更新状态和通知\n固定 rtttl 端点\n改进的错误处理\n修复了 Blockly 代码生成问题"
-      },
-      "0.0.6": {
-        "en": "Renamed visible to enabled\nAdded slot positions",
-        "de": "„Sichtbar“ wurde in „Aktiviert“ umbenannt.\nHinzugefügte Slot-Positionen",
-        "ru": "Переименовано из visible в enabled\nДобавлены позиции слотов",
-        "pt": "Renomeado de visível para ativado\nPosições de slot adicionadas",
-        "nl": "Hernoemd naar zichtbaar naar ingeschakeld\nToegevoegde slotposities",
-        "fr": "Renommé visible en activé\nAjout de positions d'emplacement",
-        "it": "Rinominato visibile in abilitato\nPosizioni slot aggiunte",
-        "es": "Se cambió el nombre de visible a habilitado.\nSe agregaron posiciones de ranura",
-        "pl": "Zmieniono nazwę z widocznego na włączony\nDodano pozycje slotów",
-        "uk": "Перейменовано з видимого на ввімкнено\nДодані позиції слотів",
-        "zh-cn": "将“可见”重命名为“已启用”。\n新增插槽位置"
       }
     },
     "titleLang": {
