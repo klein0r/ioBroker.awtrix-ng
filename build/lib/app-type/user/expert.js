@@ -85,6 +85,8 @@ var AppType;
           `[refresh] Refreshing app with values "${this.appDefinition.name}": ${JSON.stringify(this.appStates)}`
         );
         const app = {
+          ...this.getLifetimeOptions(),
+          // can be overwritten by base object
           ...this.baseObject,
           text: typeof this.appStates.text === "string" ? this.appStates.text : "",
           textCase: "asTyped",
@@ -111,12 +113,9 @@ var AppType;
             app.progressTrackColor = typeof this.appStates.progressTrackColor === "string" ? this.appStates.progressTrackColor : "#FFFFFF";
           }
         }
-        await this.apiClient.apps.push(this.appDefinition.name, app).catch((error) => {
-          this.adapter.log.warn(
-            `[refreshExpertApp] Unable to update expert app "${this.appDefinition.name}": ${error}`
-          );
-        });
+        await this.pushApp(app, "expert app");
         refreshed = true;
+        this.scheduleKeepAlive();
       }
       return refreshed;
     }

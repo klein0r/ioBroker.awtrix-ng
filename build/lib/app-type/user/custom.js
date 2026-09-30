@@ -108,7 +108,7 @@ var AppType;
       await super.init();
     }
     createAppRequestObj(text, val) {
-      const app = {};
+      const app = { ...this.getLifetimeOptions() };
       if (text !== "") {
         app.text = text;
         app.textCase = "asTyped";
@@ -235,31 +235,13 @@ var AppType;
               }
               const displayText = text.replace("%s", newVal).replace("%u", (_b = this.objCache.unit) != null ? _b : "").trim();
               if (displayText.length > 0) {
-                await this.apiClient.apps.push(this.appDefinition.name, this.createAppRequestObj(displayText, val)).catch((error) => {
-                  this.adapter.log.warn(
-                    `[refreshCustomApp] Unable to update custom app "${this.appDefinition.name}": ${error}`
-                  );
-                });
+                await this.pushApp(this.createAppRequestObj(displayText, val), "state value");
                 refreshed = true;
               } else {
-                this.adapter.log.debug(
-                  `[refreshCustomApp] Going to remove app "${this.appDefinition.name}" (empty text)`
-                );
-                await this.apiClient.apps.delete(this.appDefinition.name).catch((error) => {
-                  this.adapter.log.warn(
-                    `[refreshCustomApp] Unable to remove app "${this.appDefinition.name}" (empty text): ${error}`
-                  );
-                });
+                await this.removeApp("empty text");
               }
             } else {
-              this.adapter.log.debug(
-                `[refreshCustomApp] Going to remove app "${this.appDefinition.name}" (no state data)`
-              );
-              await this.apiClient.apps.delete(this.appDefinition.name).catch((error) => {
-                this.adapter.log.warn(
-                  `[refreshCustomApp] Unable to remove app "${this.appDefinition.name}" (no state data): ${error}`
-                );
-              });
+              await this.removeApp("no state data");
             }
           } catch (error) {
             this.adapter.log.error(
@@ -277,30 +259,18 @@ var AppType;
           }
           const displayText = text.replace("%u", "").trim();
           if (displayText.length > 0) {
-            await this.apiClient.apps.push(this.appDefinition.name, this.createAppRequestObj(displayText)).catch((error) => {
-              this.adapter.log.warn(
-                `[refreshCustomApp] Unable to create app "${this.appDefinition.name}" with static text: ${error}`
-              );
-            });
+            await this.pushApp(this.createAppRequestObj(displayText), "static text");
             refreshed = true;
           } else {
-            this.adapter.log.debug(
-              `[refreshCustomApp] Going to remove app "${this.appDefinition.name}" with static text (empty text)`
-            );
-            await this.apiClient.apps.delete(this.appDefinition.name).catch((error) => {
-              this.adapter.log.warn(
-                `[refreshCustomApp] Unable to remove app "${this.appDefinition.name}" with static text (empty text): ${error}`
-              );
-            });
+            await this.removeApp("static text is empty");
           }
         } else if (this.isBackgroundOnly) {
-          await this.apiClient.apps.push(this.appDefinition.name, this.createAppRequestObj("")).catch((error) => {
-            this.adapter.log.warn(
-              `[refreshCustomApp] Unable to create app "${this.appDefinition.name}" with background only: ${error}`
-            );
-          });
+          await this.pushApp(this.createAppRequestObj(""), "background only");
           refreshed = true;
         }
+      }
+      if (refreshed) {
+        this.scheduleKeepAlive();
       }
       return refreshed;
     }

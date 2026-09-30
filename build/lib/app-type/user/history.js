@@ -186,29 +186,21 @@ var AppType;
         } else {
           moreOptions.lineChart = graphData;
         }
-        await this.apiClient.apps.push(this.appDefinition.name, {
-          chartColor: this.appDefinition.lineColor || "#FF0000",
-          backgroundColor: this.appDefinition.backgroundColor || "#000000",
-          chartAutoscale: true,
-          icon: this.appDefinition.icon,
-          lifetimeMs: (this.adapter.config.historyAppsRefreshInterval + 60) * 1e3,
-          // Remove app if there is no update in configured interval (+ buffer)
-          ...moreOptions
-        }).catch((error) => {
-          this.adapter.log.warn(
-            `[refreshHistoryApp] Unable to create app "${this.appDefinition.name}": ${error}`
-          );
-        });
+        await this.pushApp(
+          {
+            chartColor: this.appDefinition.lineColor || "#FF0000",
+            backgroundColor: this.appDefinition.backgroundColor || "#000000",
+            chartAutoscale: true,
+            icon: this.appDefinition.icon,
+            lifetimeMs: (this.adapter.config.historyAppsRefreshInterval + 60) * 1e3,
+            // Remove app if there is no update in configured interval (+ buffer)
+            ...moreOptions
+          },
+          "history data"
+        );
         return true;
       }
-      this.adapter.log.debug(
-        `[refreshHistoryApp] Going to remove app "${this.appDefinition.name}" (no history data)`
-      );
-      await this.apiClient.apps.delete(this.appDefinition.name).catch((error) => {
-        this.adapter.log.warn(
-          `[refreshHistoryApp] Unable to remove app "${this.appDefinition.name}" (no history data): ${error}`
-        );
-      });
+      await this.removeApp("no history data");
       return false;
     }
     async unloadAsync() {

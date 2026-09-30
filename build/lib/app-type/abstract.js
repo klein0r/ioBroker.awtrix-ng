@@ -47,7 +47,7 @@ var AppType;
       adapter.on("objectChange", this.onObjectChange.bind(this));
     }
     async init(appInfo) {
-      var _a, _b;
+      var _a, _b, _c;
       const appNameC = this.getNameClean();
       const appEnabledState = await this.adapter.getForeignStateAsync(
         `${this.objPrefix}.apps.${appNameC}.enabled`
@@ -69,6 +69,65 @@ var AppType;
       }
       if (!appSlotState || !(appSlotState == null ? void 0 : appSlotState.ack) || (appSlotState == null ? void 0 : appSlotState.val) !== this.slot) {
         await this.adapter.setState(`apps.${appNameC}.slot`, { val: this.slot, ack: true, c: "init" });
+      }
+      await this.setAppStatus((_c = appInfo == null ? void 0 : appInfo.present) != null ? _c : false);
+    }
+    /**
+     * Updates the status states of the app (own namespace - status of this device).
+     *
+     * @param present - app exists on the device (undefined = unchanged)
+     * @param lastError - last error message (null = no error, undefined = unchanged)
+     */
+    async setAppStatus(present, lastError) {
+      const appNameC = this.getNameClean();
+      try {
+        if (present !== void 0) {
+          await this.adapter.setStateChangedAsync(`apps.${appNameC}.present`, { val: present, ack: true });
+        }
+        if (lastError !== void 0) {
+          await this.adapter.setStateChangedAsync(`apps.${appNameC}.lastError`, {
+            val: lastError,
+            ack: true
+          });
+        }
+      } catch (error) {
+        this.adapter.log.debug(`[setAppStatus] Unable to update status of app "${this.getName()}": ${error}`);
+      }
+    }
+    /**
+     * Creates or replaces the app on the device (pushed app) and updates the status states.
+     *
+     * @param payload - app definition
+     * @param context - description for log messages
+     */
+    async pushApp(payload, context) {
+      const appName = this.getName();
+      try {
+        await this.apiClient.apps.push(appName, payload);
+        await this.setAppStatus(true, null);
+        return true;
+      } catch (error) {
+        this.adapter.log.warn(`[pushApp] Unable to update app "${appName}" (${context}): ${error}`);
+        await this.setAppStatus(void 0, error instanceof Error ? error.message : String(error));
+        return false;
+      }
+    }
+    /**
+     * Removes the app from the device and updates the status states.
+     *
+     * @param context - description for log messages
+     */
+    async removeApp(context) {
+      const appName = this.getName();
+      this.adapter.log.debug(`[removeApp] Going to remove app "${appName}" (${context})`);
+      try {
+        await this.apiClient.apps.delete(appName);
+        await this.setAppStatus(false, null);
+        return true;
+      } catch (error) {
+        this.adapter.log.warn(`[removeApp] Unable to remove app "${appName}" (${context}): ${error}`);
+        await this.setAppStatus(void 0, error instanceof Error ? error.message : String(error));
+        return false;
       }
     }
     // eslint-disable-next-line @typescript-eslint/require-await
@@ -148,6 +207,53 @@ var AppType;
           role: "level",
           read: true,
           write: this.isMainInstance()
+        },
+        native: {}
+      });
+      await this.adapter.extendObject(`apps.${appNameC}.present`, {
+        type: "state",
+        common: {
+          name: {
+            en: "Present on device",
+            de: "Auf dem Ger\xE4t vorhanden",
+            ru: "\u041F\u0440\u0438\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442 \u043D\u0430 \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u0435",
+            pt: "Presente no dispositivo",
+            nl: "Aanwezig op apparaat",
+            fr: "Pr\xE9sent sur l'appareil",
+            it: "Presente sul dispositivo",
+            es: "Presente en el dispositivo",
+            pl: "Obecna na urz\u0105dzeniu",
+            uk: "\u041F\u0440\u0438\u0441\u0443\u0442\u043D\u0456\u0439 \u043D\u0430 \u043F\u0440\u0438\u0441\u0442\u0440\u043E\u0457",
+            "zh-cn": "\u5B58\u5728\u4E8E\u8BBE\u5907\u4E0A"
+          },
+          type: "boolean",
+          role: "indicator",
+          read: true,
+          write: false,
+          def: false
+        },
+        native: {}
+      });
+      await this.adapter.extendObject(`apps.${appNameC}.lastError`, {
+        type: "state",
+        common: {
+          name: {
+            en: "Last error",
+            de: "Letzter Fehler",
+            ru: "\u041F\u043E\u0441\u043B\u0435\u0434\u043D\u044F\u044F \u043E\u0448\u0438\u0431\u043A\u0430",
+            pt: "\xDAltimo erro",
+            nl: "Laatste fout",
+            fr: "Derni\xE8re erreur",
+            it: "Ultimo errore",
+            es: "\xDAltimo error",
+            pl: "Ostatni b\u0142\u0105d",
+            uk: "\u041E\u0441\u0442\u0430\u043D\u043D\u044F \u043F\u043E\u043C\u0438\u043B\u043A\u0430",
+            "zh-cn": "\u6700\u540E\u4E00\u4E2A\u9519\u8BEF"
+          },
+          type: "string",
+          role: "text",
+          read: true,
+          write: false
         },
         native: {}
       });
