@@ -1,6 +1,6 @@
+import type { AppInfo, AwtrixClient, ClassicAppPayload } from 'awtrix-ng-api';
 import type { AwtrixNg } from '../../../awtrix-ng';
 import type { CustomApp } from '../../adapter-config';
-import type { AwtrixApi } from '../../api';
 import { AppType as UserAppType } from '../user';
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -16,16 +16,16 @@ export namespace AppType {
         private appDefinition: CustomApp;
         private objCache: ObjCache | undefined;
         private isStaticText: boolean;
-        private isBackgroundOny: boolean;
+        private isBackgroundOnly: boolean;
         private cooldownTimeout: ioBroker.Timeout | undefined;
 
-        public constructor(apiClient: AwtrixApi.Client, adapter: AwtrixNg, definition: CustomApp) {
+        public constructor(apiClient: AwtrixClient, adapter: AwtrixNg, definition: CustomApp) {
             super(apiClient, adapter, definition);
 
             this.appDefinition = definition;
             this.objCache = undefined;
             this.isStaticText = false;
-            this.isBackgroundOny = true;
+            this.isBackgroundOnly = false;
             this.cooldownTimeout = undefined;
         }
 
@@ -38,7 +38,7 @@ export namespace AppType {
         }
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        public override async init(orderDefinition?: AwtrixApi.AppOrderDefinition): Promise<void> {
+        public override async init(appInfo?: AppInfo): Promise<void> {
             const text = String(this.appDefinition.text).trim();
             if (text.length > 0) {
                 if (this.appDefinition.objId && text.includes('%s')) {
@@ -95,16 +95,23 @@ export namespace AppType {
                     this.adapter.log.debug(`[initCustomApp] Init app "${this.appDefinition.name}" with static text`);
                     this.isStaticText = true;
                 }
-            } else if (this.appDefinition.useBackgroundEffect && this.appDefinition.backgroundEffect) {
+            } else if (
+                (this.appDefinition.useBackgroundEffect && this.appDefinition.backgroundEffect) ||
+                (!this.appDefinition.useBackgroundEffect && this.appDefinition.backgroundColor)
+            ) {
                 this.adapter.log.debug(`[initCustomApp] Init app "${this.appDefinition.name}" with background only`);
-                this.isBackgroundOny = true;
+                this.isBackgroundOnly = true;
+            } else {
+                this.adapter.log.warn(
+                    `[initCustomApp] App "${this.appDefinition.name}" has no text and no background - nothing to display`,
+                );
             }
 
             await super.init();
         }
 
-        private createAppRequestObj(text: string, val?: ioBroker.StateValue): AwtrixApi.App {
-            const app: AwtrixApi.App = {};
+        private createAppRequestObj(text: string, val?: ioBroker.StateValue): ClassicAppPayload {
+            const app: ClassicAppPayload = { ...this.getLifetimeOptions() };
 
             if (text !== '') {
                 app.text = text;
@@ -127,9 +134,9 @@ export namespace AppType {
             if (this.appDefinition.noScroll) {
                 app.scroll = { mode: 'static' };
             } else {
-                // Scroll speed
-                if (this.appDefinition.scrollSpeed > 0 && this.appDefinition.scrollSpeed <= 100) {
-                    app.scroll = { mode: 'wrap', speed: this.appDefinition.scrollSpeed, whenFits: 'scroll' };
+                // Scroll speed (percent of the default speed) - all other scroll options are inherited
+                if (this.appDefinition.scrollSpeed > 0) {
+                    app.scroll = { speed: this.appDefinition.scrollSpeed };
                 }
 
                 // Repeat
@@ -144,8 +151,8 @@ export namespace AppType {
             }
 
             // Duration
-            if (this.appDefinition.durationMs > 0) {
-                app.durationMs = this.appDefinition.durationMs;
+            if (this.appDefinition.duration > 0) {
+                app.durationMs = this.appDefinition.duration * 1000;
             }
 
             // Thresholds
@@ -208,117 +215,88 @@ export namespace AppType {
                     );
 
                     try {
-                        if (this.isEnabled) {
-                            const val = this.objCache.val;
+                        const val = this.objCache.val;
 
-                            if (typeof val !== 'undefined') {
-                                let newVal = val;
+                        if (typeof val !== 'undefined') {
+                            let newVal = val;
 
-                                if (this.objCache.type === 'number') {
-                                    const realVal = typeof val !== 'number' ? parseFloat(val as string) : val;
-                                    const decimals =
-                                        typeof this.appDefinition.decimals === 'string'
-                                            ? parseInt(this.appDefinition.decimals)
-                                            : (this.appDefinition.decimals ?? 3);
+                            if (this.objCache.type === 'number') {
+                                const realVal = typeof val !== 'number' ? parseFloat(val as string) : val;
+                                const decimals =
+                                    typeof this.appDefinition.decimals === 'string'
+                                        ? parseInt(this.appDefinition.decimals)
+                                        : (this.appDefinition.decimals ?? 3);
 
-                                    if (!isNaN(realVal) && realVal % 1 !== 0) {
-                                        const valParts = String(realVal).split('.');
-                                        const countDigits = valParts[0].length;
-                                        let countDecimals = valParts[1].length || 3;
+                                if (!isNaN(realVal) && realVal % 1 !== 0) {
+                                    const valParts = String(realVal).split('.');
+                                    const countDigits = valParts[0].length;
+                                    let countDecimals = valParts[1].length || 3;
 
-                                        this.adapter.log.debug(
-                                            `[refreshCustomApp] value of objId "${this.appDefinition.objId}" has ${countDigits} digits and ${countDecimals} decimals`,
-                                        );
-
-                                        if (countDecimals > decimals) {
-                                            countDecimals = decimals; // limit
-                                        }
-
-                                        const numFormat = this.adapter.config.numberFormat;
-
-                                        // Dynamic round
-                                        if (this.appDefinition.dynamicRound) {
-                                            let maxLength = 7; // without icon
-                                            if (this.appDefinition.icon) {
-                                                maxLength = 5;
-                                            }
-
-                                            // digits
-                                            maxLength -= countDigits; // substract values in front of decimal point
-
-                                            // If thousands seperator
-                                            if (['.,', ',.'].includes(numFormat) && countDigits > 3) {
-                                                maxLength -= 1;
-                                            }
-
-                                            // unit
-                                            maxLength -= this.objCache.unit
-                                                ? text.trim().replace('%s', '').replace('%u', this.objCache.unit).length
-                                                : 1;
-
-                                            if (maxLength < countDecimals) {
-                                                countDecimals = maxLength >= 0 ? maxLength : 0;
-                                            }
-                                        }
-
-                                        if (numFormat === 'system') {
-                                            newVal = this.adapter.formatValue(realVal, countDecimals);
-                                        } else if (['.,', ',.'].includes(numFormat)) {
-                                            newVal = this.adapter.formatValue(realVal, countDecimals, numFormat);
-                                        } else if (numFormat === '.') {
-                                            newVal = realVal.toFixed(countDecimals);
-                                        } else if (numFormat === ',') {
-                                            newVal = realVal.toFixed(countDecimals).replace('.', ',');
-                                        }
-
-                                        this.adapter.log.debug(
-                                            `[refreshCustomApp] value (formatted) of objId "${this.appDefinition.objId}" from ${realVal} to ${newVal} (${countDecimals} decimals) with "${numFormat}"`,
-                                        );
-                                    }
-                                }
-
-                                const displayText = text
-                                    .replace('%s', newVal as string)
-                                    .replace('%u', this.objCache.unit ?? '')
-                                    .trim();
-
-                                if (displayText.length > 0) {
-                                    await this.apiClient
-                                        .appRequestAsync(
-                                            this.appDefinition.name,
-                                            this.createAppRequestObj(displayText, val),
-                                        )
-                                        .catch(error => {
-                                            this.adapter.log.warn(
-                                                `[refreshCustomApp] Unable to update custom app "${this.appDefinition.name}": ${error}`,
-                                            );
-                                        });
-
-                                    refreshed = true;
-                                } else {
-                                    // Empty text => remove app
                                     this.adapter.log.debug(
-                                        `[refreshCustomApp] Going to remove app "${this.appDefinition.name}" (empty text)`,
+                                        `[refreshCustomApp] value of objId "${this.appDefinition.objId}" has ${countDigits} digits and ${countDecimals} decimals`,
                                     );
 
-                                    await this.apiClient.removeAppAsync(this.appDefinition.name).catch(error => {
-                                        this.adapter.log.warn(
-                                            `[refreshCustomApp] Unable to remove app "${this.appDefinition.name}" (empty text): ${error}`,
-                                        );
-                                    });
+                                    if (countDecimals > decimals) {
+                                        countDecimals = decimals; // limit
+                                    }
+
+                                    const numFormat = this.adapter.config.numberFormat;
+
+                                    // Dynamic round
+                                    if (this.appDefinition.dynamicRound) {
+                                        let maxLength = 7; // without icon
+                                        if (this.appDefinition.icon) {
+                                            maxLength = 5;
+                                        }
+
+                                        // digits
+                                        maxLength -= countDigits; // substract values in front of decimal point
+
+                                        // If thousands seperator
+                                        if (['.,', ',.'].includes(numFormat) && countDigits > 3) {
+                                            maxLength -= 1;
+                                        }
+
+                                        // unit
+                                        maxLength -= this.objCache.unit
+                                            ? text.trim().replace('%s', '').replace('%u', this.objCache.unit).length
+                                            : 1;
+
+                                        if (maxLength < countDecimals) {
+                                            countDecimals = maxLength >= 0 ? maxLength : 0;
+                                        }
+                                    }
+
+                                    if (numFormat === 'system') {
+                                        newVal = this.adapter.formatValue(realVal, countDecimals);
+                                    } else if (['.,', ',.'].includes(numFormat)) {
+                                        newVal = this.adapter.formatValue(realVal, countDecimals, numFormat);
+                                    } else if (numFormat === '.') {
+                                        newVal = realVal.toFixed(countDecimals);
+                                    } else if (numFormat === ',') {
+                                        newVal = realVal.toFixed(countDecimals).replace('.', ',');
+                                    }
+
+                                    this.adapter.log.debug(
+                                        `[refreshCustomApp] value (formatted) of objId "${this.appDefinition.objId}" from ${realVal} to ${newVal} (${countDecimals} decimals) with "${numFormat}"`,
+                                    );
                                 }
-                            } else {
-                                // No state value => remove app
-                                this.adapter.log.debug(
-                                    `[refreshCustomApp] Going to remove app "${this.appDefinition.name}" (no state data)`,
-                                );
-
-                                await this.apiClient.removeAppAsync(this.appDefinition.name).catch(error => {
-                                    this.adapter.log.warn(
-                                        `[refreshCustomApp] Unable to remove app "${this.appDefinition.name}" (no state data): ${error}`,
-                                    );
-                                });
                             }
+
+                            const displayText = text
+                                .replace('%s', newVal as string)
+                                .replace('%u', this.objCache.unit ?? '')
+                                .trim();
+
+                            if (displayText.length > 0) {
+                                await this.pushApp(this.createAppRequestObj(displayText, val), 'state value');
+
+                                refreshed = true;
+                            } else {
+                                await this.removeApp('empty text');
+                            }
+                        } else {
+                            await this.removeApp('no state data');
                         }
                     } catch (error) {
                         this.adapter.log.error(
@@ -340,38 +318,21 @@ export namespace AppType {
                     const displayText = text.replace('%u', '').trim();
 
                     if (displayText.length > 0) {
-                        await this.apiClient
-                            .appRequestAsync(this.appDefinition.name, this.createAppRequestObj(displayText))
-                            .catch(error => {
-                                this.adapter.log.warn(
-                                    `[refreshCustomApp] Unable to create app "${this.appDefinition.name}" with static text: ${error}`,
-                                );
-                            });
+                        await this.pushApp(this.createAppRequestObj(displayText), 'static text');
 
                         refreshed = true;
                     } else {
-                        // Empty text => remove app
-                        this.adapter.log.debug(
-                            `[refreshCustomApp] Going to remove app "${this.appDefinition.name}" with static text (empty text)`,
-                        );
-
-                        await this.apiClient.removeAppAsync(this.appDefinition.name).catch(error => {
-                            this.adapter.log.warn(
-                                `[refreshCustomApp] Unable to remove app "${this.appDefinition.name}" with static text (empty text): ${error}`,
-                            );
-                        });
+                        await this.removeApp('static text is empty');
                     }
-                } else if (this.isBackgroundOny) {
-                    await this.apiClient
-                        .appRequestAsync(this.appDefinition.name, this.createAppRequestObj(''))
-                        .catch(error => {
-                            this.adapter.log.warn(
-                                `[refreshCustomApp] Unable to create app "${this.appDefinition.name}" with background only: ${error}`,
-                            );
-                        });
+                } else if (this.isBackgroundOnly) {
+                    await this.pushApp(this.createAppRequestObj(''), 'background only');
 
                     refreshed = true;
                 }
+            }
+
+            if (refreshed) {
+                this.scheduleKeepAlive();
             }
 
             return refreshed;
@@ -451,13 +412,14 @@ export namespace AppType {
             }
         }
 
-        public override async unloadAsync(): Promise<void> {
+        public override async unloadAsync(removeFromDevice: boolean): Promise<void> {
             if (this.cooldownTimeout) {
                 this.adapter.log.debug(`clearing custom app cooldown timeout for "${this.getName()}"`);
                 this.adapter.clearTimeout(this.cooldownTimeout);
+                this.cooldownTimeout = undefined;
             }
 
-            await super.unloadAsync();
+            await super.unloadAsync(removeFromDevice);
         }
     }
 }

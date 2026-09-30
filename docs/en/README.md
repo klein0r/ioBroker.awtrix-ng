@@ -15,7 +15,7 @@ Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amaz
 
 1. Flash the firmware on your device and add it to your WiFi network - see [documentation](https://blueforcer.github.io/awtrix-ng/getting-started/flashing/)
 2. Install the awtrix-ng adapter in ioBroker (and add a new instance)
-3. Open the instance configuration and enter the IP address of the device in your local network
+3. Open the instance configuration and enter the IP address of the device in your local network (and the port, if you changed it on the device - default is 80)
 
 ## FAQ
 
@@ -130,16 +130,34 @@ sendTo('awtrix-ng.0', 'audio', { rtttl: 'beep:d=4,o=5,b=120:c,e,g' }, (res) => {
 });
 ```
 
+## Radio
+
+Devices with internet radio (e.g. Ulanzi TC002) get the channel `audio.radio`. The feature is detected automatically (capabilities of the device) - on devices without radio (e.g. TC001), these objects are not created.
+
+- `audio.radio.<station>.playing` - `true` plays the station, `false` stops it (if this station is playing). The state also shows if the station is currently playing.
+- `audio.radio.<station>.url` - stream URL of the station (read only)
+- `audio.radio.playing` / `audio.radio.station` / `audio.radio.title` - current playback state (read only)
+- `audio.radio.stop` - stops the radio
+
+The stations are maintained in the web interface of the device. The objects are created and deleted automatically when stations are added or removed there (checked every 60 seconds). Stations cannot be added or removed in ioBroker.
+
 ## Apps
 
-**App names must be lowercase (a-z) and unique. No numbers, no capital letters, no special characters, no whitespaces.**
+**App names must be unique and may contain letters (A-Z, a-z), digits (0-9), `_` and `-` (max. 32 characters). No whitespaces or other special characters.**
 
-The following names are used by internal apps and cannot be used: `Time`, `Date`, `Temperature`, `Humidity`, `Battery`.
+The following names are used by internal apps or the device and cannot be used: `Time`, `Date`, `Temperature`, `Humidity`, `Battery`, `Status`, `active`, `next`, `prev`, `previous`, `order`.
 
-- You can use the state `activate` of each app to bring that app to front
-- This state has the role `button` and allows just the value `true` (other values will raise a warning)
+Each app has the following states:
 
-Each custom and history app has a state `apps.<name>.visible`. If this state is set to `false`, the app will be removed from the device and no further updates are pushed. This is useful, if a certain app should only be displayed during day time or in a given time range.
+- `apps.<name>.enabled` - if set to `false`, the app is disabled on the device and will not be displayed anymore. This is useful, if a certain app should only be displayed during day time or in a given time range.
+- `apps.<name>.slot` - position of the app in the loop (0 = first app). To change the order, just set the new position of an app - all other apps are shifted automatically (like drag and drop). The positions of all apps are always numbered consecutively.
+- `apps.<name>.activate` - bring that app to front. This state has the role `button` and allows just the value `true` (other values will raise a warning)
+- `apps.<name>.present` - `true` if the app exists on the device (read only)
+- `apps.<name>.lastError` - last error message of the device when transferring or removing the app (read only)
+
+The order and the enabled state of the apps are managed by ioBroker. Changes made on the device (e.g. via web interface) are overwritten with the next synchronization. The order of the device is just used for new apps. Instances which use the settings of another instance follow the order of that instance.
+
+If the option "Delete apps when instance is stopped" is enabled, custom and expert apps are transferred with a lifetime and are transferred again every 5 minutes. So these apps will also disappear from the device if the instance is not running anymore (e.g. after a crash).
 
 ### Custom apps
 

@@ -28,14 +28,14 @@ var AppType;
     appDefinition;
     objCache;
     isStaticText;
-    isBackgroundOny;
+    isBackgroundOnly;
     cooldownTimeout;
     constructor(apiClient, adapter, definition) {
       super(apiClient, adapter, definition);
       this.appDefinition = definition;
       this.objCache = void 0;
       this.isStaticText = false;
-      this.isBackgroundOny = true;
+      this.isBackgroundOnly = false;
       this.cooldownTimeout = void 0;
     }
     getDescription() {
@@ -45,7 +45,7 @@ var AppType;
       return "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NDggNTEyIj48IS0tIUZvbnQgQXdlc29tZSBGcmVlIDYuNy4yIGJ5IEBmb250YXdlc29tZSAtIGh0dHBzOi8vZm9udGF3ZXNvbWUuY29tIExpY2Vuc2UgLSBodHRwczovL2ZvbnRhd2Vzb21lLmNvbS9saWNlbnNlL2ZyZWUgQ29weXJpZ2h0IDIwMjUgRm9udGljb25zLCBJbmMuLS0+PHBhdGggZD0iTTIyNCAyNTZBMTI4IDEyOCAwIDEgMCAyMjQgMGExMjggMTI4IDAgMSAwIDAgMjU2em0tNDUuNyA0OEM3OS44IDMwNCAwIDM4My44IDAgNDgyLjNDMCA0OTguNyAxMy4zIDUxMiAyOS43IDUxMmwzODguNiAwYzE2LjQgMCAyOS43LTEzLjMgMjkuNy0yOS43QzQ0OCAzODMuOCAzNjguMiAzMDQgMjY5LjcgMzA0bC05MS40IDB6Ii8+PC9zdmc+";
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async init(orderDefinition) {
+    async init(appInfo) {
       var _a, _b;
       const text = String(this.appDefinition.text).trim();
       if (text.length > 0) {
@@ -97,14 +97,18 @@ var AppType;
           this.adapter.log.debug(`[initCustomApp] Init app "${this.appDefinition.name}" with static text`);
           this.isStaticText = true;
         }
-      } else if (this.appDefinition.useBackgroundEffect && this.appDefinition.backgroundEffect) {
+      } else if (this.appDefinition.useBackgroundEffect && this.appDefinition.backgroundEffect || !this.appDefinition.useBackgroundEffect && this.appDefinition.backgroundColor) {
         this.adapter.log.debug(`[initCustomApp] Init app "${this.appDefinition.name}" with background only`);
-        this.isBackgroundOny = true;
+        this.isBackgroundOnly = true;
+      } else {
+        this.adapter.log.warn(
+          `[initCustomApp] App "${this.appDefinition.name}" has no text and no background - nothing to display`
+        );
       }
       await super.init();
     }
     createAppRequestObj(text, val) {
-      const app = {};
+      const app = { ...this.getLifetimeOptions() };
       if (text !== "") {
         app.text = text;
         app.textCase = "asTyped";
@@ -184,83 +188,60 @@ var AppType;
             `[refreshCustomApp] Refreshing custom app "${this.appDefinition.name}" with icon "${this.appDefinition.icon}" and text "${this.appDefinition.text}"`
           );
           try {
-            if (this.isEnabled) {
-              const val = this.objCache.val;
-              if (typeof val !== "undefined") {
-                let newVal = val;
-                if (this.objCache.type === "number") {
-                  const realVal = typeof val !== "number" ? parseFloat(val) : val;
-                  const decimals = typeof this.appDefinition.decimals === "string" ? parseInt(this.appDefinition.decimals) : (_a = this.appDefinition.decimals) != null ? _a : 3;
-                  if (!isNaN(realVal) && realVal % 1 !== 0) {
-                    const valParts = String(realVal).split(".");
-                    const countDigits = valParts[0].length;
-                    let countDecimals = valParts[1].length || 3;
-                    this.adapter.log.debug(
-                      `[refreshCustomApp] value of objId "${this.appDefinition.objId}" has ${countDigits} digits and ${countDecimals} decimals`
-                    );
-                    if (countDecimals > decimals) {
-                      countDecimals = decimals;
-                    }
-                    const numFormat = this.adapter.config.numberFormat;
-                    if (this.appDefinition.dynamicRound) {
-                      let maxLength = 7;
-                      if (this.appDefinition.icon) {
-                        maxLength = 5;
-                      }
-                      maxLength -= countDigits;
-                      if ([".,", ",."].includes(numFormat) && countDigits > 3) {
-                        maxLength -= 1;
-                      }
-                      maxLength -= this.objCache.unit ? text.trim().replace("%s", "").replace("%u", this.objCache.unit).length : 1;
-                      if (maxLength < countDecimals) {
-                        countDecimals = maxLength >= 0 ? maxLength : 0;
-                      }
-                    }
-                    if (numFormat === "system") {
-                      newVal = this.adapter.formatValue(realVal, countDecimals);
-                    } else if ([".,", ",."].includes(numFormat)) {
-                      newVal = this.adapter.formatValue(realVal, countDecimals, numFormat);
-                    } else if (numFormat === ".") {
-                      newVal = realVal.toFixed(countDecimals);
-                    } else if (numFormat === ",") {
-                      newVal = realVal.toFixed(countDecimals).replace(".", ",");
-                    }
-                    this.adapter.log.debug(
-                      `[refreshCustomApp] value (formatted) of objId "${this.appDefinition.objId}" from ${realVal} to ${newVal} (${countDecimals} decimals) with "${numFormat}"`
-                    );
-                  }
-                }
-                const displayText = text.replace("%s", newVal).replace("%u", (_b = this.objCache.unit) != null ? _b : "").trim();
-                if (displayText.length > 0) {
-                  await this.apiClient.appRequestAsync(
-                    this.appDefinition.name,
-                    this.createAppRequestObj(displayText, val)
-                  ).catch((error) => {
-                    this.adapter.log.warn(
-                      `[refreshCustomApp] Unable to update custom app "${this.appDefinition.name}": ${error}`
-                    );
-                  });
-                  refreshed = true;
-                } else {
+            const val = this.objCache.val;
+            if (typeof val !== "undefined") {
+              let newVal = val;
+              if (this.objCache.type === "number") {
+                const realVal = typeof val !== "number" ? parseFloat(val) : val;
+                const decimals = typeof this.appDefinition.decimals === "string" ? parseInt(this.appDefinition.decimals) : (_a = this.appDefinition.decimals) != null ? _a : 3;
+                if (!isNaN(realVal) && realVal % 1 !== 0) {
+                  const valParts = String(realVal).split(".");
+                  const countDigits = valParts[0].length;
+                  let countDecimals = valParts[1].length || 3;
                   this.adapter.log.debug(
-                    `[refreshCustomApp] Going to remove app "${this.appDefinition.name}" (empty text)`
+                    `[refreshCustomApp] value of objId "${this.appDefinition.objId}" has ${countDigits} digits and ${countDecimals} decimals`
                   );
-                  await this.apiClient.removeAppAsync(this.appDefinition.name).catch((error) => {
-                    this.adapter.log.warn(
-                      `[refreshCustomApp] Unable to remove app "${this.appDefinition.name}" (empty text): ${error}`
-                    );
-                  });
+                  if (countDecimals > decimals) {
+                    countDecimals = decimals;
+                  }
+                  const numFormat = this.adapter.config.numberFormat;
+                  if (this.appDefinition.dynamicRound) {
+                    let maxLength = 7;
+                    if (this.appDefinition.icon) {
+                      maxLength = 5;
+                    }
+                    maxLength -= countDigits;
+                    if ([".,", ",."].includes(numFormat) && countDigits > 3) {
+                      maxLength -= 1;
+                    }
+                    maxLength -= this.objCache.unit ? text.trim().replace("%s", "").replace("%u", this.objCache.unit).length : 1;
+                    if (maxLength < countDecimals) {
+                      countDecimals = maxLength >= 0 ? maxLength : 0;
+                    }
+                  }
+                  if (numFormat === "system") {
+                    newVal = this.adapter.formatValue(realVal, countDecimals);
+                  } else if ([".,", ",."].includes(numFormat)) {
+                    newVal = this.adapter.formatValue(realVal, countDecimals, numFormat);
+                  } else if (numFormat === ".") {
+                    newVal = realVal.toFixed(countDecimals);
+                  } else if (numFormat === ",") {
+                    newVal = realVal.toFixed(countDecimals).replace(".", ",");
+                  }
+                  this.adapter.log.debug(
+                    `[refreshCustomApp] value (formatted) of objId "${this.appDefinition.objId}" from ${realVal} to ${newVal} (${countDecimals} decimals) with "${numFormat}"`
+                  );
                 }
-              } else {
-                this.adapter.log.debug(
-                  `[refreshCustomApp] Going to remove app "${this.appDefinition.name}" (no state data)`
-                );
-                await this.apiClient.removeAppAsync(this.appDefinition.name).catch((error) => {
-                  this.adapter.log.warn(
-                    `[refreshCustomApp] Unable to remove app "${this.appDefinition.name}" (no state data): ${error}`
-                  );
-                });
               }
+              const displayText = text.replace("%s", newVal).replace("%u", (_b = this.objCache.unit) != null ? _b : "").trim();
+              if (displayText.length > 0) {
+                await this.pushApp(this.createAppRequestObj(displayText, val), "state value");
+                refreshed = true;
+              } else {
+                await this.removeApp("empty text");
+              }
+            } else {
+              await this.removeApp("no state data");
             }
           } catch (error) {
             this.adapter.log.error(
@@ -278,30 +259,18 @@ var AppType;
           }
           const displayText = text.replace("%u", "").trim();
           if (displayText.length > 0) {
-            await this.apiClient.appRequestAsync(this.appDefinition.name, this.createAppRequestObj(displayText)).catch((error) => {
-              this.adapter.log.warn(
-                `[refreshCustomApp] Unable to create app "${this.appDefinition.name}" with static text: ${error}`
-              );
-            });
+            await this.pushApp(this.createAppRequestObj(displayText), "static text");
             refreshed = true;
           } else {
-            this.adapter.log.debug(
-              `[refreshCustomApp] Going to remove app "${this.appDefinition.name}" with static text (empty text)`
-            );
-            await this.apiClient.removeAppAsync(this.appDefinition.name).catch((error) => {
-              this.adapter.log.warn(
-                `[refreshCustomApp] Unable to remove app "${this.appDefinition.name}" with static text (empty text): ${error}`
-              );
-            });
+            await this.removeApp("static text is empty");
           }
-        } else if (this.isBackgroundOny) {
-          await this.apiClient.appRequestAsync(this.appDefinition.name, this.createAppRequestObj("")).catch((error) => {
-            this.adapter.log.warn(
-              `[refreshCustomApp] Unable to create app "${this.appDefinition.name}" with background only: ${error}`
-            );
-          });
+        } else if (this.isBackgroundOnly) {
+          await this.pushApp(this.createAppRequestObj(""), "background only");
           refreshed = true;
         }
+      }
+      if (refreshed) {
+        this.scheduleKeepAlive();
       }
       return refreshed;
     }

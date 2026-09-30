@@ -22,7 +22,9 @@
 
 Integrate your [Awtrix NG](https://github.com/Blueforcer/awtrix-ng) device (e.g. Ulanzi TC001) via HTTP
 
-Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC001) or here: [ulanzi.de](https://haus-auto.com/p/ula/UlanziTC001) (Affiliate-Links)
+Buy TC001 here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC001) or here: [ulanzi.de](https://haus-auto.com/p/ula/UlanziTC001) (Affiliate-Links)
+
+Buy TC002 here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC002) or here: [ulanzi.de](https://haus-auto.com/p/ula/UlanziTC002) (Affiliate-Links)
 
 ## Sponsored by
 
@@ -42,6 +44,25 @@ Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amaz
 
 ### **WORK IN PROGRESS**
 
+* (@klein0r) Port of the device is configurable now (default: 80)
+* (@klein0r) Apps are transferred again when a reboot of the device has been detected
+* (@klein0r) App order (enabled / slot) is transferred to the device on connect
+* (@klein0r) Custom apps are transferred even if disabled (visibility is controlled by the device)
+* (@klein0r) Fixed custom apps with invalid object ID being transferred as background-only apps
+* (@klein0r) History apps keep refreshing after errors and retry if the history instance was unavailable
+* (@klein0r) Custom and expert apps get a lifetime if "Delete apps when instance is stopped" is enabled (removed from device if the adapter is not running anymore)
+* (@klein0r) App names may contain digits, `_` and `-` now
+* (@klein0r) Added states `apps.<name>.present` and `apps.<name>.lastError`
+* (@klein0r) Failed steps when transferring data to the device (settings, apps, indicators, ...) are retried with the next refresh
+* (@klein0r) Apps which have been removed from the device (e.g. scripts) are cleaned up properly
+* (@klein0r) Apps are removed in parallel when the instance is stopped (and not at all if the device is not reachable)
+* (@klein0r) Changing `apps.<name>.slot` moves the app to the new position (other apps are shifted) - order and enabled state are managed by ioBroker
+* (@klein0r) Added internet radio (`audio.radio.*`) for devices which support it (e.g. TC002)
+* (@klein0r) Fixed display duration of custom and history apps (setting was ignored)
+* (@klein0r) Scroll speed of custom apps is a percentage of the default speed now (up to 500 %) and does not force scrolling of short texts anymore
+* (@klein0r) Improved instance configuration (dependencies between fields, validation, labels and help texts)
+* (@klein0r) Migrated all HTTP requests to the new library [awtrix-ng-api](https://www.npmjs.com/package/awtrix-ng-api)
+* (@klein0r) Fixed screen content download (`display.content`)
 * (@klein0r) Added additional meta information (soc and board type)
 * (@klein0r) Recommended Awtrix NG version is now 1.1.2
 * (ioBroker-Bot) Adapter requires admin >= 7.8.23 now.

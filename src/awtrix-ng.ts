@@ -3,18 +3,86 @@
  */
 
 import * as utils from '@iobroker/adapter-core';
-import type { AxiosResponse } from 'axios';
+import type {
+    AppInfo,
+    AudioPlayRequest,
+    ClassicAppPayload,
+    IndicatorUpdate,
+    MoodlightOptions,
+    NotificationPayload,
+    OkResponse,
+    SettingsUpdate,
+} from 'awtrix-ng-api';
+import { AwtrixApiError, AwtrixClient, AwtrixConnectionError, isValidAppName, toHexColor } from 'awtrix-ng-api';
 
-import { rgb565to888Str } from './lib/color-convert';
-
-import { AwtrixApi } from './lib/api';
 import type { AppType as AppTypeAbstract } from './lib/app-type/abstract';
+import { Radio } from './lib/radio';
 import { AppType as AppTypeBuiltin } from './lib/app-type/builtin';
 import { AppType as AppTypeScript } from './lib/app-type/script';
-import { AppType as AppTypeUser } from './lib/app-type/user';
 import { AppType as AppTypeCustom } from './lib/app-type/user/custom';
 import { AppType as AppTypeExpert } from './lib/app-type/user/expert';
 import { AppType as AppTypeHistory } from './lib/app-type/user/history';
+
+type ResyncStep = 'settings' | 'capabilities' | 'radio' | 'apps' | 'indicators' | 'moodlight' | 'screenContent';
+
+/** Features of the connected device (defaults until the capabilities have been loaded) */
+type DeviceCapabilities = {
+    /** capabilities have been loaded from the device */
+    loaded: boolean;
+    effects: Array<string>;
+    overlays: Array<string>;
+    palettes: Array<string>;
+    paletteEffects: Array<string>;
+    transitions: Array<string>;
+    /** internet radio (e.g. TC002) */
+    radio: boolean;
+};
+
+const DEFAULT_CAPABILITIES: DeviceCapabilities = {
+    loaded: false,
+    effects: [
+        'BrickBreaker',
+        'Checkerboard',
+        'ColorWaves',
+        'Fade',
+        'Fireworks',
+        'LookingEyes',
+        'Matrix',
+        'MovingLine',
+        'Pacifica',
+        'PingPong',
+        'Plasma',
+        'PlasmaCloud',
+        'Radar',
+        'Ripple',
+        'Snake',
+        'SwirlIn',
+        'SwirlOut',
+        'TheaterChase',
+        'TwinklingStars',
+    ],
+    overlays: ['rain', 'snow', 'drizzle', 'storm', 'thunder', 'frost'],
+    palettes: ['Cloud', 'Lava', 'Ocean', 'Forest', 'Stripe', 'Party', 'Heat', 'Rainbow'],
+    paletteEffects: [
+        'Checkerboard',
+        'ColorWaves',
+        'Fade',
+        'Fireworks',
+        'MovingLine',
+        'Pacifica',
+        'Plasma',
+        'PlasmaCloud',
+        'Radar',
+        'Ripple',
+        'Snake',
+        'SwirlIn',
+        'SwirlOut',
+        'TheaterChase',
+        'TwinklingStars',
+    ],
+    transitions: [],
+    radio: false,
+};
 
 type NestedObject = {
     [key: string]: any;
@@ -81,16 +149,20 @@ export class AwtrixNg extends utils.Adapter {
     private supportedVersion: string;
     private displayedVersionWarning: boolean;
 
-    private apiClient: AwtrixApi.Client | null;
+    private apiClient: AwtrixClient | null;
     private apiConnected: boolean;
+    private lastConnectionError: string | undefined;
+    private lastUptimeSeconds: number | undefined;
+    private welcomeSent: boolean;
+    private resyncFailedSteps: Set<ResyncStep>;
+    private appOrderLock: Promise<void>;
+    private appOrderSyncTimeout: ioBroker.Timeout | undefined;
+    private radio: Radio | null;
+    private capabilities: DeviceCapabilities;
     private refreshStateTimeout: ioBroker.Timeout | undefined;
     private downloadScreenContentInterval: ioBroker.Interval | undefined;
 
     private apps: Array<AppTypeAbstract.AbstractApp>;
-    private backgroundEffects: Array<string>;
-    private weatherOverlays: Array<string>;
-    private palettes: Array<string>;
-    private paletteEffects: Array<string>;
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
@@ -107,51 +179,19 @@ export class AwtrixNg extends utils.Adapter {
 
         this.apiClient = null;
         this.apiConnected = false;
+        this.lastConnectionError = undefined;
+        this.lastUptimeSeconds = undefined;
+        this.welcomeSent = false;
+        this.resyncFailedSteps = new Set();
+        this.appOrderLock = Promise.resolve();
+        this.appOrderSyncTimeout = undefined;
+        this.radio = null;
+        this.capabilities = { ...DEFAULT_CAPABILITIES };
 
         this.refreshStateTimeout = undefined;
         this.downloadScreenContentInterval = undefined;
 
         this.apps = [];
-        this.backgroundEffects = [
-            'BrickBreaker',
-            'Checkerboard',
-            'ColorWaves',
-            'Fade',
-            'Fireworks',
-            'LookingEyes',
-            'Matrix',
-            'MovingLine',
-            'Pacifica',
-            'PingPong',
-            'Plasma',
-            'PlasmaCloud',
-            'Radar',
-            'Ripple',
-            'Snake',
-            'SwirlIn',
-            'SwirlOut',
-            'TheaterChase',
-            'TwinklingStars',
-        ];
-        this.weatherOverlays = ['rain', 'snow', 'drizzle', 'storm', 'thunder', 'frost'];
-        this.palettes = ['Cloud', 'Lava', 'Ocean', 'Forest', 'Stripe', 'Party', 'Heat', 'Rainbow'];
-        this.paletteEffects = [
-            'Checkerboard',
-            'ColorWaves',
-            'Fade',
-            'Fireworks',
-            'MovingLine',
-            'Pacifica',
-            'Plasma',
-            'PlasmaCloud',
-            'Radar',
-            'Ripple',
-            'Snake',
-            'SwirlIn',
-            'SwirlOut',
-            'TheaterChase',
-            'TwinklingStars',
-        ];
 
         this.on('ready', this.onReady.bind(this));
         this.on('stateChange', this.onStateChange.bind(this));
@@ -169,14 +209,24 @@ export class AwtrixNg extends utils.Adapter {
             this.log.error(`IP address not configured - please check instance configuration and restart`);
             return;
         }
-        this.apiClient = new AwtrixApi.Client(
-            this,
-            this.config.awtrixIp,
-            80,
-            this.config.httpTimeout,
-            this.config.userName,
-            this.config.userPassword,
-        );
+
+        try {
+            this.apiClient = new AwtrixClient({
+                host: this.config.awtrixIp,
+                port: this.config.awtrixPort || 80,
+                timeout: this.config.httpTimeout * 1000 || 3000,
+                auth: this.config.userName
+                    ? { username: this.config.userName, password: this.config.userPassword }
+                    : undefined,
+            });
+        } catch (error) {
+            this.log.error(`Unable to create API client - please check instance configuration: ${error}`);
+            return;
+        }
+
+        this.log.info(`Starting - connecting to ${this.apiClient.baseUrl}/`);
+
+        this.radio = new Radio(this, this.apiClient);
 
         if (this.config.foreignSettingsInstance !== '' && this.config.foreignSettingsInstance !== this.namespace) {
             this._isMainInstance = false;
@@ -227,24 +277,32 @@ export class AwtrixNg extends utils.Adapter {
         return this._isMainInstance;
     }
 
+    public isApiConnected(): boolean {
+        return this.apiConnected;
+    }
+
     private async onStateChange(id: string, state: ioBroker.State | null | undefined): Promise<void> {
         if (id && state && !state.ack) {
             const idNoNamespace = this.removeNamespace(id);
 
             this.log.debug(`state ${idNoNamespace} changed: ${state.val}`);
 
-            if (this.apiClient!.isConnected()) {
+            if (this.apiClient && this.apiConnected) {
                 if (idNoNamespace.startsWith('settings.')) {
                     this.log.debug(`changing setting ${idNoNamespace} power to ${state.val}`);
 
                     const settingsObj = await this.getObjectAsync(idNoNamespace);
                     if (settingsObj && settingsObj.native?.settingsKey) {
-                        this.apiClient!.settingsRequestAsync(settingsObj.native.settingsKey, state.val)
-                            .then(async response => {
-                                if (response.status === 200 && response.data.ok === true) {
-                                    await this.setState(idNoNamespace, { val: state.val, ack: true });
-                                }
+                        // settings key to nested object
+                        const settingsKey: string = settingsObj.native.settingsKey;
+                        const settingsUpdate = settingsKey
+                            .split('.')
+                            .reduceRight<unknown>((acc, key) => ({ [key]: acc }), state.val) as SettingsUpdate;
 
+                        this.apiClient.settings
+                            .update(settingsUpdate)
+                            .then(async () => {
+                                await this.setState(idNoNamespace, { val: state.val, ack: true });
                                 await this.refreshSettings();
                             })
                             .catch(error => {
@@ -256,11 +314,10 @@ export class AwtrixNg extends utils.Adapter {
                 } else if (idNoNamespace === 'display.power') {
                     this.log.debug(`changing display power to ${state.val}`);
 
-                    this.apiClient!.requestAsync('display', 'PATCH', { power: state.val })
-                        .then(async response => {
-                            if (response.status === 200 && response.data.ok === true) {
-                                await this.setState(idNoNamespace, { val: state.val, ack: true });
-                            }
+                    this.apiClient.display
+                        .setPower(!!state.val)
+                        .then(async () => {
+                            await this.setState(idNoNamespace, { val: state.val, ack: true });
                         })
                         .catch(error => {
                             this.log.warn(`(power) Unable to execute action: ${error}`);
@@ -268,47 +325,46 @@ export class AwtrixNg extends utils.Adapter {
                 } else if (idNoNamespace === 'device.sleep') {
                     this.log.debug(`enable sleep mode of device for ${state.val} seconds`);
 
-                    this.apiClient!.requestAsync('device/sleep', 'POST', { durationMs: state.val })
-                        .then(async response => {
-                            if (response.status === 200 && response.data.ok === true) {
-                                await this.setState(idNoNamespace, { val: state.val, ack: true });
-                                await this.setApiConnected(false);
-                            }
+                    this.apiClient.device
+                        .sleep(Number(state.val))
+                        .then(async () => {
+                            await this.setState(idNoNamespace, { val: state.val, ack: true });
+                            await this.setApiConnected(false);
                         })
                         .catch(error => {
                             this.log.warn(`(device/sleep) Unable to execute action: ${error}`);
                         });
                 } else if (idNoNamespace.startsWith('display.moodlight.')) {
                     this.updateMoodlightByStates()
-                        .then(async response => {
-                            if (response.status === 200 && response.data.ok === true) {
-                                await this.setState(idNoNamespace, { val: state.val, ack: true });
-                            }
+                        .then(async () => {
+                            await this.setState(idNoNamespace, { val: state.val, ack: true });
                         })
                         .catch(error => {
                             this.log.warn(`(moodlight) Unable to execute action: ${error}`);
                         });
+                } else if (idNoNamespace.startsWith('audio.radio.')) {
+                    this.radio!.onStateChange(idNoNamespace, state).catch(error => {
+                        this.log.warn(`(radio) Unable to execute action: ${error}`);
+                    });
                 } else if (idNoNamespace === 'device.reboot') {
-                    this.apiClient!.requestAsync('device/reboot', 'POST')
-                        .then(async response => {
-                            if (response.status === 200 && response.data.ok === true) {
-                                this.log.info('rebooting device');
+                    this.apiClient.device
+                        .reboot()
+                        .then(async () => {
+                            this.log.info('rebooting device');
 
-                                await this.setState(idNoNamespace, { val: state.val, ack: true });
-                                await this.setApiConnected(false);
-                            }
+                            await this.setState(idNoNamespace, { val: state.val, ack: true });
+                            await this.setApiConnected(false);
                         })
                         .catch(error => {
                             this.log.warn(`(device/reboot) Unable to execute action: ${error}`);
                         });
                 } else if (idNoNamespace === 'notification.dismiss') {
-                    this.apiClient!.requestAsync('notifications/active', 'DELETE')
-                        .then(async response => {
-                            if (response.status === 200 && response.data.ok === true) {
-                                this.log.info('dismissed notifications');
+                    this.apiClient.notifications
+                        .dismiss()
+                        .then(async () => {
+                            this.log.info('dismissed notifications');
 
-                                await this.setState(idNoNamespace, { val: state.val, ack: true });
-                            }
+                            await this.setState(idNoNamespace, { val: state.val, ack: true });
                         })
                         .catch(error => {
                             this.log.warn(`(notifications/active) Unable to execute action: ${error}`);
@@ -316,11 +372,10 @@ export class AwtrixNg extends utils.Adapter {
                 } else if (idNoNamespace === 'apps.next') {
                     this.log.debug('switching to next app');
 
-                    this.apiClient!.requestAsync('apps/next', 'POST')
-                        .then(async response => {
-                            if (response.status === 200 && response.data.ok === true) {
-                                await this.setState(idNoNamespace, { val: state.val, ack: true });
-                            }
+                    this.apiClient.apps
+                        .next()
+                        .then(async () => {
+                            await this.setState(idNoNamespace, { val: state.val, ack: true });
                         })
                         .catch(error => {
                             this.log.warn(`(apps/next) Unable to execute action: ${error}`);
@@ -328,11 +383,10 @@ export class AwtrixNg extends utils.Adapter {
                 } else if (idNoNamespace === 'apps.prev') {
                     this.log.debug('switching to previous app');
 
-                    this.apiClient!.requestAsync('apps/previous', 'POST')
-                        .then(async response => {
-                            if (response.status === 200 && response.data.ok === true) {
-                                await this.setState(idNoNamespace, { val: state.val, ack: true });
-                            }
+                    this.apiClient.apps
+                        .previous()
+                        .then(async () => {
+                            await this.setState(idNoNamespace, { val: state.val, ack: true });
                         })
                         .catch(error => {
                             this.log.warn(`(apps/previous) Unable to execute action: ${error}`);
@@ -344,12 +398,10 @@ export class AwtrixNg extends utils.Adapter {
 
                     this.log.debug(`Changed indicator ${indicatorNo} with action ${action}`);
 
-                    if (indicatorNo && indicatorNo >= 1) {
+                    if (indicatorNo === 1 || indicatorNo === 2 || indicatorNo === 3) {
                         this.updateIndicatorByStates(indicatorNo)
-                            .then(async response => {
-                                if (response.status === 200 && response.data.ok === true) {
-                                    await this.setState(idNoNamespace, { val: state.val, ack: true });
-                                }
+                            .then(async () => {
+                                await this.setState(idNoNamespace, { val: state.val, ack: true });
                             })
                             .catch(error => {
                                 this.log.warn(`(indicator) Unable to perform action: ${error}`);
@@ -374,15 +426,15 @@ export class AwtrixNg extends utils.Adapter {
     }
 
     public getWeatherOverlays(): Array<string> {
-        return ['none', ...this.weatherOverlays];
+        return ['none', ...this.capabilities.overlays];
     }
 
     public getPalettes(): Array<string> {
-        return ['none', ...this.palettes];
+        return ['none', ...this.capabilities.palettes];
     }
 
     public getPaletteEffects(): Array<string> {
-        return ['none', ...this.paletteEffects];
+        return ['none', ...this.capabilities.paletteEffects];
     }
 
     private onMessage(obj: ioBroker.Message): void {
@@ -393,13 +445,13 @@ export class AwtrixNg extends utils.Adapter {
                 this.sendTo(
                     obj.from,
                     obj.command,
-                    this.backgroundEffects.map(v => ({ value: v, label: v })),
+                    this.capabilities.effects.map(v => ({ value: v, label: v })),
                     obj.callback,
                 );
             } else if (obj.command === 'notification' && typeof obj.message === 'object') {
                 // Notification
-                if (this.apiClient && this.apiClient.isConnected()) {
-                    const msgFiltered: AwtrixApi.App = Object.fromEntries(
+                if (this.apiClient && this.apiConnected) {
+                    const msgFiltered: Record<string, any> = Object.fromEntries(
                         Object.entries(obj.message).filter(([_, v]) => v !== null),
                     );
 
@@ -424,13 +476,13 @@ export class AwtrixNg extends utils.Adapter {
                         msgFiltered.icon = String(msgFiltered.icon);
                     }
 
-                    this.apiClient
-                        .requestAsync('notifications', 'POST', msgFiltered)
-                        .then(response => {
-                            this.sendTo(obj.from, obj.command, { error: null, data: response.data }, obj.callback);
+                    this.apiClient.notifications
+                        .send(msgFiltered as NotificationPayload)
+                        .then(data => {
+                            this.sendTo(obj.from, obj.command, { error: null, data }, obj.callback);
                         })
                         .catch(error => {
-                            this.sendTo(obj.from, obj.command, { error }, obj.callback);
+                            this.sendTo(obj.from, obj.command, { error: this.errorToString(error) }, obj.callback);
                         });
                 } else {
                     this.sendTo(
@@ -442,8 +494,8 @@ export class AwtrixNg extends utils.Adapter {
                 }
             } else if (obj.command === 'audio' && typeof obj.message === 'object') {
                 // Audio (generic)
-                if (this.apiClient && this.apiClient.isConnected()) {
-                    const msgFiltered: AwtrixApi.App = Object.fromEntries(
+                if (this.apiClient && this.apiConnected) {
+                    const msgFiltered: Record<string, any> = Object.fromEntries(
                         Object.entries(obj.message).filter(([_, v]) => v !== null),
                     );
 
@@ -455,13 +507,13 @@ export class AwtrixNg extends utils.Adapter {
                         );
                     }
 
-                    this.apiClient
-                        .requestAsync('audio/play', 'POST', msgFiltered)
-                        .then(response => {
-                            this.sendTo(obj.from, obj.command, { error: null, data: response.data }, obj.callback);
+                    this.apiClient.audio
+                        .play(msgFiltered as AudioPlayRequest)
+                        .then(data => {
+                            this.sendTo(obj.from, obj.command, { error: null, data }, obj.callback);
                         })
                         .catch(error => {
-                            this.sendTo(obj.from, obj.command, { error }, obj.callback);
+                            this.sendTo(obj.from, obj.command, { error: this.errorToString(error) }, obj.callback);
                         });
                 } else {
                     this.sendTo(
@@ -472,7 +524,7 @@ export class AwtrixNg extends utils.Adapter {
                     );
                 }
             } else if (obj.command === 'sendNotification' && typeof obj.message === 'object') {
-                if (this.apiClient && this.apiClient.isConnected()) {
+                if (this.apiClient && this.apiConnected) {
                     const notification: NotificationManager.LocalizedNotification = obj.message;
 
                     const { instances } = notification.category;
@@ -481,17 +533,22 @@ export class AwtrixNg extends utils.Adapter {
                         .map(([, entry]) => entry.messages.map(m => m.message))
                         .join(', ');
 
-                    const notificationApp: AwtrixApi.App = {
+                    const notificationApp: ClassicAppPayload = {
                         text: messages,
                     };
 
-                    this.apiClient
-                        .requestAsync('notifications', 'POST', notificationApp)
-                        .then(response => {
+                    this.apiClient.notifications
+                        .send(notificationApp)
+                        .then(() => {
                             this.sendTo(obj.from, obj.command, { error: null, sent: true }, obj.callback);
                         })
                         .catch(error => {
-                            this.sendTo(obj.from, obj.command, { error, sent: false }, obj.callback);
+                            this.sendTo(
+                                obj.from,
+                                obj.command,
+                                { error: this.errorToString(error), sent: false },
+                                obj.callback,
+                            );
                         });
                 } else {
                     this.sendTo(
@@ -522,101 +579,169 @@ export class AwtrixNg extends utils.Adapter {
                 // API was offline - refresh all states
                 this.log.debug('API is online');
 
-                try {
-                    // welcome (ioBroker icon and adapter version)
-                    this.apiClient!.requestAsync('notifications', 'POST', {
-                        durationMs: 2000,
-                        draw: [
-                            ['circle', 3, 4, 3, '#164477'], // ["circle", cx, cy, r, color]
-                            ['line', 3, 3, 3, 8, '#3399cc'], // ["line", x1, y1, x2, y2, color]
-                            ['pixel', 3, 1, '#3399cc'], // ["pixel", x, y, color]
-                            ['text', 10, 2, this.version, '#164477'], // ["text", x, y, "HI", color]
-                        ],
-                    }).catch(error => {
-                        this.log.warn(error);
-                    });
-
-                    // settings
-                    await this.refreshSettings();
-                    await this.refreshCapabilitiesLists();
-
-                    // apps
-                    await this.createAppObjects();
-
-                    // indicators
-                    for (let i = 1; i <= 3; i++) {
-                        await this.updateIndicatorByStates(i);
-                    }
-
-                    // moodlight
-                    await this.updateMoodlightByStates();
-
-                    if (this.config.downloadScreenContent && !this.downloadScreenContentInterval) {
-                        this.log.debug(
-                            `[setApiConnected] Downloading screen contents every ${this.config.downloadScreenContentInterval} seconds`,
-                        );
-
-                        const downloadInterval = Math.min(this.config.downloadScreenContentInterval, 86_400) * 1_000;
-
-                        this.downloadScreenContentInterval = this.setInterval(() => {
-                            if (this.apiClient!.isConnected()) {
-                                this.apiClient!.requestAsync('display/screen', 'GET')
-                                    .then(async response => {
-                                        if (response.status === 200) {
-                                            const pixelData = response.data;
-                                            const width = pixelData.width;
-                                            const height = pixelData.height;
-                                            const scaleX = width / 32;
-                                            const scaleY = height / 8;
-
-                                            let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 640 160">`;
-
-                                            for (let y = 0; y < 8; y++) {
-                                                for (let x = 0; x < 32; x++) {
-                                                    const color = rgb565to888Str(pixelData[y * 32 + x]);
-                                                    svg += `\n  <rect style="fill: ${color}; stroke: #000000; stroke-width: 2px;" `;
-                                                    svg += `x="${x * scaleX}" y="${y * scaleY}" width="${scaleX}" height="${scaleY}"/>`;
-                                                }
-                                            }
-
-                                            svg += '\n</svg>';
-
-                                            await this.setState('display.content', { val: svg, ack: true });
-                                        }
-                                    })
-                                    .catch(error => {
-                                        this.log.debug(`(display/screen) received error: ${JSON.stringify(error)}`);
-                                    });
-                            }
-                        }, downloadInterval);
-                    } else {
-                        await this.setState('display.content', {
-                            val: `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="160"/>`,
-                            ack: true,
-                            c: 'Feature disabled',
-                            q: 0x01,
-                        });
-                    }
-                } catch (error) {
-                    this.log.error(`[setApiConnected] Unable to refresh settings, apps or indicators: ${error}`);
-                }
+                await this.resyncDevice();
             } else {
                 if (this.downloadScreenContentInterval) {
                     this.clearInterval(this.downloadScreenContentInterval);
                     this.downloadScreenContentInterval = undefined;
                 }
 
+                this.lastUptimeSeconds = undefined;
+                this.resyncFailedSteps.clear(); // full resync on reconnect
+
                 this.log.debug('API is offline');
             }
+        }
+    }
+
+    /**
+     * Transfers everything the device should know (settings, apps, app order, indicators, ...).
+     * Called when the device comes online and when a reboot was detected (pushed apps are held in RAM only).
+     * Each step is executed on its own - failed steps are retried with the next state refresh.
+     *
+     * @param onlySteps - just execute these steps (retry of failed steps)
+     */
+    private async resyncDevice(onlySteps?: ReadonlySet<ResyncStep>): Promise<void> {
+        if (!onlySteps) {
+            this.sendWelcomeNotification();
+        }
+
+        const steps: Array<[ResyncStep, () => Promise<unknown>]> = [
+            ['settings', () => this.refreshSettings()],
+            ['capabilities', () => this.refreshCapabilities()],
+            ['radio', () => this.refreshRadio(true)],
+            ['apps', () => this.createAppObjects()],
+            ['indicators', () => this.updateAllIndicatorsByStates()],
+            ['moodlight', () => this.updateMoodlightByStates()],
+            ['screenContent', () => this.initScreenContentDownload()],
+        ];
+
+        const failedSteps = new Set<ResyncStep>();
+
+        for (const [step, fn] of steps) {
+            if (onlySteps && !onlySteps.has(step)) {
+                continue;
+            }
+
+            try {
+                await fn();
+            } catch (error) {
+                failedSteps.add(step);
+                this.log.debug(`[resyncDevice] Step "${step}" failed: ${error}`);
+
+                if (!this.apiConnected) {
+                    break; // device went offline - full resync on reconnect
+                }
+            }
+        }
+
+        if (failedSteps.size > 0) {
+            const msg = `[resyncDevice] Unable to transfer ${[...failedSteps].join(', ')} - retrying with next refresh`;
+
+            // avoid spamming the log if a step fails repeatedly
+            if (this.resyncFailedSteps.size === 0) {
+                this.log.warn(msg);
+            } else {
+                this.log.debug(msg);
+            }
+        } else if (this.resyncFailedSteps.size > 0) {
+            this.log.info('[resyncDevice] Transferred all remaining data successfully');
+        }
+
+        this.resyncFailedSteps = failedSteps;
+    }
+
+    private sendWelcomeNotification(): void {
+        // welcome (ioBroker icon and adapter version) - just once after adapter start
+        if (!this.welcomeSent) {
+            this.apiClient!.notifications.send({
+                durationMs: 2000,
+                draw: [
+                    ['circle', 3, 4, 3, '#164477'], // ["circle", cx, cy, r, color]
+                    ['line', 3, 3, 3, 8, '#3399cc'], // ["line", x1, y1, x2, y2, color]
+                    ['pixel', 3, 1, '#3399cc'], // ["pixel", x, y, color]
+                    ['text', 10, 2, this.version ?? '', '#164477'], // ["text", x, y, "HI", color]
+                ],
+            })
+                .then(() => {
+                    this.welcomeSent = true;
+                })
+                .catch(error => {
+                    this.log.warn(`(welcome notification) Unable to send: ${error}`);
+                });
+        }
+    }
+
+    private async initScreenContentDownload(): Promise<void> {
+        if (this.config.downloadScreenContent) {
+            if (!this.downloadScreenContentInterval) {
+                this.log.debug(
+                    `[initScreenContentDownload] Downloading screen contents every ${this.config.downloadScreenContentInterval} seconds`,
+                );
+
+                const downloadInterval =
+                    Math.min(Math.max(this.config.downloadScreenContentInterval, 5), 86_400) * 1_000;
+
+                this.downloadScreenContentInterval = this.setInterval(() => {
+                    if (this.apiClient && this.apiConnected) {
+                        this.apiClient.display
+                            .getScreen()
+                            .then(async screen => {
+                                const { width, height, pixels } = screen;
+                                const pixelSize = 20;
+
+                                let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width * pixelSize}" height="${height * pixelSize}" viewBox="0 0 ${width * pixelSize} ${height * pixelSize}">`;
+
+                                for (let y = 0; y < height; y++) {
+                                    for (let x = 0; x < width; x++) {
+                                        const color = toHexColor(pixels[y * width + x] ?? 0);
+                                        svg += `\n  <rect style="fill: ${color}; stroke: #000000; stroke-width: 2px;" `;
+                                        svg += `x="${x * pixelSize}" y="${y * pixelSize}" width="${pixelSize}" height="${pixelSize}"/>`;
+                                    }
+                                }
+
+                                svg += '\n</svg>';
+
+                                await this.setState('display.content', { val: svg, ack: true });
+                            })
+                            .catch(error => {
+                                this.log.debug(`(display/screen) received error: ${error}`);
+                            });
+                    }
+                }, downloadInterval);
+            }
+        } else {
+            await this.setState('display.content', {
+                val: `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="160"/>`,
+                ack: true,
+                c: 'Feature disabled',
+                q: 0x01,
+            });
         }
     }
 
     private refreshState(): void {
         this.log.debug('refreshing device state');
 
-        this.apiClient!.getDeviceAsync()
+        this.apiClient!.device.get()
             .then(async content => {
-                await this.setApiConnected(true);
+                this.lastConnectionError = undefined;
+
+                // uptime decreased since last request -> device was rebooted between two requests
+                const rebootDetected =
+                    this.apiConnected &&
+                    this.lastUptimeSeconds !== undefined &&
+                    content.uptimeSeconds < this.lastUptimeSeconds;
+                this.lastUptimeSeconds = content.uptimeSeconds;
+
+                if (rebootDetected) {
+                    this.log.info('Device was rebooted - transferring apps and settings again');
+                    await this.resyncDevice();
+                } else if (this.apiConnected && this.resyncFailedSteps.size > 0) {
+                    await this.resyncDevice(new Set(this.resyncFailedSteps));
+                } else {
+                    await this.setApiConnected(true);
+                }
 
                 this.currentVersion = String(content.version);
 
@@ -636,22 +761,31 @@ export class AwtrixNg extends utils.Adapter {
                 await this.setStateChangedAsync('meta.boardType', { val: content.boardType, ack: true });
                 await this.setStateChangedAsync('meta.soc', { val: content.soc, ack: true });
 
-                await this.setStateChangedAsync('sensor.lux', { val: content.lightLevel, ack: true });
-                await this.setStateChangedAsync('sensor.temp', { val: content.temperature, ack: true });
-                await this.setStateChangedAsync('sensor.humidity', { val: content.humidity, ack: true });
+                await this.setStateChangedAsync('sensor.lux', { val: content.lightLevel ?? null, ack: true });
+                await this.setStateChangedAsync('sensor.temp', { val: content.temperature ?? null, ack: true });
+                await this.setStateChangedAsync('sensor.humidity', { val: content.humidity ?? null, ack: true });
 
                 await this.setStateChangedAsync('display.brightness', { val: content.brightness, ack: true });
 
-                await this.setStateChangedAsync('device.battery', { val: content.batteryPercent, ack: true });
+                await this.setStateChangedAsync('device.battery', { val: content.batteryPercent ?? null, ack: true });
                 await this.setStateChangedAsync('device.ipAddress', { val: content.ipAddress, ack: true });
                 await this.setStateChangedAsync('device.wifiSignal', { val: content.wifiRssi, ack: true });
                 await this.setStateChangedAsync('device.freeRAM', { val: content.freeHeapBytes, ack: true });
                 await this.setStateChangedAsync('device.uptime', { val: content.uptimeSeconds, ack: true });
+
+                // Radio: playback state and station list (stations may be changed in the web interface)
+                if (this.capabilities.radio && !this.resyncFailedSteps.has('radio')) {
+                    await this.radio!.refresh(false).catch(error => {
+                        this.log.debug(`[refreshState] Unable to refresh radio: ${error}`);
+                    });
+                }
             })
             .catch(error => {
                 this.currentVersion = undefined;
 
-                this.log.debug(`(stats) received error - API is now offline: ${JSON.stringify(error)}`);
+                this.logRequestError(error);
+
+                this.log.debug(`(stats) received error - API is now offline: ${error}`);
                 this.setApiConnected(false).catch(error => {
                     this.log.warn(`[refreshState] Set API connected to false failed`);
                 });
@@ -681,94 +815,112 @@ export class AwtrixNg extends utils.Adapter {
         }, {});
     }
 
-    private async refreshSettings(): Promise<number> {
-        return new Promise<number>((resolve, reject) => {
-            this.apiClient!.requestAsync('settings', 'GET')
-                .then(async response => {
-                    if (response.status === 200) {
-                        const content = this.flattenObject(response.data);
+    private async refreshSettings(): Promise<void> {
+        try {
+            const content = this.flattenObject(await this.apiClient!.settings.get());
 
-                        const settingsStates = await this.getObjectViewAsync('system', 'state', {
-                            startkey: `${this.namespace}.settings.`,
-                            endkey: `${this.namespace}.settings.\u9999`,
-                        });
+            const settingsStates = await this.getObjectViewAsync('system', 'state', {
+                startkey: `${this.namespace}.settings.`,
+                endkey: `${this.namespace}.settings.\u9999`,
+            });
 
-                        // Find all available settings objects with settingsKey
-                        const knownSettings: { [key: string]: { id: string; role: string } } = {};
-                        for (const settingsObj of settingsStates.rows) {
-                            if (settingsObj.value?.native?.settingsKey) {
-                                knownSettings[settingsObj.value.native.settingsKey] = {
-                                    id: this.removeNamespace(settingsObj.id),
-                                    role: settingsObj.value.common.role,
-                                };
-                            }
-                        }
+            // Find all available settings objects with settingsKey
+            const knownSettings: { [key: string]: { id: string; role: string } } = {};
+            for (const settingsObj of settingsStates.rows) {
+                if (settingsObj.value?.native?.settingsKey) {
+                    knownSettings[settingsObj.value.native.settingsKey] = {
+                        id: this.removeNamespace(settingsObj.id),
+                        role: settingsObj.value.common.role,
+                    };
+                }
+            }
 
-                        const unknownSettings = [];
+            const unknownSettings = [];
 
-                        for (const [settingsKey, val] of Object.entries(content)) {
-                            if (Object.prototype.hasOwnProperty.call(knownSettings, settingsKey)) {
-                                this.log.debug(
-                                    `[refreshSettings] updating settings value "${knownSettings[settingsKey].id}" to ${String(val)}`,
-                                );
+            for (const [settingsKey, val] of Object.entries(content)) {
+                if (Object.prototype.hasOwnProperty.call(knownSettings, settingsKey)) {
+                    this.log.debug(
+                        `[refreshSettings] updating settings value "${knownSettings[settingsKey].id}" to ${String(val)}`,
+                    );
 
-                                await this.setStateChangedAsync(knownSettings[settingsKey].id, {
-                                    val: val as string | number,
-                                    ack: true,
-                                    c: 'Updated from API',
-                                });
-                            } else {
-                                unknownSettings.push(settingsKey);
-                            }
-                        }
+                    await this.setStateChangedAsync(knownSettings[settingsKey].id, {
+                        val: val as string | number,
+                        ack: true,
+                        c: 'Updated from API',
+                    });
+                } else {
+                    unknownSettings.push(settingsKey);
+                }
+            }
 
-                        this.log.debug(
-                            `[refreshSettings] Missing setting objects for keys: ${JSON.stringify(unknownSettings)}`,
-                        );
-                    }
-
-                    resolve(response.status);
-                })
-                .catch(error => {
-                    this.log.warn(`(settings) Received error: ${JSON.stringify(error)}`);
-
-                    // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
-                    reject(error);
-                });
-        });
+            this.log.debug(`[refreshSettings] Missing setting objects for keys: ${JSON.stringify(unknownSettings)}`);
+        } catch (error) {
+            this.log.debug(`(settings) Received error: ${error}`);
+            throw error;
+        }
     }
 
-    private async refreshCapabilitiesLists(): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
-            this.apiClient!.requestAsync('capabilities')
-                .then(response => {
-                    if (response.status === 200) {
-                        this.log.debug(
-                            `[refreshCapabilitiesLists] Existing capabilities "${JSON.stringify(response.data)}"`,
-                        );
+    private async refreshCapabilities(): Promise<void> {
+        const capabilities = await this.apiClient!.device.capabilities();
 
-                        this.backgroundEffects = response.data.effects;
-                        this.weatherOverlays = response.data.overlays;
+        this.log.debug(`[refreshCapabilities] Existing capabilities "${JSON.stringify(capabilities)}"`);
 
-                        // Transistions
-                        const transitions = response.data.transitions;
+        this.capabilities = {
+            loaded: true,
+            effects: capabilities.effects ?? DEFAULT_CAPABILITIES.effects,
+            overlays: capabilities.overlays ?? DEFAULT_CAPABILITIES.overlays,
+            palettes: capabilities.palettes ?? DEFAULT_CAPABILITIES.palettes,
+            paletteEffects: capabilities.paletteEffects ?? DEFAULT_CAPABILITIES.paletteEffects,
+            transitions: capabilities.transitions ?? DEFAULT_CAPABILITIES.transitions,
+            radio: capabilities.audio?.radio === true,
+        };
 
-                        const states: { [key: string]: string } = {};
-                        for (let i = 0; i < transitions.length; i++) {
-                            states[transitions[i]] = transitions[i];
-                        }
+        // Transistions
+        const states: { [key: string]: string } = {};
+        for (const transition of this.capabilities.transitions) {
+            states[transition] = transition;
+        }
 
-                        this.extendObject('settings.apps.transitionEffect', { common: { states } })
-                            .then(() => {
-                                resolve();
-                            })
-                            .catch(reject);
-                    } else {
-                        reject(new Error(`${response.status}: ${response.data}`));
-                    }
-                })
-                .catch(reject);
-        });
+        await this.extendObject('settings.apps.transitionEffect', { common: { states } });
+    }
+
+    /**
+     * Radio stations and playback state (just if supported by the device - e.g. TC002)
+     *
+     * @param forceObjectSync - create / check objects even if the station list is unchanged
+     */
+    private async refreshRadio(forceObjectSync: boolean): Promise<void> {
+        if (!this.capabilities.loaded) {
+            throw new Error('capabilities of device unknown');
+        }
+
+        if (this.capabilities.radio) {
+            await this.radio!.refresh(forceObjectSync);
+        } else {
+            await this.radio!.remove();
+        }
+    }
+
+    private isValidUserAppName(name: string): boolean {
+        // same list as the validator in admin/jsonConfig.json
+        const reservedNames = [
+            // builtin apps
+            'time',
+            'date',
+            'temperature',
+            'humidity',
+            'battery',
+            'status',
+            // reserved by the device (routes)
+            'active',
+            'next',
+            'previous',
+            'order',
+            // would collide with the state apps.prev
+            'prev',
+        ];
+
+        return isValidAppName(name) && !reservedNames.includes(name.toLowerCase());
     }
 
     private findAppWithName(name: string): AppTypeAbstract.AbstractApp | undefined {
@@ -776,169 +928,324 @@ export class AwtrixNg extends utils.Adapter {
     }
 
     private async createAppObjects(): Promise<number> {
-        return new Promise<number>((resolve, reject) => {
-            if (this.apiClient!.isConnected()) {
-                this.apiClient!.requestAsync('apps', 'GET')
-                    .then(async response => {
-                        if (response.status === 200) {
-                            const content = response.data as Array<AwtrixApi.AppOrderDefinition>;
+        if (!this.apiClient || !this.apiConnected) {
+            throw new Error('API_OFFLINE');
+        }
 
-                            const builtinApps = content.filter(a => a.origin === 'builtin').map(a => a.name);
-                            const scriptApps = content.filter(a => a.origin === 'script').map(a => a.name);
+        const apiClient = this.apiClient;
 
-                            // Init all apps
-                            for (const builtinAppName of builtinApps) {
-                                if (!this.findAppWithName(builtinAppName)) {
-                                    this.apps.push(new AppTypeBuiltin.Builtin(this.apiClient!, this, builtinAppName));
-                                }
-                            }
+        let content: AppInfo[];
+        try {
+            content = await apiClient.apps.list();
+        } catch (error) {
+            this.log.debug(`[createAppObjects] received error: ${error}`);
+            throw error;
+        }
 
-                            for (const scriptAppName of scriptApps) {
-                                if (!this.findAppWithName(scriptAppName)) {
-                                    this.apps.push(new AppTypeScript.Script(this.apiClient!, this, scriptAppName));
-                                }
-                            }
+        const builtinApps = content.filter(a => a.origin === 'builtin').map(a => a.name);
+        const scriptApps = content.filter(a => a.origin === 'script').map(a => a.name);
 
-                            for (const customApp of this.config.customApps) {
-                                if (!this.findAppWithName(customApp.name)) {
-                                    this.apps.push(new AppTypeCustom.Custom(this.apiClient!, this, customApp));
-                                } else {
-                                    this.log.warn(
-                                        `App with name ${customApp.name} already exists. Skipping custom app!`,
-                                    );
-                                }
-                            }
+        // Remove builtin / script apps which are not present on the device anymore (e.g. deleted script)
+        for (const app of [...this.apps]) {
+            const vanished =
+                (app instanceof AppTypeBuiltin.Builtin && !builtinApps.includes(app.getName())) ||
+                (app instanceof AppTypeScript.Script && !scriptApps.includes(app.getName()));
 
-                            for (const historyApp of this.config.historyApps) {
-                                if (!this.findAppWithName(historyApp.name)) {
-                                    this.apps.push(new AppTypeHistory.History(this.apiClient!, this, historyApp));
-                                } else {
-                                    this.log.warn(
-                                        `App with name ${historyApp.name} already exists. Skipping history app!`,
-                                    );
-                                }
-                            }
+            if (vanished) {
+                this.log.debug(`[createAppObjects] app "${app.getName()}" is not present on the device anymore`);
 
-                            for (const expertApp of this.config.expertApps) {
-                                if (!this.findAppWithName(expertApp.name)) {
-                                    this.apps.push(new AppTypeExpert.Expert(this.apiClient!, this, expertApp));
-                                } else {
-                                    this.log.warn(
-                                        `App with name ${expertApp.name} already exists. Skipping expert app!`,
-                                    );
-                                }
-                            }
-
-                            const customApps = this.config.customApps.map(a => a.name);
-                            const historyApps = this.config.historyApps.map(a => a.name);
-                            const expertApps = this.config.expertApps.map(a => a.name);
-                            const allApps = [
-                                ...builtinApps,
-                                ...scriptApps,
-                                ...customApps,
-                                ...historyApps,
-                                ...expertApps,
-                            ];
-
-                            const appsAll = [];
-                            const appsKeep = [];
-
-                            // Collect all existing apps from objects
-                            const existingChannels = await this.getChannelsOfAsync('apps');
-                            if (existingChannels) {
-                                for (const existingChannel of existingChannels) {
-                                    const id = this.removeNamespace(existingChannel._id);
-
-                                    // Check if the state is a direct child (e.g. apps.temp)
-                                    if (id.split('.').length === 2) {
-                                        appsAll.push(id);
-                                    }
-                                }
-                            }
-
-                            // Create new app structure for all existing apps and apps of instance configuration
-                            for (const name of allApps) {
-                                const isBuiltinApp = builtinApps.includes(name);
-                                const isScriptApp = scriptApps.includes(name);
-                                const isCustomApp = customApps.includes(name);
-                                const isHistoryApp = historyApps.includes(name);
-                                const isExpertApp = expertApps.includes(name);
-
-                                const app = this.findAppWithName(name);
-
-                                if (app) {
-                                    this.log.debug(`[createAppObjects] found (keep): apps.${app.getNameClean()}`);
-
-                                    appsKeep.push(`apps.${app.getNameClean()}`);
-
-                                    await this.extendObject(`apps.${app.getNameClean()}`, {
-                                        type: 'channel',
-                                        common: {
-                                            name: `App ${name}`,
-                                            desc: `${app.getDescription()} app`,
-                                            icon: app.getIconForObjectTree(),
-                                        },
-                                        native: {
-                                            isBuiltinApp,
-                                            isScriptApp,
-                                            isCustomApp,
-                                            isHistoryApp,
-                                            isExpertApp,
-                                        },
-                                    });
-
-                                    const orderDefinition = content.find(a => a.name === app.getName());
-
-                                    await app.createObjects();
-                                    await app.init(orderDefinition);
-                                    await app.refresh();
-                                }
-                            }
-
-                            // Delete non existent app objects
-                            for (const app of appsAll) {
-                                if (!appsKeep.includes(app)) {
-                                    await this.delObjectAsync(app, { recursive: true });
-                                    this.log.debug(`[createAppObjects] deleted: ${app}`);
-                                }
-                            }
-
-                            resolve(appsKeep.length);
-                        } else {
-                            this.log.warn(`[createAppObjects] received status code: ${response.status}`);
-
-                            reject(new Error(`received status code: ${response.status}`));
-                        }
-                    })
-                    .catch(error => {
-                        this.log.debug(`[createAppObjects] received error: ${JSON.stringify(error)}`);
-
-                        // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
-                        reject(error);
-                    });
-            } else {
-                reject(new Error('API_OFFLINE'));
+                await app.unloadAsync(false);
+                this.apps.splice(this.apps.indexOf(app), 1);
             }
-        });
+        }
+
+        // Init all apps
+        for (const builtinAppName of builtinApps) {
+            if (!this.findAppWithName(builtinAppName)) {
+                this.apps.push(new AppTypeBuiltin.Builtin(apiClient, this, builtinAppName));
+            }
+        }
+
+        for (const scriptAppName of scriptApps) {
+            if (!this.findAppWithName(scriptAppName)) {
+                this.apps.push(new AppTypeScript.Script(apiClient, this, scriptAppName));
+            }
+        }
+
+        for (const customApp of this.config.customApps) {
+            if (!this.isValidUserAppName(customApp.name)) {
+                this.log.warn(
+                    `App name "${customApp.name}" is invalid or reserved (allowed: A-Z, a-z, 0-9, _ and -, max. 32 characters). Skipping custom app!`,
+                );
+            } else if (!this.findAppWithName(customApp.name)) {
+                this.apps.push(new AppTypeCustom.Custom(apiClient, this, customApp));
+            } else {
+                this.log.warn(`App with name ${customApp.name} already exists. Skipping custom app!`);
+            }
+        }
+
+        for (const historyApp of this.config.historyApps) {
+            if (!this.isValidUserAppName(historyApp.name)) {
+                this.log.warn(
+                    `App name "${historyApp.name}" is invalid or reserved (allowed: A-Z, a-z, 0-9, _ and -, max. 32 characters). Skipping history app!`,
+                );
+            } else if (!this.findAppWithName(historyApp.name)) {
+                this.apps.push(new AppTypeHistory.History(apiClient, this, historyApp));
+            } else {
+                this.log.warn(`App with name ${historyApp.name} already exists. Skipping history app!`);
+            }
+        }
+
+        for (const expertApp of this.config.expertApps) {
+            if (!this.isValidUserAppName(expertApp.name)) {
+                this.log.warn(
+                    `App name "${expertApp.name}" is invalid or reserved (allowed: A-Z, a-z, 0-9, _ and -, max. 32 characters). Skipping expert app!`,
+                );
+            } else if (!this.findAppWithName(expertApp.name)) {
+                this.apps.push(new AppTypeExpert.Expert(apiClient, this, expertApp));
+            } else {
+                this.log.warn(`App with name ${expertApp.name} already exists. Skipping expert app!`);
+            }
+        }
+
+        const customApps = this.config.customApps.map(a => a.name);
+        const historyApps = this.config.historyApps.map(a => a.name);
+        const expertApps = this.config.expertApps.map(a => a.name);
+        const allApps = [...builtinApps, ...scriptApps, ...customApps, ...historyApps, ...expertApps];
+
+        const appsAll = [];
+        const appsKeep = [];
+        const failedApps: Array<string> = [];
+
+        // Collect all existing apps from objects
+        const existingChannels = await this.getChannelsOfAsync('apps');
+        if (existingChannels) {
+            for (const existingChannel of existingChannels) {
+                const id = this.removeNamespace(existingChannel._id);
+
+                // Check if the state is a direct child (e.g. apps.temp)
+                if (id.split('.').length === 2) {
+                    appsAll.push(id);
+                }
+            }
+        }
+
+        // Create new app structure for all existing apps and apps of instance configuration
+        for (const name of allApps) {
+            const isBuiltinApp = builtinApps.includes(name);
+            const isScriptApp = scriptApps.includes(name);
+            const isCustomApp = customApps.includes(name);
+            const isHistoryApp = historyApps.includes(name);
+            const isExpertApp = expertApps.includes(name);
+
+            const app = this.findAppWithName(name);
+
+            if (app) {
+                this.log.debug(`[createAppObjects] found (keep): apps.${app.getNameClean()}`);
+
+                appsKeep.push(`apps.${app.getNameClean()}`);
+
+                try {
+                    await this.extendObject(`apps.${app.getNameClean()}`, {
+                        type: 'channel',
+                        common: {
+                            name: `App ${name}`,
+                            desc: `${app.getDescription()} app`,
+                            icon: app.getIconForObjectTree(),
+                        },
+                        native: {
+                            isBuiltinApp,
+                            isScriptApp,
+                            isCustomApp,
+                            isHistoryApp,
+                            isExpertApp,
+                        },
+                    });
+
+                    const appInfo = content.find(a => a.name === app.getName());
+
+                    await app.createObjects();
+                    await app.init(appInfo);
+                    await app.refresh();
+                } catch (error) {
+                    failedApps.push(name);
+                    this.log.warn(`[createAppObjects] Unable to initialize app "${name}": ${error}`);
+                }
+            }
+        }
+
+        // Delete non existent app objects
+        for (const app of appsAll) {
+            if (!appsKeep.includes(app)) {
+                await this.delObjectAsync(app, { recursive: true });
+                this.log.debug(`[createAppObjects] deleted: ${app}`);
+            }
+        }
+
+        // Assign positions to new apps, remove gaps and transfer the order (ioBroker is leading)
+        await this.runAppOrderExclusive(() => this.normalizeAppOrder());
+        await this.sendAppOrder();
+
+        if (failedApps.length > 0) {
+            throw new Error(`Unable to initialize apps: ${failedApps.join(', ')}`);
+        }
+
+        return appsKeep.length;
     }
 
     public async refreshAppOrder(): Promise<void> {
-        if (this.apiClient && this.apiClient.isConnected()) {
+        if (this.apiClient && this.apiConnected) {
             try {
-                const appsEnabled = this.apps.filter(a => a.enabled());
-                appsEnabled.sort((a, b) => (a.getSlot() ?? 9999) - (b.getSlot() ?? 9999));
-
-                await this.apiClient?.requestAsync('apps/order', 'PUT', {
-                    order: appsEnabled.map(a => a.getName()),
-                    disabled: this.apps.filter(a => !a.enabled()).map(a => a.getName()),
-                });
+                await this.sendAppOrder();
             } catch (err) {
                 this.log.error(`[refreshAppOrder] Failed to change app order: ${err}`);
             }
         }
     }
 
-    private async updateIndicatorByStates(index: number): Promise<AxiosResponse> {
+    /**
+     * Operations on the app order are executed one after another (e.g. multiple slot changes at once)
+     *
+     * @param fn - operation
+     */
+    private async runAppOrderExclusive(fn: () => Promise<void>): Promise<void> {
+        const result = this.appOrderLock.then(fn);
+        this.appOrderLock = result.catch(() => undefined);
+
+        return result;
+    }
+
+    /**
+     * All apps sorted by their current position (apps without position at the end)
+     */
+    private getAppsSortedBySlot(): Array<AppTypeAbstract.AbstractApp> {
+        return [...this.apps].sort(
+            (a, b) =>
+                (a.getSlot() ?? Number.MAX_SAFE_INTEGER) - (b.getSlot() ?? Number.MAX_SAFE_INTEGER) ||
+                a.getName().localeCompare(b.getName()),
+        );
+    }
+
+    /**
+     * Brings the positions of all apps into a dense order (0 ... n-1). Apps without a position
+     * (new apps or first start) are appended - sorted by their position on the device.
+     */
+    private async normalizeAppOrder(): Promise<void> {
+        const appsWithSlot = this.apps.filter(a => a.getSlot() !== null);
+        const appsWithoutSlot = this.apps
+            .filter(a => a.getSlot() === null)
+            .sort(
+                (a, b) =>
+                    (a.getDeviceSlot() ?? Number.MAX_SAFE_INTEGER) - (b.getDeviceSlot() ?? Number.MAX_SAFE_INTEGER) ||
+                    a.getName().localeCompare(b.getName()),
+            );
+
+        const sorted = [
+            ...appsWithSlot.sort((a, b) => a.getSlot()! - b.getSlot()! || a.getName().localeCompare(b.getName())),
+            ...appsWithoutSlot,
+        ];
+
+        await this.applyAppSlots(sorted);
+    }
+
+    /**
+     * Sets the position of each app to its index in the given list and updates the slot states
+     *
+     * @param sorted - all apps in the new order
+     * @param movedApp - app which has been moved by the user (state is acknowledged even if unchanged)
+     */
+    private async applyAppSlots(
+        sorted: Array<AppTypeAbstract.AbstractApp>,
+        movedApp?: AppTypeAbstract.AbstractApp,
+    ): Promise<void> {
+        for (const [index, app] of sorted.entries()) {
+            const changed = app.getSlot() !== index;
+            app.setSlot(index);
+
+            if (changed || app === movedApp) {
+                await this.setState(`apps.${app.getNameClean()}.slot`, { val: index, ack: true, c: 'app order' });
+            } else {
+                await this.setStateChangedAsync(`apps.${app.getNameClean()}.slot`, { val: index, ack: true });
+            }
+        }
+    }
+
+    /**
+     * Moves the app to the given position - all other apps are shifted (main instance only)
+     *
+     * @param app - app to move
+     * @param position - new position (0 = first)
+     */
+    public async moveApp(app: AppTypeAbstract.AbstractApp, position: number): Promise<void> {
+        await this.runAppOrderExclusive(async () => {
+            const sorted = this.getAppsSortedBySlot().filter(a => a !== app);
+            const index = Math.max(0, Math.min(Math.round(position), sorted.length));
+
+            sorted.splice(index, 0, app);
+
+            await this.applyAppSlots(sorted, app);
+        });
+
+        await this.refreshAppOrder();
+    }
+
+    /**
+     * Follow the order of the main instance (other instances only) - debounced, because a move
+     * in the main instance changes the slots of multiple apps
+     */
+    public scheduleAppOrderSync(): void {
+        if (this.appOrderSyncTimeout) {
+            this.clearTimeout(this.appOrderSyncTimeout);
+        }
+
+        this.appOrderSyncTimeout = this.setTimeout(async () => {
+            this.appOrderSyncTimeout = undefined;
+
+            try {
+                await this.runAppOrderExclusive(async () => {
+                    for (const app of this.apps) {
+                        const slotState = await this.getForeignStateAsync(
+                            `${this.config.foreignSettingsInstance}.apps.${app.getNameClean()}.slot`,
+                        );
+                        app.setSlot(slotState && typeof slotState.val === 'number' ? slotState.val : null);
+                    }
+
+                    await this.normalizeAppOrder();
+                });
+
+                await this.refreshAppOrder();
+            } catch (error) {
+                this.log.warn(`[scheduleAppOrderSync] Unable to apply app order of main instance: ${error}`);
+            }
+        }, 500);
+    }
+
+    private async sendAppOrder(): Promise<void> {
+        const appsEnabled = this.getAppsSortedBySlot().filter(a => a.enabled());
+
+        await this.apiClient!.apps.setOrder({
+            order: appsEnabled.map(a => a.getName()),
+            disabled: this.apps.filter(a => !a.enabled()).map(a => a.getName()),
+        });
+    }
+
+    private async updateAllIndicatorsByStates(): Promise<void> {
+        const errors: Array<string> = [];
+
+        for (const i of [1, 2, 3] as const) {
+            try {
+                await this.updateIndicatorByStates(i);
+            } catch (error) {
+                errors.push(`indicator ${i}: ${this.errorToString(error)}`);
+            }
+        }
+
+        if (errors.length > 0) {
+            throw new Error(errors.join(', '));
+        }
+    }
+
+    private async updateIndicatorByStates(index: 1 | 2 | 3): Promise<OkResponse> {
         this.log.debug(`Updating indicator with index ${index}`);
 
         const indicatorStates = await this.getStatesAsync(`indicator.${index}.*`);
@@ -951,7 +1258,7 @@ export class AwtrixNg extends utils.Adapter {
         );
 
         if (indicatorValues[`indicator.${index}.active`]) {
-            const indicator: AwtrixApi.Indicator = {
+            const indicator: IndicatorUpdate = {
                 color: indicatorValues[`indicator.${index}.color`] as string,
             };
 
@@ -965,13 +1272,13 @@ export class AwtrixNg extends utils.Adapter {
                 }
             }
 
-            return this.apiClient!.indicatorRequestAsync(index, indicator);
+            return this.apiClient!.indicators.set(index, indicator);
         }
 
-        return this.apiClient!.indicatorDeleteAsync(index);
+        return this.apiClient!.indicators.clear(index);
     }
 
-    private async updateMoodlightByStates(): Promise<AxiosResponse> {
+    private async updateMoodlightByStates(): Promise<OkResponse> {
         this.log.debug(`Updating moodlight`);
 
         const moodlightStates = await this.getStatesAsync('display.moodlight.*');
@@ -984,15 +1291,42 @@ export class AwtrixNg extends utils.Adapter {
         );
 
         if (moodlightValues['display.moodlight.active']) {
-            const moodlight: AwtrixApi.Moodlight = {
+            const moodlight: MoodlightOptions = {
                 brightness: moodlightValues['display.moodlight.brightness'] as number,
                 color: String(moodlightValues['display.moodlight.color']).toUpperCase(),
             };
 
-            return this.apiClient!.requestAsync('display/moodlight', 'PUT', moodlight);
+            return this.apiClient!.display.setMoodlight(moodlight);
         }
 
-        return this.apiClient!.requestAsync('display/moodlight', 'DELETE');
+        return this.apiClient!.display.disableMoodlight();
+    }
+
+    private errorToString(error: unknown): string {
+        return error instanceof Error ? error.message : String(error);
+    }
+
+    private logRequestError(error: unknown): void {
+        if (error instanceof AwtrixApiError) {
+            if (error.isUnauthorized) {
+                this.log.warn(
+                    'Unable to perform request. Looks like the device is protected with username / password. Check instance configuration!',
+                );
+            } else {
+                this.log.warn(`received error response: ${error.message}`);
+            }
+        } else if (error instanceof AwtrixConnectionError) {
+            // avoid spamming of the same error when stuck in a reconnection loop
+            const connectionError = error.code ?? error.kind;
+            if (connectionError === this.lastConnectionError) {
+                this.log.debug(error.message);
+            } else {
+                this.log.info(`error ${connectionError}: ${error.message}`);
+                this.lastConnectionError = connectionError;
+            }
+        } else {
+            this.log.error(this.errorToString(error));
+        }
     }
 
     public removeNamespace(id: string): string {
@@ -1002,11 +1336,15 @@ export class AwtrixNg extends utils.Adapter {
 
     private async onUnload(callback: () => void): Promise<void> {
         try {
-            for (const app of this.apps) {
-                if (app instanceof AppTypeUser.UserApp) {
-                    await app.unloadAsync();
-                }
+            // Just try to remove apps if the device is reachable (avoids timeouts for each app)
+            const removeFromDevice = this.apiConnected;
+            if (!removeFromDevice && this.config.removeAppsOnStop) {
+                this.log.info('[onUnload] Device is not reachable - unable to remove apps');
             }
+
+            // Parallel - the instance has limited time to stop
+            await Promise.allSettled(this.apps.map(app => app.unloadAsync(removeFromDevice)));
+            this.apps = [];
 
             await this.setApiConnected(false);
 
@@ -1019,6 +1357,13 @@ export class AwtrixNg extends utils.Adapter {
                 this.clearInterval(this.downloadScreenContentInterval);
                 this.downloadScreenContentInterval = undefined;
             }
+
+            if (this.appOrderSyncTimeout) {
+                this.clearTimeout(this.appOrderSyncTimeout);
+                this.appOrderSyncTimeout = undefined;
+            }
+
+            this.radio?.unload();
 
             callback();
         } catch (e) {

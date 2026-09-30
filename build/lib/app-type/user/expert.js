@@ -43,13 +43,13 @@ var AppType;
       return "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NDAgNTEyIj48IS0tIUZvbnQgQXdlc29tZSBGcmVlIDYuNy4yIGJ5IEBmb250YXdlc29tZSAtIGh0dHBzOi8vZm9udGF3ZXNvbWUuY29tIExpY2Vuc2UgLSBodHRwczovL2ZvbnRhd2Vzb21lLmNvbS9saWNlbnNlL2ZyZWUgQ29weXJpZ2h0IDIwMjUgRm9udGljb25zLCBJbmMuLS0+PHBhdGggZD0iTTk2IDEyOGExMjggMTI4IDAgMSAxIDI1NiAwQTEyOCAxMjggMCAxIDEgOTYgMTI4ek0wIDQ4Mi4zQzAgMzgzLjggNzkuOCAzMDQgMTc4LjMgMzA0bDkxLjQgMEMzNjguMiAzMDQgNDQ4IDM4My44IDQ0OCA0ODIuM2MwIDE2LjQtMTMuMyAyOS43LTI5LjcgMjkuN0wyOS43IDUxMkMxMy4zIDUxMiAwIDQ5OC43IDAgNDgyLjN6TTUwNCAzMTJsMC02NC02NCAwYy0xMy4zIDAtMjQtMTAuNy0yNC0yNHMxMC43LTI0IDI0LTI0bDY0IDAgMC02NGMwLTEzLjMgMTAuNy0yNCAyNC0yNHMyNCAxMC43IDI0IDI0bDAgNjQgNjQgMGMxMy4zIDAgMjQgMTAuNyAyNCAyNHMtMTAuNyAyNC0yNCAyNGwtNjQgMCAwIDY0YzAgMTMuMy0xMC43IDI0LTI0IDI0cy0yNC0xMC43LTI0LTI0eiIvPjwvc3ZnPg==";
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async init(orderDefinition) {
+    async init(appInfo) {
       var _a, _b, _c, _d;
       const appName = this.getName();
-      const appNameClean = this.getNameClean();
+      const appNameC = this.getNameClean();
       const appObjects = await this.adapter.getObjectViewAsync("system", "state", {
-        startkey: `${this.objPrefix}.apps.${appNameClean}.`,
-        endkey: `${this.objPrefix}.apps.${appNameClean}.\u9999`
+        startkey: `${this.objPrefix}.apps.${appNameC}.`,
+        endkey: `${this.objPrefix}.apps.${appNameC}.\u9999`
       });
       for (const appObj of appObjects.rows) {
         if (appObj.value.type === "state") {
@@ -85,6 +85,8 @@ var AppType;
           `[refresh] Refreshing app with values "${this.appDefinition.name}": ${JSON.stringify(this.appStates)}`
         );
         const app = {
+          ...this.getLifetimeOptions(),
+          // can be overwritten by base object
           ...this.baseObject,
           text: typeof this.appStates.text === "string" ? this.appStates.text : "",
           textCase: "asTyped",
@@ -111,20 +113,16 @@ var AppType;
             app.progressTrackColor = typeof this.appStates.progressTrackColor === "string" ? this.appStates.progressTrackColor : "#FFFFFF";
           }
         }
-        await this.apiClient.appRequestAsync(this.appDefinition.name, app).catch((error) => {
-          this.adapter.log.warn(
-            `[refreshExpertApp] Unable to update expert app "${this.appDefinition.name}": ${error}`
-          );
-        });
+        await this.pushApp(app, "expert app");
         refreshed = true;
+        this.scheduleKeepAlive();
       }
       return refreshed;
     }
     async createObjects() {
       await super.createObjects();
-      const appName = this.getName();
-      const appNameClean = this.getNameClean();
-      await this.adapter.extendObject(`apps.${appNameClean}.baseObject`, {
+      const appNameC = this.getNameClean();
+      await this.adapter.extendObject(`apps.${appNameC}.baseObject`, {
         type: "state",
         common: {
           name: {
@@ -150,7 +148,7 @@ var AppType;
           isBaseObject: true
         }
       });
-      await this.adapter.extendObject(`apps.${appNameClean}.text`, {
+      await this.adapter.extendObject(`apps.${appNameC}.text`, {
         type: "state",
         common: {
           name: {
@@ -176,7 +174,7 @@ var AppType;
           attribute: "text"
         }
       });
-      await this.adapter.extendObject(`apps.${appNameClean}.textColor`, {
+      await this.adapter.extendObject(`apps.${appNameC}.textColor`, {
         type: "state",
         common: {
           name: {
@@ -202,7 +200,7 @@ var AppType;
           attribute: "textColor"
         }
       });
-      await this.adapter.extendObject(`apps.${appNameClean}.backgroundColor`, {
+      await this.adapter.extendObject(`apps.${appNameC}.backgroundColor`, {
         type: "state",
         common: {
           name: {
@@ -228,7 +226,7 @@ var AppType;
           attribute: "background"
         }
       });
-      await this.adapter.extendObject(`apps.${appNameClean}.icon`, {
+      await this.adapter.extendObject(`apps.${appNameC}.icon`, {
         type: "state",
         common: {
           name: {
@@ -254,7 +252,7 @@ var AppType;
           attribute: "icon"
         }
       });
-      await this.adapter.extendObject(`apps.${appNameClean}.durationMs`, {
+      await this.adapter.extendObject(`apps.${appNameC}.durationMs`, {
         type: "state",
         common: {
           name: {
@@ -281,7 +279,7 @@ var AppType;
           attribute: "durationMs"
         }
       });
-      await this.adapter.extendObject(`apps.${appNameClean}.overlay`, {
+      await this.adapter.extendObject(`apps.${appNameC}.overlay`, {
         type: "state",
         common: {
           name: {
@@ -310,7 +308,7 @@ var AppType;
           attribute: "overlay"
         }
       });
-      await this.adapter.extendObject(`apps.${appNameClean}.scrollSpeed`, {
+      await this.adapter.extendObject(`apps.${appNameC}.scrollSpeed`, {
         type: "state",
         common: {
           name: {
@@ -339,7 +337,7 @@ var AppType;
           attribute: "scrollSpeed"
         }
       });
-      await this.adapter.extendObject(`apps.${appNameClean}.progress`, {
+      await this.adapter.extendObject(`apps.${appNameC}.progress`, {
         type: "folder",
         common: {
           name: {
@@ -357,7 +355,7 @@ var AppType;
           }
         }
       });
-      await this.adapter.extendObject(`apps.${appNameClean}.progress.percent`, {
+      await this.adapter.extendObject(`apps.${appNameC}.progress.percent`, {
         type: "state",
         common: {
           name: {
@@ -386,7 +384,7 @@ var AppType;
           attribute: "progress"
         }
       });
-      await this.adapter.extendObject(`apps.${appNameClean}.progress.color`, {
+      await this.adapter.extendObject(`apps.${appNameC}.progress.color`, {
         type: "state",
         common: {
           name: {
@@ -412,7 +410,7 @@ var AppType;
           attribute: "progressColor"
         }
       });
-      await this.adapter.extendObject(`apps.${appNameClean}.progress.trackColor`, {
+      await this.adapter.extendObject(`apps.${appNameC}.progress.trackColor`, {
         type: "state",
         common: {
           name: {
@@ -439,17 +437,19 @@ var AppType;
         }
       });
       if (!this.isMainInstance()) {
-        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.baseObject`);
-        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.text`);
-        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.textColor`);
-        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.backgroundColor`);
-        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.icon`);
-        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.durationMs`);
-        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.overlay`);
-        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.scrollSpeed`);
-        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.progress.percent`);
-        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.progress.color`);
-        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameClean}.progress.trackColor`);
+        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameC}.baseObject`);
+        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameC}.text`);
+        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameC}.textColor`);
+        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameC}.backgroundColor`);
+        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameC}.icon`);
+        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameC}.durationMs`);
+        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameC}.overlay`);
+        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameC}.scrollSpeed`);
+        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameC}.progress.percent`);
+        await this.adapter.subscribeForeignStatesAsync(`${this.objPrefix}.apps.${appNameC}.progress.color`);
+        await this.adapter.subscribeForeignStatesAsync(
+          `${this.objPrefix}.apps.${appNameC}.progress.trackColor`
+        );
       }
     }
     async stateChanged(id, state) {
@@ -457,9 +457,9 @@ var AppType;
       await super.stateChanged(id, state);
       if (id && state && !state.ack) {
         const appName = this.getName();
-        const appNameClean = this.getNameClean();
+        const appNameC = this.getNameClean();
         const idOwnNamespace = this.getObjIdOwnNamespace(id);
-        if (id.startsWith(`${this.objPrefix}.apps.${appNameClean}.`)) {
+        if (id.startsWith(`${this.objPrefix}.apps.${appNameC}.`)) {
           const obj = await this.adapter.getForeignObjectAsync(id);
           if (obj && ((_a = obj == null ? void 0 : obj.native) == null ? void 0 : _a.attribute)) {
             const attr = obj.native.attribute;

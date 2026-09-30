@@ -15,7 +15,7 @@ Hier kaufen: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), hier: [A
 
 1. Flashe die Firmware auf das Gerät und füge es zu deinem lokalen Netzwerk per WLAN hinzu - siehe [Dokumentation](https://blueforcer.github.io/awtrix-ng/getting-started/flashing/)
 2. Installiere den awtrix-ng Adapter im ioBroker (und erstelle eine neue Instanz)
-3. Öffne die Instanz-Konfiguration und hinterlege die IP-Adresse des Gerätes im lokalen Netzwerk
+3. Öffne die Instanz-Konfiguration und hinterlege die IP-Adresse des Gerätes im lokalen Netzwerk (und den Port, falls dieser am Gerät geändert wurde - Standard ist 80)
 
 ## FAQ (häufig gestellte Fragen)
 
@@ -130,16 +130,34 @@ sendTo('awtrix-ng.0', 'audio', { rtttl: 'beep:d=4,o=5,b=120:c,e,g' }, (res) => {
 });
 ```
 
+## Radio
+
+Geräte mit Internetradio (z.B. Ulanzi TC002) erhalten den Kanal `audio.radio`. Die Funktion wird automatisch erkannt (Capabilities des Gerätes) - auf Geräten ohne Radio (z.B. TC001) werden diese Objekte nicht angelegt.
+
+- `audio.radio.<Sender>.playing` - `true` spielt den Sender ab, `false` stoppt ihn (falls dieser Sender gerade läuft). Der Zustand zeigt außerdem an, ob der Sender gerade abgespielt wird.
+- `audio.radio.<Sender>.url` - Stream-URL des Senders (nur lesend)
+- `audio.radio.playing` / `audio.radio.station` / `audio.radio.title` - aktueller Wiedergabestatus (nur lesend)
+- `audio.radio.stop` - stoppt das Radio
+
+Die Sender werden in der Weboberfläche des Gerätes gepflegt. Werden dort Sender hinzugefügt oder entfernt, werden die Objekte automatisch angelegt bzw. gelöscht (Prüfung alle 60 Sekunden). In ioBroker können keine Sender hinzugefügt oder entfernt werden.
+
 ## Apps
 
-**App-Namen dürfen nur Kleinbuchstaben (a-z) enthalten und müssen eindeutig sein. Keine Zahlen, keine Sonderzeichen, keine Leerzeichen.**
+**App-Namen müssen eindeutig sein und dürfen Buchstaben (A-Z, a-z), Ziffern (0-9), `_` und `-` enthalten (max. 32 Zeichen). Keine Leerzeichen oder andere Sonderzeichen.**
 
-Die folgenden App-Namen sind von den internen apps reserviert und können nicht verwendet werden: `Time`, `Date`, `Temperature`, `Humidity`, `Battery`.
+Die folgenden Namen sind von internen Apps oder dem Gerät reserviert und können nicht verwendet werden: `Time`, `Date`, `Temperature`, `Humidity`, `Battery`, `Status`, `active`, `next`, `prev`, `previous`, `order`.
 
-- Mit dem `activate`-Zustand jeder App kann diese in den Vordergrund geholt werden
-- Diese Zustände haben die Rolle `button` und erlauben nur den boolschen Wert `true` (andere Werte führen zu einer Warnung im Log)
+Jede App hat die folgenden Zustände:
 
-Jede selbst angelegte App hat einen Zustand mit der ID `apps.<name>.visible`. Wenn dieser Zustand auf `false` (falsch) gesetzt wird, wird die App vom Gerät entfernt und nicht mehr dargestellt. Dies ist nützlich, um bestimmte Apps z.B. nur tagsüber oder in bestimmten Zeiträumen darzustellen.
+- `apps.<name>.enabled` - wenn dieser Zustand auf `false` (falsch) gesetzt wird, wird die App auf dem Gerät deaktiviert und nicht mehr dargestellt. Dies ist nützlich, um bestimmte Apps z.B. nur tagsüber oder in bestimmten Zeiträumen darzustellen.
+- `apps.<name>.slot` - Position der App in der Schleife (0 = erste App). Um die Reihenfolge zu ändern, einfach die neue Position einer App setzen - alle anderen Apps werden automatisch verschoben (wie bei Drag & Drop). Die Positionen aller Apps sind immer fortlaufend nummeriert.
+- `apps.<name>.activate` - holt die App in den Vordergrund. Dieser Zustand hat die Rolle `button` und erlaubt nur den boolschen Wert `true` (andere Werte führen zu einer Warnung im Log)
+- `apps.<name>.present` - `true`, wenn die App auf dem Gerät vorhanden ist (nur lesend)
+- `apps.<name>.lastError` - letzte Fehlermeldung des Gerätes beim Übertragen oder Entfernen der App (nur lesend)
+
+Die Reihenfolge und der Aktiviert-Zustand der Apps werden von ioBroker verwaltet. Änderungen am Gerät (z.B. über die Weboberfläche) werden bei der nächsten Synchronisation überschrieben. Die Reihenfolge des Gerätes wird nur für neue Apps verwendet. Instanzen, welche die Einstellungen einer anderen Instanz verwenden, übernehmen deren Reihenfolge.
+
+Ist die Option "Apps löschen, wenn die Instanz gestoppt wird" aktiviert, werden benutzerdefinierte Apps und Experten-Apps mit einer Lebensdauer übertragen und alle 5 Minuten erneut gesendet. So verschwinden diese Apps auch dann vom Gerät, wenn die Instanz nicht mehr läuft (z.B. nach einem Absturz).
 
 ### Benutzerdefinierte Apps
 

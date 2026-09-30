@@ -43,37 +43,49 @@ var AppType;
       return "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NDggNTEyIj48IS0tIUZvbnQgQXdlc29tZSBGcmVlIDYuNy4yIGJ5IEBmb250YXdlc29tZSAtIGh0dHBzOi8vZm9udGF3ZXNvbWUuY29tIExpY2Vuc2UgLSBodHRwczovL2ZvbnRhd2Vzb21lLmNvbS9saWNlbnNlL2ZyZWUgQ29weXJpZ2h0IDIwMjUgRm9udGljb25zLCBJbmMuLS0+PHBhdGggZD0iTTE2MCA4MGMwLTI2LjUgMjEuNS00OCA0OC00OGwzMiAwYzI2LjUgMCA0OCAyMS41IDQ4IDQ4bDAgMzUyYzAgMjYuNS0yMS41IDQ4LTQ4IDQ4bC0zMiAwYy0yNi41IDAtNDgtMjEuNS00OC00OGwwLTM1MnpNMCAyNzJjMC0yNi41IDIxLjUtNDggNDgtNDhsMzIgMGMyNi41IDAgNDggMjEuNSA0OCA0OGwwIDE2MGMwIDI2LjUtMjEuNSA0OC00OCA0OGwtMzIgMGMtMjYuNSAwLTQ4LTIxLjUtNDgtNDhMMCAyNzJ6TTM2OCA5NmwzMiAwYzI2LjUgMCA0OCAyMS41IDQ4IDQ4bDAgMjg4YzAgMjYuNS0yMS41IDQ4LTQ4IDQ4bC0zMiAwYy0yNi41IDAtNDgtMjEuNS00OC00OGwwLTI4OGMwLTI2LjUgMjEuNS00OCA0OC00OHoiLz48L3N2Zz4=";
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async init(orderDefinition) {
+    async init(appInfo) {
+      await this.validateSource(true);
+      await super.init();
+    }
+    /**
+     * Checks if the source instance is running and if logging is configured for objId.
+     * Warnings are just logged on init - later checks (on every refresh while invalid) log as debug.
+     */
+    async validateSource(isInit) {
       var _a, _b, _c;
-      if (this.appDefinition.sourceInstance) {
-        const sourceInstanceObj = await this.adapter.getForeignObjectAsync(
-          `system.adapter.${this.appDefinition.sourceInstance}`
-        );
-        if (sourceInstanceObj && ((_a = sourceInstanceObj.common) == null ? void 0 : _a.getHistory)) {
-          const sourceInstanceAliveState = await this.adapter.getForeignStateAsync(
-            `system.adapter.${this.appDefinition.sourceInstance}.alive`
+      const logWarn = (msg) => isInit ? this.adapter.log.warn(msg) : this.adapter.log.debug(msg);
+      const logInfo = (msg) => isInit ? this.adapter.log.info(msg) : this.adapter.log.debug(msg);
+      this.isValidSourceInstance = false;
+      this.isValidObjId = false;
+      try {
+        if (this.appDefinition.sourceInstance) {
+          const sourceInstanceObj = await this.adapter.getForeignObjectAsync(
+            `system.adapter.${this.appDefinition.sourceInstance}`
           );
-          if (sourceInstanceAliveState && sourceInstanceAliveState.val) {
-            this.adapter.log.debug(
-              `[initHistoryApp] Found valid source instance for history data: ${this.appDefinition.sourceInstance}`
+          if (sourceInstanceObj && ((_a = sourceInstanceObj.common) == null ? void 0 : _a.getHistory)) {
+            const sourceInstanceAliveState = await this.adapter.getForeignStateAsync(
+              `system.adapter.${this.appDefinition.sourceInstance}.alive`
             );
-            this.isValidSourceInstance = true;
+            if (sourceInstanceAliveState && sourceInstanceAliveState.val) {
+              this.adapter.log.debug(
+                `[initHistoryApp] Found valid source instance for history data: ${this.appDefinition.sourceInstance}`
+              );
+              this.isValidSourceInstance = true;
+            } else {
+              logWarn(
+                `[initHistoryApp] Unable to get history data of "${this.appDefinition.sourceInstance}": instance not running (stopped)`
+              );
+            }
           } else {
-            this.adapter.log.warn(
-              `[initHistoryApp] Unable to get history data of "${this.appDefinition.sourceInstance}": instance not running (stopped)`
+            logWarn(
+              `[initHistoryApp] Unable to get history data of "${this.appDefinition.sourceInstance}": no valid source for getHistory()`
             );
           }
-        } else {
-          this.adapter.log.warn(
-            `[initHistoryApp] Unable to get history data of "${this.appDefinition.sourceInstance}": no valid source for getHistory()`
-          );
         }
-      }
-      if (this.appDefinition.objId) {
-        this.adapter.log.debug(
-          `[initHistoryApp] getting history data for app "${this.appDefinition.name}" of "${this.appDefinition.objId}" from ${this.appDefinition.sourceInstance}`
-        );
-        try {
+        if (this.appDefinition.objId) {
+          this.adapter.log.debug(
+            `[initHistoryApp] getting history data for app "${this.appDefinition.name}" of "${this.appDefinition.objId}" from ${this.appDefinition.sourceInstance}`
+          );
           if (this.isValidSourceInstance) {
             const sourceObj = await this.adapter.getForeignObjectAsync(this.appDefinition.objId);
             if (sourceObj && Object.prototype.hasOwnProperty.call(
@@ -82,91 +94,38 @@ var AppType;
             )) {
               this.isValidObjId = true;
             } else {
-              this.adapter.log.info(
+              logInfo(
                 `[initHistoryApp] Unable to get data for app "${this.appDefinition.name}" of "${this.appDefinition.objId}": logging is not configured for this object`
               );
             }
           } else {
-            this.adapter.log.info(
+            logInfo(
               `[initHistoryApp] Unable to get data for app "${this.appDefinition.name}" of "${this.appDefinition.objId}": source invalid or unavailable`
             );
           }
-        } catch (error) {
-          this.adapter.log.error(
-            `[initHistoryApp] Unable to get data for app "${this.appDefinition.name}" of "${this.appDefinition.objId}": ${error}`
-          );
         }
+      } catch (error) {
+        this.adapter.log.error(
+          `[initHistoryApp] Unable to get data for app "${this.appDefinition.name}" of "${this.appDefinition.objId}": ${error}`
+        );
       }
-      await super.init();
     }
     async refresh() {
       var _a;
       let refreshed = false;
-      if (await super.refresh() && this.isValidSourceInstance && this.isValidObjId) {
-        const itemCount = this.appDefinition.icon ? 11 : 16;
-        const options = {
-          start: 1,
-          end: Date.now(),
-          limit: itemCount,
-          returnNewestEntries: true,
-          ignoreNull: 0,
-          removeBorderValues: true,
-          ack: true
-        };
-        if (this.appDefinition.mode == "aggregate") {
-          options.aggregate = this.appDefinition.aggregation;
-          options.step = this.appDefinition.step ? this.appDefinition.step * 1e3 : 36e5;
-        } else {
-          options.aggregate = "none";
+      try {
+        if (await super.refresh()) {
+          if (!this.isValidSourceInstance || !this.isValidObjId) {
+            await this.validateSource(false);
+          }
+          if (this.isValidSourceInstance && this.isValidObjId) {
+            refreshed = await this.refreshHistoryData();
+          }
         }
-        this.adapter.log.debug(
-          `[refreshHistoryApp] Getting history for app "${this.appDefinition.name}" of "${this.appDefinition.objId}" with options: ${JSON.stringify(options)}`
+      } catch (error) {
+        this.adapter.log.warn(
+          `[refreshHistoryApp] Unable to refresh app "${this.appDefinition.name}": ${error}`
         );
-        const historyData = await this.adapter.sendToAsync(this.appDefinition.sourceInstance, "getHistory", {
-          id: this.appDefinition.objId,
-          options
-        });
-        const graphData = historyData == null ? void 0 : historyData.result.filter((state) => typeof state.val === "number" && state.ack).map((state) => Math.round(state.val)).slice(itemCount * -1);
-        this.adapter.log.debug(
-          `[refreshHistoryApp] Data for app "${this.appDefinition.name}" of "${this.appDefinition.objId}": ${JSON.stringify(historyData)} - filtered: ${JSON.stringify(graphData)}`
-        );
-        if (graphData.length > 0) {
-          const moreOptions = {};
-          if (this.appDefinition.durationMs > 0) {
-            moreOptions.durationMs = this.appDefinition.durationMs;
-          }
-          if (this.appDefinition.repeat > 0) {
-            moreOptions.repeat = this.appDefinition.repeat;
-          }
-          if (this.appDefinition.display == "bar") {
-            moreOptions.barChart = graphData;
-          } else {
-            moreOptions.lineChart = graphData;
-          }
-          await this.apiClient.appRequestAsync(this.appDefinition.name, {
-            chartColor: this.appDefinition.lineColor || "#FF0000",
-            backgroundColor: this.appDefinition.backgroundColor || "#000000",
-            chartAutoscale: true,
-            icon: this.appDefinition.icon,
-            lifetimeMs: (this.adapter.config.historyAppsRefreshInterval + 60) * 1e3,
-            // Remove app if there is no update in configured interval (+ buffer)
-            ...moreOptions
-          }).catch((error) => {
-            this.adapter.log.warn(
-              `[refreshHistoryApp] Unable to create app "${this.appDefinition.name}": ${error}`
-            );
-          });
-          refreshed = true;
-        } else {
-          this.adapter.log.debug(
-            `[refreshHistoryApp] Going to remove app "${this.appDefinition.name}" (no history data)`
-          );
-          await this.apiClient.removeAppAsync(this.appDefinition.name).catch((error) => {
-            this.adapter.log.warn(
-              `[refreshHistoryApp] Unable to remove app "${this.appDefinition.name}" (no history data): ${error}`
-            );
-          });
-        }
       }
       this.adapter.log.debug(
         `re-creating history apps timeout (${(_a = this.adapter.config.historyAppsRefreshInterval) != null ? _a : 300} seconds)`
@@ -179,6 +138,70 @@ var AppType;
         this.adapter.config.historyAppsRefreshInterval * 1e3 || 5 * 60 * 1e3
       );
       return refreshed;
+    }
+    async refreshHistoryData() {
+      const itemCount = this.appDefinition.icon ? 11 : 16;
+      const options = {
+        start: 1,
+        end: Date.now(),
+        limit: itemCount,
+        returnNewestEntries: true,
+        ignoreNull: 0,
+        removeBorderValues: true,
+        ack: true
+      };
+      if (this.appDefinition.mode == "aggregate") {
+        options.aggregate = this.appDefinition.aggregation;
+        options.step = this.appDefinition.step ? this.appDefinition.step * 1e3 : 36e5;
+      } else {
+        options.aggregate = "none";
+      }
+      this.adapter.log.debug(
+        `[refreshHistoryApp] Getting history for app "${this.appDefinition.name}" of "${this.appDefinition.objId}" with options: ${JSON.stringify(options)}`
+      );
+      const historyData = await this.adapter.sendToAsync(
+        this.appDefinition.sourceInstance,
+        "getHistory",
+        {
+          id: this.appDefinition.objId,
+          options
+        },
+        { timeout: 3e4 }
+      );
+      const result = historyData == null ? void 0 : historyData.result;
+      const graphData = (Array.isArray(result) ? result : []).filter((state) => typeof (state == null ? void 0 : state.val) === "number" && state.ack).map((state) => Math.round(state.val)).slice(itemCount * -1);
+      this.adapter.log.debug(
+        `[refreshHistoryApp] Data for app "${this.appDefinition.name}" of "${this.appDefinition.objId}": ${JSON.stringify(historyData)} - filtered: ${JSON.stringify(graphData)}`
+      );
+      if (graphData.length > 0) {
+        const moreOptions = {};
+        if (this.appDefinition.durationMs > 0) {
+          moreOptions.durationMs = this.appDefinition.durationMs;
+        }
+        if (this.appDefinition.repeat > 0) {
+          moreOptions.repeat = this.appDefinition.repeat;
+        }
+        if (this.appDefinition.display == "bar") {
+          moreOptions.barChart = graphData;
+        } else {
+          moreOptions.lineChart = graphData;
+        }
+        await this.pushApp(
+          {
+            chartColor: this.appDefinition.lineColor || "#FF0000",
+            backgroundColor: this.appDefinition.backgroundColor || "#000000",
+            chartAutoscale: true,
+            icon: this.appDefinition.icon,
+            lifetimeMs: (this.adapter.config.historyAppsRefreshInterval + 60) * 1e3,
+            // Remove app if there is no update in configured interval (+ buffer)
+            ...moreOptions
+          },
+          "history data"
+        );
+        return true;
+      }
+      await this.removeApp("no history data");
+      return false;
     }
     async unloadAsync() {
       if (this.refreshTimeout) {

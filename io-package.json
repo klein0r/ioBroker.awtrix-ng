@@ -184,6 +184,7 @@
   ],
   "native": {
     "awtrixIp": "192.168.0.123",
+    "awtrixPort": 80,
     "userName": "",
     "userPassword": "",
     "downloadScreenContent": false,
@@ -193,7 +194,6 @@
     "customApps": [],
     "ignoreNewValueForAppInTimeRange": 3,
     "historyApps": [],
-    "historyAppsBackgroundColor": "#000000",
     "historyAppsRefreshInterval": 300,
     "removeAppsOnStop": true,
     "httpTimeout": 3,

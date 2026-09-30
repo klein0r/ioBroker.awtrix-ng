@@ -21,23 +21,24 @@ npm run release-patch  # @alcalzone/release-script (runs lint before, build befo
 
 Single TS test file: `npx mocha --config test/mocharc.custom.json src/path/to/file.test.ts`. There are currently no real unit tests (`src/main.test.ts` is a placeholder).
 
-`build/` is committed to git — the release script rebuilds before committing, so keep it in sync when changing `src/`.
+`build/` is committed to git, but only updated by the release script (it rebuilds before its release commit). Run `npm run build` to verify changes, but roll back `build/` before committing (`git checkout -- build`) — normal commits must not contain changes in `build/`.
 
 ## Architecture
 
 - **`src/main.ts`** — entry; exports the adapter factory for compact mode.
 - **`src/awtrix-ng.ts`** — `AwtrixNg` adapter class (the bulk of the logic):
-  - `onReady` creates the `AwtrixApi.Client` and starts `refreshState()`, a 60 s poll of `GET device` that fills `meta.*`, `sensor.*`, `device.*`, `display.brightness`.
+  - `onReady` creates the `AwtrixClient` and starts `refreshState()`, a 60 s poll of `GET device` that fills `meta.*`, `sensor.*`, `device.*`, `display.brightness`.
   - `setApiConnected(true)` (on transition offline → online) does the full resync: welcome notification, `refreshSettings()`, `createAppObjects()`, indicators 1–3, moodlight, optional screen-content download (RGB565 → SVG into `display.content`).
   - `onStateChange` (non-ack only) pushes writes to the device: `settings.*`, indicators, moodlight, etc.
   - `onMessage` handles `sendTo` commands: `notification`, `audio`, `sendNotification` (ioBroker notification-manager integration), `getBackgroundEffects`. `admin/blockly.js` generates Blockly blocks that call these.
-- **`src/lib/api.ts`** — `AwtrixApi.Client`: thin axios wrapper around the device REST API (`http://<ip>:80/api/v1/`, optional basic auth; only 200/201 count as success), and the request/response types (`App`, `Indicator`, `AppOrderDefinition`, ...).
+- **HTTP API** — all device requests go through the npm package [`awtrix-ng-api`](https://www.npmjs.com/package/awtrix-ng-api) (`AwtrixClient`, namespaces `device`, `settings`, `display`, `apps`, `notifications`, `indicators`, `audio`, ...; payload/response types like `ClassicAppPayload`, `AppInfo`). Errors are `AwtrixApiError` (non-2xx) / `AwtrixConnectionError` (no answer); the adapter tracks the connection itself in `apiConnected` (set by the `GET device` poll) and logs poll errors via `logRequestError()`.
 - **`src/lib/app-type/`** — one object per Awtrix app under the `apps.<nameClean>` channel:
   - `abstract.ts` `AbstractApp`: shared `enabled`/`slot`/`activate` states and handling. Each app instance registers its **own** `stateChange`/`objectChange` listeners on the adapter; subclasses override `stateChanged`/`objectChanged`/`refresh`/`init`.
   - `builtin.ts` (device built-in apps), `script.ts` (apps pushed to the device by others), `user.ts` `UserApp` (apps this adapter creates/owns; may delete them on stop via `removeAppsOnStop`).
   - `user/custom.ts` (text + state value with thresholds), `user/history.ts` (chart from a history adapter instance), `user/expert.ts` (fully state-driven app with many sub-states).
   - `createAppObjects()` fetches the device app list, instantiates the right class per app, creates/extends objects, deletes `apps.*` channels no longer present, then `PUT apps/order` from enabled apps sorted by slot.
 - **Settings mapping** — the `settings.*` objects are declared statically in `io-package.json` `instanceObjects`; each state carries `native.settingsKey`, which maps it to a key in the flattened device `GET settings` response. To expose a new device setting, add an object with `settingsKey` there (no code change needed). Other static states (`meta.*`, `sensor.*`, ...) are also defined in `instanceObjects`.
+- **`src/lib/radio.ts`** — `Radio`: internet radio (only if `capabilities.audio.radio`, e.g. TC002). One channel per station under `audio.radio.<station>` (switch `playing`), synced from `audio.getState()` in the resync step `radio` and in every 60 s poll; stations removed on the device are deleted. Stations are maintained on the device only.
 - **Foreign settings instance** — if `config.foreignSettingsInstance` points to another instance, this instance is not the "main" instance: it copies app config (`customApps`, `historyApps`, `expertApps`, ...) from that instance's `native` and reads app `enabled`/`slot` states from the foreign namespace (`objPrefix` in `AbstractApp`). This lets multiple clocks share one app configuration.
 - **Config** — `admin/jsonConfig.json` (admin UI), types in `src/lib/adapter-config.d.ts` (keep both in sync with `native` defaults in `io-package.json`).
 

@@ -1,6 +1,6 @@
+import type { AppInfo, AwtrixClient, ClassicAppPayload } from 'awtrix-ng-api';
 import type { AwtrixNg } from '../../../awtrix-ng';
 import type { ExpertApp } from '../../adapter-config';
-import type { AwtrixApi } from '../../api';
 import { AppType as UserAppType } from '../user';
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -9,9 +9,9 @@ export namespace AppType {
         private appDefinition: ExpertApp;
         private appStates: { [key: string]: ioBroker.StateValue };
         private refreshTimeout: ioBroker.Timeout | undefined;
-        private baseObject: AwtrixApi.App;
+        private baseObject: ClassicAppPayload;
 
-        public constructor(apiClient: AwtrixApi.Client, adapter: AwtrixNg, definition: ExpertApp) {
+        public constructor(apiClient: AwtrixClient, adapter: AwtrixNg, definition: ExpertApp) {
             super(apiClient, adapter, definition);
 
             this.appDefinition = definition;
@@ -29,7 +29,7 @@ export namespace AppType {
         }
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        public override async init(orderDefinition?: AwtrixApi.AppOrderDefinition): Promise<void> {
+        public override async init(appInfo?: AppInfo): Promise<void> {
             const appName = this.getName();
             const appNameC = this.getNameClean();
 
@@ -80,7 +80,8 @@ export namespace AppType {
                     `[refresh] Refreshing app with values "${this.appDefinition.name}": ${JSON.stringify(this.appStates)}`,
                 );
 
-                const app: AwtrixApi.App = {
+                const app: ClassicAppPayload = {
+                    ...this.getLifetimeOptions(), // can be overwritten by base object
                     ...this.baseObject,
                     text: typeof this.appStates.text === 'string' ? this.appStates.text : '',
                     textCase: 'asTyped', // show as sent
@@ -125,13 +126,10 @@ export namespace AppType {
                     }
                 }
 
-                await this.apiClient.appRequestAsync(this.appDefinition.name, app).catch(error => {
-                    this.adapter.log.warn(
-                        `[refreshExpertApp] Unable to update expert app "${this.appDefinition.name}": ${error}`,
-                    );
-                });
+                await this.pushApp(app, 'expert app');
 
                 refreshed = true;
+                this.scheduleKeepAlive();
             }
 
             return refreshed;
@@ -483,6 +481,15 @@ export namespace AppType {
                     `${this.objPrefix}.apps.${appNameC}.progress.trackColor`,
                 );
             }
+        }
+
+        public override async unloadAsync(removeFromDevice: boolean): Promise<void> {
+            if (this.refreshTimeout) {
+                this.adapter.clearTimeout(this.refreshTimeout);
+                this.refreshTimeout = undefined;
+            }
+
+            await super.unloadAsync(removeFromDevice);
         }
 
         protected override async stateChanged(id: string, state: ioBroker.State | null | undefined): Promise<void> {
