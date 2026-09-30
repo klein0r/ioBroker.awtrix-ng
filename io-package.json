@@ -1751,6 +1751,26 @@
       "native": {}
     },
     {
+      "_id": "audio",
+      "type": "channel",
+      "common": {
+        "name": {
+          "en": "Audio features",
+          "de": "Audiofunktionen",
+          "ru": "Функции аудио",
+          "pt": "Funções áudio",
+          "nl": "Audiofuncties",
+          "fr": "Fonctions audio",
+          "it": "Funzioni audio",
+          "es": "Funciones de audio",
+          "pl": "Funkcje audio",
+          "uk": "Функції аудіо",
+          "zh-cn": "音频功能"
+        }
+      },
+      "native": {}
+    },
+    {
       "_id": "indicator",
       "type": "channel",
       "common": {
