@@ -25,6 +25,65 @@ import { AppType as AppTypeHistory } from './lib/app-type/user/history';
 
 type ResyncStep = 'settings' | 'capabilities' | 'radio' | 'apps' | 'indicators' | 'moodlight' | 'screenContent';
 
+/** Features of the connected device (defaults until the capabilities have been loaded) */
+type DeviceCapabilities = {
+    /** capabilities have been loaded from the device */
+    loaded: boolean;
+    effects: Array<string>;
+    overlays: Array<string>;
+    palettes: Array<string>;
+    paletteEffects: Array<string>;
+    transitions: Array<string>;
+    /** internet radio (e.g. TC002) */
+    radio: boolean;
+};
+
+const DEFAULT_CAPABILITIES: DeviceCapabilities = {
+    loaded: false,
+    effects: [
+        'BrickBreaker',
+        'Checkerboard',
+        'ColorWaves',
+        'Fade',
+        'Fireworks',
+        'LookingEyes',
+        'Matrix',
+        'MovingLine',
+        'Pacifica',
+        'PingPong',
+        'Plasma',
+        'PlasmaCloud',
+        'Radar',
+        'Ripple',
+        'Snake',
+        'SwirlIn',
+        'SwirlOut',
+        'TheaterChase',
+        'TwinklingStars',
+    ],
+    overlays: ['rain', 'snow', 'drizzle', 'storm', 'thunder', 'frost'],
+    palettes: ['Cloud', 'Lava', 'Ocean', 'Forest', 'Stripe', 'Party', 'Heat', 'Rainbow'],
+    paletteEffects: [
+        'Checkerboard',
+        'ColorWaves',
+        'Fade',
+        'Fireworks',
+        'MovingLine',
+        'Pacifica',
+        'Plasma',
+        'PlasmaCloud',
+        'Radar',
+        'Ripple',
+        'Snake',
+        'SwirlIn',
+        'SwirlOut',
+        'TheaterChase',
+        'TwinklingStars',
+    ],
+    transitions: [],
+    radio: false,
+};
+
 type NestedObject = {
     [key: string]: any;
 };
@@ -99,16 +158,11 @@ export class AwtrixNg extends utils.Adapter {
     private appOrderLock: Promise<void>;
     private appOrderSyncTimeout: ioBroker.Timeout | undefined;
     private radio: Radio | null;
-    /** undefined = capabilities not loaded yet */
-    private radioSupported: boolean | undefined;
+    private capabilities: DeviceCapabilities;
     private refreshStateTimeout: ioBroker.Timeout | undefined;
     private downloadScreenContentInterval: ioBroker.Interval | undefined;
 
     private apps: Array<AppTypeAbstract.AbstractApp>;
-    private backgroundEffects: Array<string>;
-    private weatherOverlays: Array<string>;
-    private palettes: Array<string>;
-    private paletteEffects: Array<string>;
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
@@ -132,52 +186,12 @@ export class AwtrixNg extends utils.Adapter {
         this.appOrderLock = Promise.resolve();
         this.appOrderSyncTimeout = undefined;
         this.radio = null;
-        this.radioSupported = undefined;
+        this.capabilities = { ...DEFAULT_CAPABILITIES };
 
         this.refreshStateTimeout = undefined;
         this.downloadScreenContentInterval = undefined;
 
         this.apps = [];
-        this.backgroundEffects = [
-            'BrickBreaker',
-            'Checkerboard',
-            'ColorWaves',
-            'Fade',
-            'Fireworks',
-            'LookingEyes',
-            'Matrix',
-            'MovingLine',
-            'Pacifica',
-            'PingPong',
-            'Plasma',
-            'PlasmaCloud',
-            'Radar',
-            'Ripple',
-            'Snake',
-            'SwirlIn',
-            'SwirlOut',
-            'TheaterChase',
-            'TwinklingStars',
-        ];
-        this.weatherOverlays = ['rain', 'snow', 'drizzle', 'storm', 'thunder', 'frost'];
-        this.palettes = ['Cloud', 'Lava', 'Ocean', 'Forest', 'Stripe', 'Party', 'Heat', 'Rainbow'];
-        this.paletteEffects = [
-            'Checkerboard',
-            'ColorWaves',
-            'Fade',
-            'Fireworks',
-            'MovingLine',
-            'Pacifica',
-            'Plasma',
-            'PlasmaCloud',
-            'Radar',
-            'Ripple',
-            'Snake',
-            'SwirlIn',
-            'SwirlOut',
-            'TheaterChase',
-            'TwinklingStars',
-        ];
 
         this.on('ready', this.onReady.bind(this));
         this.on('stateChange', this.onStateChange.bind(this));
@@ -412,15 +426,15 @@ export class AwtrixNg extends utils.Adapter {
     }
 
     public getWeatherOverlays(): Array<string> {
-        return ['none', ...this.weatherOverlays];
+        return ['none', ...this.capabilities.overlays];
     }
 
     public getPalettes(): Array<string> {
-        return ['none', ...this.palettes];
+        return ['none', ...this.capabilities.palettes];
     }
 
     public getPaletteEffects(): Array<string> {
-        return ['none', ...this.paletteEffects];
+        return ['none', ...this.capabilities.paletteEffects];
     }
 
     private onMessage(obj: ioBroker.Message): void {
@@ -431,7 +445,7 @@ export class AwtrixNg extends utils.Adapter {
                 this.sendTo(
                     obj.from,
                     obj.command,
-                    this.backgroundEffects.map(v => ({ value: v, label: v })),
+                    this.capabilities.effects.map(v => ({ value: v, label: v })),
                     obj.callback,
                 );
             } else if (obj.command === 'notification' && typeof obj.message === 'object') {
@@ -594,7 +608,7 @@ export class AwtrixNg extends utils.Adapter {
 
         const steps: Array<[ResyncStep, () => Promise<unknown>]> = [
             ['settings', () => this.refreshSettings()],
-            ['capabilities', () => this.refreshCapabilitiesLists()],
+            ['capabilities', () => this.refreshCapabilities()],
             ['radio', () => this.refreshRadio(true)],
             ['apps', () => this.createAppObjects()],
             ['indicators', () => this.updateAllIndicatorsByStates()],
@@ -759,7 +773,7 @@ export class AwtrixNg extends utils.Adapter {
                 await this.setStateChangedAsync('device.uptime', { val: content.uptimeSeconds, ack: true });
 
                 // Radio: playback state and station list (stations may be changed in the web interface)
-                if (this.radioSupported && !this.resyncFailedSteps.has('radio')) {
+                if (this.capabilities.radio && !this.resyncFailedSteps.has('radio')) {
                     await this.radio!.refresh(false).catch(error => {
                         this.log.debug(`[refreshState] Unable to refresh radio: ${error}`);
                     });
@@ -845,18 +859,24 @@ export class AwtrixNg extends utils.Adapter {
         }
     }
 
-    private async refreshCapabilitiesLists(): Promise<void> {
+    private async refreshCapabilities(): Promise<void> {
         const capabilities = await this.apiClient!.device.capabilities();
 
-        this.log.debug(`[refreshCapabilitiesLists] Existing capabilities "${JSON.stringify(capabilities)}"`);
+        this.log.debug(`[refreshCapabilities] Existing capabilities "${JSON.stringify(capabilities)}"`);
 
-        this.backgroundEffects = capabilities.effects;
-        this.weatherOverlays = capabilities.overlays;
-        this.radioSupported = capabilities.audio?.radio === true;
+        this.capabilities = {
+            loaded: true,
+            effects: capabilities.effects ?? DEFAULT_CAPABILITIES.effects,
+            overlays: capabilities.overlays ?? DEFAULT_CAPABILITIES.overlays,
+            palettes: capabilities.palettes ?? DEFAULT_CAPABILITIES.palettes,
+            paletteEffects: capabilities.paletteEffects ?? DEFAULT_CAPABILITIES.paletteEffects,
+            transitions: capabilities.transitions ?? DEFAULT_CAPABILITIES.transitions,
+            radio: capabilities.audio?.radio === true,
+        };
 
         // Transistions
         const states: { [key: string]: string } = {};
-        for (const transition of capabilities.transitions) {
+        for (const transition of this.capabilities.transitions) {
             states[transition] = transition;
         }
 
@@ -869,11 +889,11 @@ export class AwtrixNg extends utils.Adapter {
      * @param forceObjectSync - create / check objects even if the station list is unchanged
      */
     private async refreshRadio(forceObjectSync: boolean): Promise<void> {
-        if (this.radioSupported === undefined) {
+        if (!this.capabilities.loaded) {
             throw new Error('capabilities of device unknown');
         }
 
-        if (this.radioSupported) {
+        if (this.capabilities.radio) {
             await this.radio!.refresh(forceObjectSync);
         } else {
             await this.radio!.remove();
