@@ -134,9 +134,9 @@ export namespace AppType {
             if (this.appDefinition.noScroll) {
                 app.scroll = { mode: 'static' };
             } else {
-                // Scroll speed
-                if (this.appDefinition.scrollSpeed > 0 && this.appDefinition.scrollSpeed <= 100) {
-                    app.scroll = { mode: 'wrap', speed: this.appDefinition.scrollSpeed, whenFits: 'scroll' };
+                // Scroll speed (percent of the default speed) - all other scroll options are inherited
+                if (this.appDefinition.scrollSpeed > 0) {
+                    app.scroll = { speed: this.appDefinition.scrollSpeed };
                 }
 
                 // Repeat
@@ -151,8 +151,8 @@ export namespace AppType {
             }
 
             // Duration
-            if (this.appDefinition.durationMs > 0) {
-                app.durationMs = this.appDefinition.durationMs;
+            if (this.appDefinition.duration > 0) {
+                app.durationMs = this.appDefinition.duration * 1000;
             }
 
             // Thresholds

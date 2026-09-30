@@ -6,14 +6,14 @@ export type DefaultApp = {
 
 export type CustomApp = DefaultApp & {
     icon: string;
-    durationMs: number;
+    /** in seconds (0 = default) */
+    duration: number;
     repeat: number;
     text: string;
     objId: string;
     decimals: number;
     dynamicRound: boolean;
     textColor: string;
-    textBlinkMs: number;
     noScroll: boolean;
     scrollSpeed: number;
     useBackgroundEffect: boolean;
@@ -35,7 +35,8 @@ export type CustomApp = DefaultApp & {
 
 export type HistoryApp = DefaultApp & {
     icon: string;
-    durationMs: number;
+    /** in seconds (0 = default) */
+    duration: number;
     repeat: number;
     sourceInstance: string;
     objId: string;
@@ -66,7 +67,6 @@ declare global {
             customApps: Array<CustomApp>;
             ignoreNewValueForAppInTimeRange: number;
             historyApps: Array<HistoryApp>;
-            historyAppsBackgroundColor: string;
             historyAppsRefreshInterval: number;
             removeAppsOnStop: boolean;
             httpTimeout: number;

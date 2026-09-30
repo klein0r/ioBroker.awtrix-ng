@@ -679,7 +679,8 @@ export class AwtrixNg extends utils.Adapter {
                     `[initScreenContentDownload] Downloading screen contents every ${this.config.downloadScreenContentInterval} seconds`,
                 );
 
-                const downloadInterval = Math.min(this.config.downloadScreenContentInterval, 86_400) * 1_000;
+                const downloadInterval =
+                    Math.min(Math.max(this.config.downloadScreenContentInterval, 5), 86_400) * 1_000;
 
                 this.downloadScreenContentInterval = this.setInterval(() => {
                     if (this.apiClient && this.apiConnected) {

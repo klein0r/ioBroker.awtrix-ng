@@ -58,6 +58,9 @@ Buy TC002 here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC002) or here: [u
 * (@klein0r) Apps are removed in parallel when the instance is stopped (and not at all if the device is not reachable)
 * (@klein0r) Changing `apps.<name>.slot` moves the app to the new position (other apps are shifted) - order and enabled state are managed by ioBroker
 * (@klein0r) Added internet radio (`audio.radio.*`) for devices which support it (e.g. TC002)
+* (@klein0r) Fixed display duration of custom and history apps (setting was ignored)
+* (@klein0r) Scroll speed of custom apps is a percentage of the default speed now (up to 500 %) and does not force scrolling of short texts anymore
+* (@klein0r) Improved instance configuration (dependencies between fields, validation, labels and help texts)
 * (@klein0r) Migrated all HTTP requests to the new library [awtrix-ng-api](https://www.npmjs.com/package/awtrix-ng-api)
 * (@klein0r) Fixed screen content download (`display.content`)
 * (@klein0r) Added additional meta information (soc and board type)

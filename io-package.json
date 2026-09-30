@@ -194,7 +194,6 @@
     "customApps": [],
     "ignoreNewValueForAppInTimeRange": 3,
     "historyApps": [],
-    "historyAppsBackgroundColor": "#000000",
     "historyAppsRefreshInterval": 300,
     "removeAppsOnStop": true,
     "httpTimeout": 3,

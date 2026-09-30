@@ -207,8 +207,8 @@ export namespace AppType {
                 const moreOptions: ClassicAppPayload = {};
 
                 // Duration
-                if (this.appDefinition.durationMs > 0) {
-                    moreOptions.durationMs = this.appDefinition.durationMs;
+                if (this.appDefinition.duration > 0) {
+                    moreOptions.durationMs = this.appDefinition.duration * 1000;
                 }
 
                 // Repeat

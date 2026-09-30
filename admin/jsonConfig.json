@@ -21,13 +21,13 @@
                 },
                 "awtrixIp": {
                     "type": "text",
-                    "label": "IP",
+                    "label": "IP / Hostname",
                     "xs": 12,
                     "sm": 12,
                     "md": 6,
                     "lg": 6,
                     "xl": 6,
-                    "help": "IP address of your Awtrix NG device",
+                    "help": "IP address or hostname of your Awtrix NG device",
                     "validator": "String(data.awtrixIp).length > 0 && !String(data.awtrixIp).startsWith('http')",
                     "validatorErrorText": "Invalid IP address",
                     "validatorNoSaveOnError": true
@@ -63,7 +63,20 @@
                     "md": 6,
                     "lg": 6,
                     "xl": 6,
-                    "label": "Password"
+                    "label": "Password",
+                    "hidden": "!data.userName"
+                },
+                "httpTimeout": {
+                    "type": "number",
+                    "label": "HTTP timeout (in seconds)",
+                    "min": 1,
+                    "max": 10,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 4,
+                    "lg": 4,
+                    "xl": 4,
+                    "newLine": true
                 },
                 "_headerOptionsScreen": {
                     "newLine": true,
@@ -89,7 +102,7 @@
                     "hidden": "!data.downloadScreenContent",
                     "type": "number",
                     "label": "Download interval (in seconds)",
-                    "min": 1,
+                    "min": 5,
                     "max": 86400,
                     "xs": 12,
                     "sm": 12,
@@ -206,12 +219,13 @@
                 "foreignSettingsInstanceActivateApps": {
                     "hidden": "data.foreignSettingsInstance === '' || data.foreignSettingsInstance === `awtrix-ng.${_instance}`",
                     "type": "checkbox",
-                    "label": "Activate same apps as in main instance",
+                    "label": "Follow 'activate' of main instance",
                     "xs": 12,
                     "sm": 12,
                     "md": 6,
                     "lg": 6,
-                    "xl": 6
+                    "xl": 6,
+                    "help": "Apps are brought to front on this device when they are activated in the main instance (no own activate states)"
                 },
                 "_headerCustomApps": {
                     "hidden": "!!data.foreignSettingsInstance",
@@ -287,7 +301,8 @@
                             "lg": 2,
                             "xl": 2,
                             "default": 0,
-                            "min": 0
+                            "min": 0,
+                            "hidden": "!!data.noScroll"
                         },
                         {
                             "type": "text",
@@ -329,7 +344,8 @@
                             "lg": 2,
                             "xl": 2,
                             "default": 3,
-                            "help": "Numeric values will be rounded"
+                            "help": "Numeric values will be rounded",
+                            "hidden": "!data.objId"
                         },
                         {
                             "type": "checkbox",
@@ -341,7 +357,8 @@
                             "lg": 2,
                             "xl": 2,
                             "default": false,
-                            "help": "Adjust digits to avoid scrolling"
+                            "help": "Adjust digits to avoid scrolling",
+                            "hidden": "!data.objId"
                         },
                         {
                             "newLine": true,
@@ -390,8 +407,8 @@
                             "xl": 4,
                             "default": 0,
                             "min": 0,
-                            "max": 100,
-                            "help": "0 = default"
+                            "max": 500,
+                            "help": "Percent of the default speed (100 = normal, 0 = default)"
                         },
                         {
                             "newLine": true,
@@ -483,8 +500,8 @@
                             "xl": 2,
                             "default": 0,
                             "step": 0.1,
-                            "validator": "!isNaN(data.thresholdLtValue)",
-                            "validatorErrorText": "Set valid number",
+                            "validator": "!isNaN(data.thresholdLtValue) && (!data.thresholdGtActive || data.thresholdLtValue < data.thresholdGtValue)",
+                            "validatorErrorText": "Set valid number ('less than' must be less than 'greater than')",
                             "validatorNoSaveOnError": true
                         },
                         {
@@ -556,8 +573,8 @@
                             "xl": 2,
                             "default": 100,
                             "step": 0.1,
-                            "validator": "!isNaN(data.thresholdGtValue)",
-                            "validatorErrorText": "Set valid number",
+                            "validator": "!isNaN(data.thresholdGtValue) && (!data.thresholdLtActive || data.thresholdLtValue < data.thresholdGtValue)",
+                            "validatorErrorText": "Set valid number ('less than' must be less than 'greater than')",
                             "validatorNoSaveOnError": true
                         },
                         {
@@ -620,6 +637,39 @@
                     "xl": 4,
                     "label": "Ignore new values after state change (in seconds)",
                     "help": "Prevents too many requests for rapid state changes"
+                },
+                "numberFormat": {
+                    "type": "select",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 4,
+                    "lg": 4,
+                    "xl": 4,
+                    "options": [
+                        {
+                            "label": "System",
+                            "value": "system"
+                        },
+                        {
+                            "label": "xx.xxx,xx",
+                            "value": ".,"
+                        },
+                        {
+                            "label": "xx,xxx.xx",
+                            "value": ",."
+                        },
+                        {
+                            "label": "xxxxx,xx",
+                            "value": ","
+                        },
+                        {
+                            "label": "xxxxx.xx",
+                            "value": "."
+                        }
+                    ],
+                    "default": "system",
+                    "label": "Number format",
+                    "help": "Used for values of custom apps"
                 },
                 "_headerHistoryApps": {
                     "hidden": "!!data.foreignSettingsInstance",
@@ -708,7 +758,10 @@
                             "sm": 12,
                             "md": 4,
                             "lg": 4,
-                            "xl": 4
+                            "xl": 4,
+                            "validator": "!!data.sourceInstance",
+                            "validatorErrorText": "Select a source instance",
+                            "validatorNoSaveOnError": true
                         },
                         {
                             "type": "objectId",
@@ -728,14 +781,14 @@
                         {
                             "type": "color",
                             "attr": "lineColor",
-                            "label": "Color",
+                            "label": "Chart color",
                             "xs": 12,
                             "sm": 12,
                             "md": 2,
                             "lg": 2,
                             "xl": 2,
                             "default": "#FF0000",
-                            "help": "Line color of chart"
+                            "help": "Color of line or bars"
                         },
                         {
                             "type": "color",
@@ -768,7 +821,8 @@
                                 }
                             ],
                             "default": "line",
-                            "label": "Display as"
+                            "label": "Display as",
+                            "help": "A line chart requires at least 2 values"
                         },
                         {
                             "newLine": true,
@@ -868,7 +922,8 @@
                     "sm": 12,
                     "md": 6,
                     "lg": 6,
-                    "xl": 6
+                    "xl": 6,
+                    "help": "Apps are transferred with a lifetime and disappear from the device if the instance is not running anymore"
                 }
             }
         },
@@ -877,50 +932,6 @@
             "label": "Expert options",
             "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48IS0tISBGb250IEF3ZXNvbWUgUHJvIDYuNC4yIGJ5IEBmb250YXdlc29tZSAtIGh0dHBzOi8vZm9udGF3ZXNvbWUuY29tIExpY2Vuc2UgLSBodHRwczovL2ZvbnRhd2Vzb21lLmNvbS9saWNlbnNlIChDb21tZXJjaWFsIExpY2Vuc2UpIENvcHlyaWdodCAyMDIzIEZvbnRpY29ucywgSW5jLiAtLT48cGF0aCBkPSJNMjU2IDMyYzE0LjIgMCAyNy4zIDcuNSAzNC41IDE5LjhsMjE2IDM2OGM3LjMgMTIuNCA3LjMgMjcuNyAuMiA0MC4xUzQ4Ni4zIDQ4MCA0NzIgNDgwSDQwYy0xNC4zIDAtMjcuNi03LjctMzQuNy0yMC4xcy03LTI3LjggLjItNDAuMWwyMTYtMzY4QzIyOC43IDM5LjUgMjQxLjggMzIgMjU2IDMyem0wIDEyOGMtMTMuMyAwLTI0IDEwLjctMjQgMjRWMjk2YzAgMTMuMyAxMC43IDI0IDI0IDI0czI0LTEwLjcgMjQtMjRWMTg0YzAtMTMuMy0xMC43LTI0LTI0LTI0em0zMiAyMjRhMzIgMzIgMCAxIDAgLTY0IDAgMzIgMzIgMCAxIDAgNjQgMHoiLz48L3N2Zz4=",
             "items": {
-                "httpTimeout": {
-                    "type": "number",
-                    "label": "HTTP timeout",
-                    "min": 1,
-                    "max": 10,
-                    "xs": 12,
-                    "sm": 12,
-                    "md": 4,
-                    "lg": 4,
-                    "xl": 4
-                },
-                "numberFormat": {
-                    "newLine": true,
-                    "type": "select",
-                    "xs": 12,
-                    "sm": 12,
-                    "md": 4,
-                    "lg": 4,
-                    "xl": 4,
-                    "options": [
-                        {
-                            "label": "System",
-                            "value": "system"
-                        },
-                        {
-                            "label": "xx.xxx,xx",
-                            "value": ".,"
-                        },
-                        {
-                            "label": "xx,xxx.xx",
-                            "value": ",."
-                        },
-                        {
-                            "label": "xxxxx,xx",
-                            "value": ","
-                        },
-                        {
-                            "label": "xxxxx.xx",
-                            "value": "."
-                        }
-                    ],
-                    "default": "system",
-                    "label": "Number format"
-                },
                 "_headerExpertApps": {
                     "hidden": "!!data.foreignSettingsInstance",
                     "newLine": true,
