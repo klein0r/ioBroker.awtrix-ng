@@ -13,12 +13,13 @@ import type {
     OkResponse,
     SettingsUpdate,
 } from 'awtrix-ng-api';
-import { AwtrixApiError, AwtrixClient, AwtrixConnectionError, isValidAppName, toHexColor } from 'awtrix-ng-api';
+import { AwtrixApiError, AwtrixClient, AwtrixConnectionError, isValidAppName } from 'awtrix-ng-api';
 
 import type { AppType as AppTypeAbstract } from './lib/app-type/abstract';
 import { Melody } from './lib/audio/melody';
 import { Mp3 } from './lib/audio/mp3';
 import { Radio } from './lib/audio/radio';
+import { screenToSvg } from './lib/screen';
 import { AppType as AppTypeBuiltin } from './lib/app-type/builtin';
 import { AppType as AppTypeScript } from './lib/app-type/script';
 import { AppType as AppTypeCustom } from './lib/app-type/user/custom';
@@ -709,22 +710,11 @@ export class AwtrixNg extends utils.Adapter {
                         this.apiClient.display
                             .getScreen()
                             .then(async screen => {
-                                const { width, height, pixels } = screen;
-                                const pixelSize = 20;
-
-                                let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width * pixelSize}" height="${height * pixelSize}" viewBox="0 0 ${width * pixelSize} ${height * pixelSize}">`;
-
-                                for (let y = 0; y < height; y++) {
-                                    for (let x = 0; x < width; x++) {
-                                        const color = toHexColor(pixels[y * width + x] ?? 0);
-                                        svg += `\n  <rect style="fill: ${color}; stroke: #000000; stroke-width: 2px;" `;
-                                        svg += `x="${x * pixelSize}" y="${y * pixelSize}" width="${pixelSize}" height="${pixelSize}"/>`;
-                                    }
-                                }
-
-                                svg += '\n</svg>';
-
-                                await this.setState('display.content', { val: svg, ack: true });
+                                // just write if the content has changed (e.g. static screen)
+                                await this.setStateChangedAsync('display.content', {
+                                    val: screenToSvg(screen),
+                                    ack: true,
+                                });
                             })
                             .catch(error => {
                                 this.log.debug(`(display/screen) received error: ${error}`);
