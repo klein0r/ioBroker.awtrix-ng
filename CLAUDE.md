@@ -1,0 +1,49 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project
+
+ioBroker adapter (`iobroker.awtrix-ng`) that controls an [Awtrix NG](https://github.com/Blueforcer/awtrix-ng) pixel clock (e.g. Ulanzi TC001) over its HTTP API. TypeScript sources in `src/`, compiled to `build/`. Node >= 22.
+
+## Commands
+
+```bash
+npm run build          # compile src/ -> build/ (build-adapter ts, cleans build/ first)
+npm run watch          # incremental build
+npm run check          # tsc --noEmit type check
+npm run lint           # eslint (@iobroker/eslint-config), prettier config in prettier.config.mjs
+npm test               # test:ts (mocha on src/**/*.test.ts) + test:package (io-package/package.json validation)
+npm run test:integration   # @iobroker/testing integration test (starts a real js-controller; needs a build first)
+npm run translate      # translate-adapter: fills i18n for admin/i18n and io-package.json
+npm run release-patch  # @alcalzone/release-script (runs lint before, build before commit)
+```
+
+Single TS test file: `npx mocha --config test/mocharc.custom.json src/path/to/file.test.ts`. There are currently no real unit tests (`src/main.test.ts` is a placeholder).
+
+`build/` is committed to git — the release script rebuilds before committing, so keep it in sync when changing `src/`.
+
+## Architecture
+
+- **`src/main.ts`** — entry; exports the adapter factory for compact mode.
+- **`src/awtrix-ng.ts`** — `AwtrixNg` adapter class (the bulk of the logic):
+  - `onReady` creates the `AwtrixApi.Client` and starts `refreshState()`, a 60 s poll of `GET device` that fills `meta.*`, `sensor.*`, `device.*`, `display.brightness`.
+  - `setApiConnected(true)` (on transition offline → online) does the full resync: welcome notification, `refreshSettings()`, `createAppObjects()`, indicators 1–3, moodlight, optional screen-content download (RGB565 → SVG into `display.content`).
+  - `onStateChange` (non-ack only) pushes writes to the device: `settings.*`, indicators, moodlight, etc.
+  - `onMessage` handles `sendTo` commands: `notification`, `audio`, `sendNotification` (ioBroker notification-manager integration), `getBackgroundEffects`. `admin/blockly.js` generates Blockly blocks that call these.
+- **`src/lib/api.ts`** — `AwtrixApi.Client`: thin axios wrapper around the device REST API (`http://<ip>:80/api/v1/`, optional basic auth; only 200/201 count as success), and the request/response types (`App`, `Indicator`, `AppOrderDefinition`, ...).
+- **`src/lib/app-type/`** — one object per Awtrix app under the `apps.<nameClean>` channel:
+  - `abstract.ts` `AbstractApp`: shared `enabled`/`slot`/`activate` states and handling. Each app instance registers its **own** `stateChange`/`objectChange` listeners on the adapter; subclasses override `stateChanged`/`objectChanged`/`refresh`/`init`.
+  - `builtin.ts` (device built-in apps), `script.ts` (apps pushed to the device by others), `user.ts` `UserApp` (apps this adapter creates/owns; may delete them on stop via `removeAppsOnStop`).
+  - `user/custom.ts` (text + state value with thresholds), `user/history.ts` (chart from a history adapter instance), `user/expert.ts` (fully state-driven app with many sub-states).
+  - `createAppObjects()` fetches the device app list, instantiates the right class per app, creates/extends objects, deletes `apps.*` channels no longer present, then `PUT apps/order` from enabled apps sorted by slot.
+- **Settings mapping** — the `settings.*` objects are declared statically in `io-package.json` `instanceObjects`; each state carries `native.settingsKey`, which maps it to a key in the flattened device `GET settings` response. To expose a new device setting, add an object with `settingsKey` there (no code change needed). Other static states (`meta.*`, `sensor.*`, ...) are also defined in `instanceObjects`.
+- **Foreign settings instance** — if `config.foreignSettingsInstance` points to another instance, this instance is not the "main" instance: it copies app config (`customApps`, `historyApps`, `expertApps`, ...) from that instance's `native` and reads app `enabled`/`slot` states from the foreign namespace (`objPrefix` in `AbstractApp`). This lets multiple clocks share one app configuration.
+- **Config** — `admin/jsonConfig.json` (admin UI), types in `src/lib/adapter-config.d.ts` (keep both in sync with `native` defaults in `io-package.json`).
+
+## Conventions
+
+- `AwtrixNg.supportedVersion` holds the recommended firmware version; when bumping it, also update README changelog and `docs/{en,de}/README.md`.
+- Changelog entries go under `### **WORK IN PROGRESS**` in `README.md` in the format `* (@klein0r) ...`; the release script moves them.
+- User documentation lives in `docs/en/README.md` and `docs/de/README.md` — update both.
+- Translatable strings (object names in `io-package.json`, `admin/i18n/*.json`, Blockly words) are objects keyed by language (en, de, ru, pt, nl, fr, it, es, pl, uk, zh-cn).
