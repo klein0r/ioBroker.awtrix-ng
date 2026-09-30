@@ -7,9 +7,10 @@
 - nodejs 22 (or later)
 - js-controller 6.0.11 (or later)
 - Admin Adapter 7.6.20 (or later)
-- _Awtrix NG_ device with firmware _1.1.2_ (or later) - e.g. Ulanzi TC001
+- _Awtrix NG_ device with firmware _1.1.4_ (or later) - e.g. Ulanzi TC001, Ulanzi TC002
 
-Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC001) or here: [ulanzi.de](https://haus-auto.com/p/ula/UlanziTC001) (Affiliate-Links)
+- Buy TC001: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), [Amazon.de](https://haus-auto.com/p/amz/UlanziTC001) or [ulanzi.de](https://haus-auto.com/p/ula/UlanziTC001) *(Affiliate-Links)*
+- Buy TC002: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC002) or [ulanzi.de](https://haus-auto.com/p/ula/UlanziTC002) *(Affiliate-Links)*
 
 ## Getting started
 
