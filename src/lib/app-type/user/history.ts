@@ -1,6 +1,6 @@
+import type { AppInfo, AwtrixClient, ClassicAppPayload } from 'awtrix-ng-api';
 import type { AwtrixNg } from '../../../awtrix-ng';
 import type { HistoryApp } from '../../adapter-config';
-import type { AwtrixApi } from '../../api';
 import { AppType as UserAppType } from '../user';
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -23,7 +23,7 @@ export namespace AppType {
         private isValidObjId: boolean;
         private refreshTimeout: ioBroker.Timeout | undefined;
 
-        public constructor(apiClient: AwtrixApi.Client, adapter: AwtrixNg, definition: HistoryApp) {
+        public constructor(apiClient: AwtrixClient, adapter: AwtrixNg, definition: HistoryApp) {
             super(apiClient, adapter, definition);
 
             this.appDefinition = definition;
@@ -41,7 +41,7 @@ export namespace AppType {
         }
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        public override async init(orderDefinition?: AwtrixApi.AppOrderDefinition): Promise<void> {
+        public override async init(appInfo?: AppInfo): Promise<void> {
             if (this.appDefinition.sourceInstance) {
                 const sourceInstanceObj = await this.adapter.getForeignObjectAsync(
                     `system.adapter.${this.appDefinition.sourceInstance}`,
@@ -149,7 +149,7 @@ export namespace AppType {
                 );
 
                 if (graphData.length > 0) {
-                    const moreOptions: AwtrixApi.App = {};
+                    const moreOptions: ClassicAppPayload = {};
 
                     // Duration
                     if (this.appDefinition.durationMs > 0) {
@@ -168,8 +168,8 @@ export namespace AppType {
                         moreOptions.lineChart = graphData;
                     }
 
-                    await this.apiClient
-                        .appRequestAsync(this.appDefinition.name, {
+                    await this.apiClient.apps
+                        .push(this.appDefinition.name, {
                             chartColor: this.appDefinition.lineColor || '#FF0000',
                             backgroundColor: this.appDefinition.backgroundColor || '#000000',
                             chartAutoscale: true,
@@ -189,7 +189,7 @@ export namespace AppType {
                         `[refreshHistoryApp] Going to remove app "${this.appDefinition.name}" (no history data)`,
                     );
 
-                    await this.apiClient.removeAppAsync(this.appDefinition.name).catch(error => {
+                    await this.apiClient.apps.delete(this.appDefinition.name).catch(error => {
                         this.adapter.log.warn(
                             `[refreshHistoryApp] Unable to remove app "${this.appDefinition.name}" (no history data): ${error}`,
                         );

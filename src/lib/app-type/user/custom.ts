@@ -1,6 +1,6 @@
+import type { AppInfo, AwtrixClient, ClassicAppPayload } from 'awtrix-ng-api';
 import type { AwtrixNg } from '../../../awtrix-ng';
 import type { CustomApp } from '../../adapter-config';
-import type { AwtrixApi } from '../../api';
 import { AppType as UserAppType } from '../user';
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -19,7 +19,7 @@ export namespace AppType {
         private isBackgroundOny: boolean;
         private cooldownTimeout: ioBroker.Timeout | undefined;
 
-        public constructor(apiClient: AwtrixApi.Client, adapter: AwtrixNg, definition: CustomApp) {
+        public constructor(apiClient: AwtrixClient, adapter: AwtrixNg, definition: CustomApp) {
             super(apiClient, adapter, definition);
 
             this.appDefinition = definition;
@@ -38,7 +38,7 @@ export namespace AppType {
         }
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        public override async init(orderDefinition?: AwtrixApi.AppOrderDefinition): Promise<void> {
+        public override async init(appInfo?: AppInfo): Promise<void> {
             const text = String(this.appDefinition.text).trim();
             if (text.length > 0) {
                 if (this.appDefinition.objId && text.includes('%s')) {
@@ -103,8 +103,8 @@ export namespace AppType {
             await super.init();
         }
 
-        private createAppRequestObj(text: string, val?: ioBroker.StateValue): AwtrixApi.App {
-            const app: AwtrixApi.App = {};
+        private createAppRequestObj(text: string, val?: ioBroker.StateValue): ClassicAppPayload {
+            const app: ClassicAppPayload = {};
 
             if (text !== '') {
                 app.text = text;
@@ -283,11 +283,8 @@ export namespace AppType {
                                     .trim();
 
                                 if (displayText.length > 0) {
-                                    await this.apiClient
-                                        .appRequestAsync(
-                                            this.appDefinition.name,
-                                            this.createAppRequestObj(displayText, val),
-                                        )
+                                    await this.apiClient.apps
+                                        .push(this.appDefinition.name, this.createAppRequestObj(displayText, val))
                                         .catch(error => {
                                             this.adapter.log.warn(
                                                 `[refreshCustomApp] Unable to update custom app "${this.appDefinition.name}": ${error}`,
@@ -301,7 +298,7 @@ export namespace AppType {
                                         `[refreshCustomApp] Going to remove app "${this.appDefinition.name}" (empty text)`,
                                     );
 
-                                    await this.apiClient.removeAppAsync(this.appDefinition.name).catch(error => {
+                                    await this.apiClient.apps.delete(this.appDefinition.name).catch(error => {
                                         this.adapter.log.warn(
                                             `[refreshCustomApp] Unable to remove app "${this.appDefinition.name}" (empty text): ${error}`,
                                         );
@@ -313,7 +310,7 @@ export namespace AppType {
                                     `[refreshCustomApp] Going to remove app "${this.appDefinition.name}" (no state data)`,
                                 );
 
-                                await this.apiClient.removeAppAsync(this.appDefinition.name).catch(error => {
+                                await this.apiClient.apps.delete(this.appDefinition.name).catch(error => {
                                     this.adapter.log.warn(
                                         `[refreshCustomApp] Unable to remove app "${this.appDefinition.name}" (no state data): ${error}`,
                                     );
@@ -340,8 +337,8 @@ export namespace AppType {
                     const displayText = text.replace('%u', '').trim();
 
                     if (displayText.length > 0) {
-                        await this.apiClient
-                            .appRequestAsync(this.appDefinition.name, this.createAppRequestObj(displayText))
+                        await this.apiClient.apps
+                            .push(this.appDefinition.name, this.createAppRequestObj(displayText))
                             .catch(error => {
                                 this.adapter.log.warn(
                                     `[refreshCustomApp] Unable to create app "${this.appDefinition.name}" with static text: ${error}`,
@@ -355,15 +352,15 @@ export namespace AppType {
                             `[refreshCustomApp] Going to remove app "${this.appDefinition.name}" with static text (empty text)`,
                         );
 
-                        await this.apiClient.removeAppAsync(this.appDefinition.name).catch(error => {
+                        await this.apiClient.apps.delete(this.appDefinition.name).catch(error => {
                             this.adapter.log.warn(
                                 `[refreshCustomApp] Unable to remove app "${this.appDefinition.name}" with static text (empty text): ${error}`,
                             );
                         });
                     }
                 } else if (this.isBackgroundOny) {
-                    await this.apiClient
-                        .appRequestAsync(this.appDefinition.name, this.createAppRequestObj(''))
+                    await this.apiClient.apps
+                        .push(this.appDefinition.name, this.createAppRequestObj(''))
                         .catch(error => {
                             this.adapter.log.warn(
                                 `[refreshCustomApp] Unable to create app "${this.appDefinition.name}" with background only: ${error}`,

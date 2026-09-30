@@ -45,7 +45,7 @@ var AppType;
       return "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NDggNTEyIj48IS0tIUZvbnQgQXdlc29tZSBGcmVlIDYuNy4yIGJ5IEBmb250YXdlc29tZSAtIGh0dHBzOi8vZm9udGF3ZXNvbWUuY29tIExpY2Vuc2UgLSBodHRwczovL2ZvbnRhd2Vzb21lLmNvbS9saWNlbnNlL2ZyZWUgQ29weXJpZ2h0IDIwMjUgRm9udGljb25zLCBJbmMuLS0+PHBhdGggZD0iTTIyNCAyNTZBMTI4IDEyOCAwIDEgMCAyMjQgMGExMjggMTI4IDAgMSAwIDAgMjU2em0tNDUuNyA0OEM3OS44IDMwNCAwIDM4My44IDAgNDgyLjNDMCA0OTguNyAxMy4zIDUxMiAyOS43IDUxMmwzODguNiAwYzE2LjQgMCAyOS43LTEzLjMgMjkuNy0yOS43QzQ0OCAzODMuOCAzNjguMiAzMDQgMjY5LjcgMzA0bC05MS40IDB6Ii8+PC9zdmc+";
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async init(orderDefinition) {
+    async init(appInfo) {
       var _a, _b;
       const text = String(this.appDefinition.text).trim();
       if (text.length > 0) {
@@ -232,10 +232,7 @@ var AppType;
                 }
                 const displayText = text.replace("%s", newVal).replace("%u", (_b = this.objCache.unit) != null ? _b : "").trim();
                 if (displayText.length > 0) {
-                  await this.apiClient.appRequestAsync(
-                    this.appDefinition.name,
-                    this.createAppRequestObj(displayText, val)
-                  ).catch((error) => {
+                  await this.apiClient.apps.push(this.appDefinition.name, this.createAppRequestObj(displayText, val)).catch((error) => {
                     this.adapter.log.warn(
                       `[refreshCustomApp] Unable to update custom app "${this.appDefinition.name}": ${error}`
                     );
@@ -245,7 +242,7 @@ var AppType;
                   this.adapter.log.debug(
                     `[refreshCustomApp] Going to remove app "${this.appDefinition.name}" (empty text)`
                   );
-                  await this.apiClient.removeAppAsync(this.appDefinition.name).catch((error) => {
+                  await this.apiClient.apps.delete(this.appDefinition.name).catch((error) => {
                     this.adapter.log.warn(
                       `[refreshCustomApp] Unable to remove app "${this.appDefinition.name}" (empty text): ${error}`
                     );
@@ -255,7 +252,7 @@ var AppType;
                 this.adapter.log.debug(
                   `[refreshCustomApp] Going to remove app "${this.appDefinition.name}" (no state data)`
                 );
-                await this.apiClient.removeAppAsync(this.appDefinition.name).catch((error) => {
+                await this.apiClient.apps.delete(this.appDefinition.name).catch((error) => {
                   this.adapter.log.warn(
                     `[refreshCustomApp] Unable to remove app "${this.appDefinition.name}" (no state data): ${error}`
                   );
@@ -278,7 +275,7 @@ var AppType;
           }
           const displayText = text.replace("%u", "").trim();
           if (displayText.length > 0) {
-            await this.apiClient.appRequestAsync(this.appDefinition.name, this.createAppRequestObj(displayText)).catch((error) => {
+            await this.apiClient.apps.push(this.appDefinition.name, this.createAppRequestObj(displayText)).catch((error) => {
               this.adapter.log.warn(
                 `[refreshCustomApp] Unable to create app "${this.appDefinition.name}" with static text: ${error}`
               );
@@ -288,14 +285,14 @@ var AppType;
             this.adapter.log.debug(
               `[refreshCustomApp] Going to remove app "${this.appDefinition.name}" with static text (empty text)`
             );
-            await this.apiClient.removeAppAsync(this.appDefinition.name).catch((error) => {
+            await this.apiClient.apps.delete(this.appDefinition.name).catch((error) => {
               this.adapter.log.warn(
                 `[refreshCustomApp] Unable to remove app "${this.appDefinition.name}" with static text (empty text): ${error}`
               );
             });
           }
         } else if (this.isBackgroundOny) {
-          await this.apiClient.appRequestAsync(this.appDefinition.name, this.createAppRequestObj("")).catch((error) => {
+          await this.apiClient.apps.push(this.appDefinition.name, this.createAppRequestObj("")).catch((error) => {
             this.adapter.log.warn(
               `[refreshCustomApp] Unable to create app "${this.appDefinition.name}" with background only: ${error}`
             );

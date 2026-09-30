@@ -27,11 +27,11 @@ Single TS test file: `npx mocha --config test/mocharc.custom.json src/path/to/fi
 
 - **`src/main.ts`** — entry; exports the adapter factory for compact mode.
 - **`src/awtrix-ng.ts`** — `AwtrixNg` adapter class (the bulk of the logic):
-  - `onReady` creates the `AwtrixApi.Client` and starts `refreshState()`, a 60 s poll of `GET device` that fills `meta.*`, `sensor.*`, `device.*`, `display.brightness`.
+  - `onReady` creates the `AwtrixClient` and starts `refreshState()`, a 60 s poll of `GET device` that fills `meta.*`, `sensor.*`, `device.*`, `display.brightness`.
   - `setApiConnected(true)` (on transition offline → online) does the full resync: welcome notification, `refreshSettings()`, `createAppObjects()`, indicators 1–3, moodlight, optional screen-content download (RGB565 → SVG into `display.content`).
   - `onStateChange` (non-ack only) pushes writes to the device: `settings.*`, indicators, moodlight, etc.
   - `onMessage` handles `sendTo` commands: `notification`, `audio`, `sendNotification` (ioBroker notification-manager integration), `getBackgroundEffects`. `admin/blockly.js` generates Blockly blocks that call these.
-- **`src/lib/api.ts`** — `AwtrixApi.Client`: thin axios wrapper around the device REST API (`http://<ip>:80/api/v1/`, optional basic auth; only 200/201 count as success), and the request/response types (`App`, `Indicator`, `AppOrderDefinition`, ...).
+- **HTTP API** — all device requests go through the npm package [`awtrix-ng-api`](https://www.npmjs.com/package/awtrix-ng-api) (`AwtrixClient`, namespaces `device`, `settings`, `display`, `apps`, `notifications`, `indicators`, `audio`, ...; payload/response types like `ClassicAppPayload`, `AppInfo`). Errors are `AwtrixApiError` (non-2xx) / `AwtrixConnectionError` (no answer); the adapter tracks the connection itself in `apiConnected` (set by the `GET device` poll) and logs poll errors via `logRequestError()`.
 - **`src/lib/app-type/`** — one object per Awtrix app under the `apps.<nameClean>` channel:
   - `abstract.ts` `AbstractApp`: shared `enabled`/`slot`/`activate` states and handling. Each app instance registers its **own** `stateChange`/`objectChange` listeners on the adapter; subclasses override `stateChanged`/`objectChanged`/`refresh`/`init`.
   - `builtin.ts` (device built-in apps), `script.ts` (apps pushed to the device by others), `user.ts` `UserApp` (apps this adapter creates/owns; may delete them on stop via `removeAppsOnStop`).

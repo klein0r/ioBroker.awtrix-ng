@@ -36,7 +36,7 @@ var AppType;
       if (this.adapter.config.removeAppsOnStop) {
         this.adapter.log.info(`[onUnload] Deleting app on awtrix light with name "${this.definition.name}"`);
         try {
-          await this.apiClient.removeAppAsync(this.definition.name).catch((error) => {
+          await this.apiClient.apps.delete(this.definition.name).catch((error) => {
             this.adapter.log.warn(`Unable to remove unknown app "${this.definition.name}": ${error}`);
           });
         } catch (error) {

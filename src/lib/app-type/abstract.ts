@@ -1,5 +1,5 @@
 import type { AwtrixNg } from '../../awtrix-ng';
-import type { AwtrixApi } from '../api';
+import type { AppInfo, AwtrixClient } from 'awtrix-ng-api';
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace AppType {
@@ -7,14 +7,14 @@ export namespace AppType {
         private name: string;
         private nameClean: string;
 
-        protected apiClient: AwtrixApi.Client;
+        protected apiClient: AwtrixClient;
         protected adapter: AwtrixNg;
 
         protected objPrefix: string;
         protected isEnabled: boolean;
         protected slot: number | null;
 
-        public constructor(apiClient: AwtrixApi.Client, adapter: AwtrixNg, name: string) {
+        public constructor(apiClient: AwtrixClient, adapter: AwtrixNg, name: string) {
             this.apiClient = apiClient;
             this.adapter = adapter;
 
@@ -38,7 +38,7 @@ export namespace AppType {
             adapter.on('objectChange', this.onObjectChange.bind(this));
         }
 
-        public async init(orderDefinition?: AwtrixApi.AppOrderDefinition): Promise<void> {
+        public async init(appInfo?: AppInfo): Promise<void> {
             const appNameC = this.getNameClean();
 
             const appEnabledState = await this.adapter.getForeignStateAsync(
@@ -46,9 +46,9 @@ export namespace AppType {
             );
             const appSlotState = await this.adapter.getForeignStateAsync(`${this.objPrefix}.apps.${appNameC}.slot`);
 
-            if (orderDefinition) {
-                this.isEnabled = orderDefinition?.enabled ?? true;
-                this.slot = orderDefinition?.slot ?? null;
+            if (appInfo && appInfo.origin !== 'module') {
+                this.isEnabled = appInfo.enabled ?? true;
+                this.slot = appInfo.slot ?? null;
             } else {
                 this.isEnabled =
                     appEnabledState && typeof appEnabledState?.val === 'boolean' ? !!appEnabledState.val : true;
@@ -214,13 +214,11 @@ export namespace AppType {
                     ) {
                         if (state.val) {
                             if (this.isEnabled) {
-                                this.apiClient
-                                    .requestAsync('apps/active', 'PUT', { name: appName })
-                                    .then(async response => {
-                                        if (response.status === 200 && response.data.ok === true) {
-                                            const idOwnNamespace = this.getObjIdOwnNamespace(id);
-                                            await this.adapter.setState(idOwnNamespace, { val: state.val, ack: true });
-                                        }
+                                this.apiClient.apps
+                                    .switchTo(appName)
+                                    .then(async () => {
+                                        const idOwnNamespace = this.getObjIdOwnNamespace(id);
+                                        await this.adapter.setState(idOwnNamespace, { val: state.val, ack: true });
                                     })
                                     .catch(error => {
                                         this.adapter.log.warn(

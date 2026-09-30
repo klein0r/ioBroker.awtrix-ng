@@ -1,11 +1,11 @@
 import type { AwtrixNg } from '../../awtrix-ng';
-import type { AwtrixApi } from '../api';
+import type { AwtrixClient } from 'awtrix-ng-api';
 import { AppType as AbstractAppType } from './abstract';
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace AppType {
     export class Script extends AbstractAppType.AbstractApp {
-        public constructor(apiClient: AwtrixApi.Client, adapter: AwtrixNg, name: string) {
+        public constructor(apiClient: AwtrixClient, adapter: AwtrixNg, name: string) {
             super(apiClient, adapter, name);
         }
 

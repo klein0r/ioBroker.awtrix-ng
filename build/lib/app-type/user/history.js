@@ -43,7 +43,7 @@ var AppType;
       return "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NDggNTEyIj48IS0tIUZvbnQgQXdlc29tZSBGcmVlIDYuNy4yIGJ5IEBmb250YXdlc29tZSAtIGh0dHBzOi8vZm9udGF3ZXNvbWUuY29tIExpY2Vuc2UgLSBodHRwczovL2ZvbnRhd2Vzb21lLmNvbS9saWNlbnNlL2ZyZWUgQ29weXJpZ2h0IDIwMjUgRm9udGljb25zLCBJbmMuLS0+PHBhdGggZD0iTTE2MCA4MGMwLTI2LjUgMjEuNS00OCA0OC00OGwzMiAwYzI2LjUgMCA0OCAyMS41IDQ4IDQ4bDAgMzUyYzAgMjYuNS0yMS41IDQ4LTQ4IDQ4bC0zMiAwYy0yNi41IDAtNDgtMjEuNS00OC00OGwwLTM1MnpNMCAyNzJjMC0yNi41IDIxLjUtNDggNDgtNDhsMzIgMGMyNi41IDAgNDggMjEuNSA0OCA0OGwwIDE2MGMwIDI2LjUtMjEuNSA0OC00OCA0OGwtMzIgMGMtMjYuNSAwLTQ4LTIxLjUtNDgtNDhMMCAyNzJ6TTM2OCA5NmwzMiAwYzI2LjUgMCA0OCAyMS41IDQ4IDQ4bDAgMjg4YzAgMjYuNS0yMS41IDQ4LTQ4IDQ4bC0zMiAwYy0yNi41IDAtNDgtMjEuNS00OC00OGwwLTI4OGMwLTI2LjUgMjEuNS00OCA0OC00OHoiLz48L3N2Zz4=";
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async init(orderDefinition) {
+    async init(appInfo) {
       var _a, _b, _c;
       if (this.appDefinition.sourceInstance) {
         const sourceInstanceObj = await this.adapter.getForeignObjectAsync(
@@ -143,7 +143,7 @@ var AppType;
           } else {
             moreOptions.lineChart = graphData;
           }
-          await this.apiClient.appRequestAsync(this.appDefinition.name, {
+          await this.apiClient.apps.push(this.appDefinition.name, {
             chartColor: this.appDefinition.lineColor || "#FF0000",
             backgroundColor: this.appDefinition.backgroundColor || "#000000",
             chartAutoscale: true,
@@ -161,7 +161,7 @@ var AppType;
           this.adapter.log.debug(
             `[refreshHistoryApp] Going to remove app "${this.appDefinition.name}" (no history data)`
           );
-          await this.apiClient.removeAppAsync(this.appDefinition.name).catch((error) => {
+          await this.apiClient.apps.delete(this.appDefinition.name).catch((error) => {
             this.adapter.log.warn(
               `[refreshHistoryApp] Unable to remove app "${this.appDefinition.name}" (no history data): ${error}`
             );

@@ -42,6 +42,8 @@ Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amaz
 
 ### **WORK IN PROGRESS**
 
+* (@klein0r) Migrated all HTTP requests to the new library [awtrix-ng-api](https://www.npmjs.com/package/awtrix-ng-api)
+* (@klein0r) Fixed screen content download (`display.content`)
 * (@klein0r) Added additional meta information (soc and board type)
 * (@klein0r) Recommended Awtrix NG version is now 1.1.2
 * (ioBroker-Bot) Adapter requires admin >= 7.8.23 now.
