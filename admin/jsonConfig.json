@@ -32,6 +32,18 @@
                     "validatorErrorText": "Invalid IP address",
                     "validatorNoSaveOnError": true
                 },
+                "awtrixPort": {
+                    "type": "number",
+                    "label": "Port",
+                    "min": 1,
+                    "max": 65535,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 2,
+                    "lg": 2,
+                    "xl": 2,
+                    "help": "Port of the web interface (default: 80)"
+                },
                 "userName": {
                     "newLine": true,
                     "type": "text",

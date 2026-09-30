@@ -182,7 +182,7 @@ export class AwtrixNg extends utils.Adapter {
         try {
             this.apiClient = new AwtrixClient({
                 host: this.config.awtrixIp,
-                port: 80,
+                port: this.config.awtrixPort || 80,
                 timeout: this.config.httpTimeout * 1000 || 3000,
                 auth: this.config.userName
                     ? { username: this.config.userName, password: this.config.userPassword }

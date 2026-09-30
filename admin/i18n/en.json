@@ -49,6 +49,8 @@
     "Options": "Options",
     "Own position for each app": "Own position for each app",
     "Password": "Password",
+    "Port": "Port",
+    "Port of the web interface (default: 80)": "Port of the web interface (default: 80)",
     "Position": "Position",
     "Prevents too many requests for rapid state changes": "Prevents too many requests for rapid state changes",
     "Refresh interval (in seconds)": "Refresh interval (in seconds)",

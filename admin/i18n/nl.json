@@ -49,6 +49,8 @@
     "Options": "Opties",
     "Own position for each app": "Eigen positie voor elke app",
     "Password": "Wachtwoord",
+    "Port": "Poort",
+    "Port of the web interface (default: 80)": "Poort van de webinterface (standaard: 80)",
     "Position": "Positie",
     "Prevents too many requests for rapid state changes": "Voorkomt te veel verzoeken om snelle statusveranderingen",
     "Refresh interval (in seconds)": "Verversingsinterval (in seconden)",

@@ -15,7 +15,7 @@ Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amaz
 
 1. Flash the firmware on your device and add it to your WiFi network - see [documentation](https://blueforcer.github.io/awtrix-ng/getting-started/flashing/)
 2. Install the awtrix-ng adapter in ioBroker (and add a new instance)
-3. Open the instance configuration and enter the IP address of the device in your local network
+3. Open the instance configuration and enter the IP address of the device in your local network (and the port, if you changed it on the device - default is 80)
 
 ## FAQ
 

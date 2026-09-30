@@ -49,6 +49,8 @@
     "Options": "Опції",
     "Own position for each app": "Власна позиція для кожного додатка",
     "Password": "Пароль",
+    "Port": "Порт",
+    "Port of the web interface (default: 80)": "Порт веб-інтерфейсу (за замовчуванням: 80)",
     "Position": "Позиція",
     "Prevents too many requests for rapid state changes": "Запобігає занадто великій кількості запитів на швидку зміну стану",
     "Refresh interval (in seconds)": "Інтервал оновлення (у секундах)",

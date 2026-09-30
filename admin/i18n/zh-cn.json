@@ -49,6 +49,8 @@
     "Options": "选项",
     "Own position for each app": "每个应用程序都有自己的位置",
     "Password": "密码",
+    "Port": "端口",
+    "Port of the web interface (default: 80)": "Web 界面端口（默认：80）",
     "Position": "位置",
     "Prevents too many requests for rapid state changes": "防止对快速状态更改的过多请求",
     "Refresh interval (in seconds)": "刷新间隔（以秒为单位）",

@@ -15,7 +15,7 @@ Hier kaufen: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), hier: [A
 
 1. Flashe die Firmware auf das Gerät und füge es zu deinem lokalen Netzwerk per WLAN hinzu - siehe [Dokumentation](https://blueforcer.github.io/awtrix-ng/getting-started/flashing/)
 2. Installiere den awtrix-ng Adapter im ioBroker (und erstelle eine neue Instanz)
-3. Öffne die Instanz-Konfiguration und hinterlege die IP-Adresse des Gerätes im lokalen Netzwerk
+3. Öffne die Instanz-Konfiguration und hinterlege die IP-Adresse des Gerätes im lokalen Netzwerk (und den Port, falls dieser am Gerät geändert wurde - Standard ist 80)
 
 ## FAQ (häufig gestellte Fragen)
 

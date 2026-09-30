@@ -56,6 +56,7 @@ declare global {
     namespace ioBroker {
         interface AdapterConfig {
             awtrixIp: string;
+            awtrixPort: number;
             userName: string;
             userPassword: string;
             downloadScreenContent: boolean;

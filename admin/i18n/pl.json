@@ -49,6 +49,8 @@
     "Options": "Opcje",
     "Own position for each app": "Własne stanowisko dla każdej aplikacji",
     "Password": "Hasło",
+    "Port": "Port",
+    "Port of the web interface (default: 80)": "Port interfejsu WWW (domyślnie: 80)",
     "Position": "Pozycja",
     "Prevents too many requests for rapid state changes": "Zapobiega zbyt wielu prośbom o szybkie zmiany stanu",
     "Refresh interval (in seconds)": "Interwał odświeżania (w sekundach)",
