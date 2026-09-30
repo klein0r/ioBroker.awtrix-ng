@@ -28,14 +28,14 @@ var AppType;
     appDefinition;
     objCache;
     isStaticText;
-    isBackgroundOny;
+    isBackgroundOnly;
     cooldownTimeout;
     constructor(apiClient, adapter, definition) {
       super(apiClient, adapter, definition);
       this.appDefinition = definition;
       this.objCache = void 0;
       this.isStaticText = false;
-      this.isBackgroundOny = true;
+      this.isBackgroundOnly = false;
       this.cooldownTimeout = void 0;
     }
     getDescription() {
@@ -97,9 +97,13 @@ var AppType;
           this.adapter.log.debug(`[initCustomApp] Init app "${this.appDefinition.name}" with static text`);
           this.isStaticText = true;
         }
-      } else if (this.appDefinition.useBackgroundEffect && this.appDefinition.backgroundEffect) {
+      } else if (this.appDefinition.useBackgroundEffect && this.appDefinition.backgroundEffect || !this.appDefinition.useBackgroundEffect && this.appDefinition.backgroundColor) {
         this.adapter.log.debug(`[initCustomApp] Init app "${this.appDefinition.name}" with background only`);
-        this.isBackgroundOny = true;
+        this.isBackgroundOnly = true;
+      } else {
+        this.adapter.log.warn(
+          `[initCustomApp] App "${this.appDefinition.name}" has no text and no background - nothing to display`
+        );
       }
       await super.init();
     }
@@ -184,80 +188,78 @@ var AppType;
             `[refreshCustomApp] Refreshing custom app "${this.appDefinition.name}" with icon "${this.appDefinition.icon}" and text "${this.appDefinition.text}"`
           );
           try {
-            if (this.isEnabled) {
-              const val = this.objCache.val;
-              if (typeof val !== "undefined") {
-                let newVal = val;
-                if (this.objCache.type === "number") {
-                  const realVal = typeof val !== "number" ? parseFloat(val) : val;
-                  const decimals = typeof this.appDefinition.decimals === "string" ? parseInt(this.appDefinition.decimals) : (_a = this.appDefinition.decimals) != null ? _a : 3;
-                  if (!isNaN(realVal) && realVal % 1 !== 0) {
-                    const valParts = String(realVal).split(".");
-                    const countDigits = valParts[0].length;
-                    let countDecimals = valParts[1].length || 3;
-                    this.adapter.log.debug(
-                      `[refreshCustomApp] value of objId "${this.appDefinition.objId}" has ${countDigits} digits and ${countDecimals} decimals`
-                    );
-                    if (countDecimals > decimals) {
-                      countDecimals = decimals;
-                    }
-                    const numFormat = this.adapter.config.numberFormat;
-                    if (this.appDefinition.dynamicRound) {
-                      let maxLength = 7;
-                      if (this.appDefinition.icon) {
-                        maxLength = 5;
-                      }
-                      maxLength -= countDigits;
-                      if ([".,", ",."].includes(numFormat) && countDigits > 3) {
-                        maxLength -= 1;
-                      }
-                      maxLength -= this.objCache.unit ? text.trim().replace("%s", "").replace("%u", this.objCache.unit).length : 1;
-                      if (maxLength < countDecimals) {
-                        countDecimals = maxLength >= 0 ? maxLength : 0;
-                      }
-                    }
-                    if (numFormat === "system") {
-                      newVal = this.adapter.formatValue(realVal, countDecimals);
-                    } else if ([".,", ",."].includes(numFormat)) {
-                      newVal = this.adapter.formatValue(realVal, countDecimals, numFormat);
-                    } else if (numFormat === ".") {
-                      newVal = realVal.toFixed(countDecimals);
-                    } else if (numFormat === ",") {
-                      newVal = realVal.toFixed(countDecimals).replace(".", ",");
-                    }
-                    this.adapter.log.debug(
-                      `[refreshCustomApp] value (formatted) of objId "${this.appDefinition.objId}" from ${realVal} to ${newVal} (${countDecimals} decimals) with "${numFormat}"`
-                    );
-                  }
-                }
-                const displayText = text.replace("%s", newVal).replace("%u", (_b = this.objCache.unit) != null ? _b : "").trim();
-                if (displayText.length > 0) {
-                  await this.apiClient.apps.push(this.appDefinition.name, this.createAppRequestObj(displayText, val)).catch((error) => {
-                    this.adapter.log.warn(
-                      `[refreshCustomApp] Unable to update custom app "${this.appDefinition.name}": ${error}`
-                    );
-                  });
-                  refreshed = true;
-                } else {
+            const val = this.objCache.val;
+            if (typeof val !== "undefined") {
+              let newVal = val;
+              if (this.objCache.type === "number") {
+                const realVal = typeof val !== "number" ? parseFloat(val) : val;
+                const decimals = typeof this.appDefinition.decimals === "string" ? parseInt(this.appDefinition.decimals) : (_a = this.appDefinition.decimals) != null ? _a : 3;
+                if (!isNaN(realVal) && realVal % 1 !== 0) {
+                  const valParts = String(realVal).split(".");
+                  const countDigits = valParts[0].length;
+                  let countDecimals = valParts[1].length || 3;
                   this.adapter.log.debug(
-                    `[refreshCustomApp] Going to remove app "${this.appDefinition.name}" (empty text)`
+                    `[refreshCustomApp] value of objId "${this.appDefinition.objId}" has ${countDigits} digits and ${countDecimals} decimals`
                   );
-                  await this.apiClient.apps.delete(this.appDefinition.name).catch((error) => {
-                    this.adapter.log.warn(
-                      `[refreshCustomApp] Unable to remove app "${this.appDefinition.name}" (empty text): ${error}`
-                    );
-                  });
+                  if (countDecimals > decimals) {
+                    countDecimals = decimals;
+                  }
+                  const numFormat = this.adapter.config.numberFormat;
+                  if (this.appDefinition.dynamicRound) {
+                    let maxLength = 7;
+                    if (this.appDefinition.icon) {
+                      maxLength = 5;
+                    }
+                    maxLength -= countDigits;
+                    if ([".,", ",."].includes(numFormat) && countDigits > 3) {
+                      maxLength -= 1;
+                    }
+                    maxLength -= this.objCache.unit ? text.trim().replace("%s", "").replace("%u", this.objCache.unit).length : 1;
+                    if (maxLength < countDecimals) {
+                      countDecimals = maxLength >= 0 ? maxLength : 0;
+                    }
+                  }
+                  if (numFormat === "system") {
+                    newVal = this.adapter.formatValue(realVal, countDecimals);
+                  } else if ([".,", ",."].includes(numFormat)) {
+                    newVal = this.adapter.formatValue(realVal, countDecimals, numFormat);
+                  } else if (numFormat === ".") {
+                    newVal = realVal.toFixed(countDecimals);
+                  } else if (numFormat === ",") {
+                    newVal = realVal.toFixed(countDecimals).replace(".", ",");
+                  }
+                  this.adapter.log.debug(
+                    `[refreshCustomApp] value (formatted) of objId "${this.appDefinition.objId}" from ${realVal} to ${newVal} (${countDecimals} decimals) with "${numFormat}"`
+                  );
                 }
+              }
+              const displayText = text.replace("%s", newVal).replace("%u", (_b = this.objCache.unit) != null ? _b : "").trim();
+              if (displayText.length > 0) {
+                await this.apiClient.apps.push(this.appDefinition.name, this.createAppRequestObj(displayText, val)).catch((error) => {
+                  this.adapter.log.warn(
+                    `[refreshCustomApp] Unable to update custom app "${this.appDefinition.name}": ${error}`
+                  );
+                });
+                refreshed = true;
               } else {
                 this.adapter.log.debug(
-                  `[refreshCustomApp] Going to remove app "${this.appDefinition.name}" (no state data)`
+                  `[refreshCustomApp] Going to remove app "${this.appDefinition.name}" (empty text)`
                 );
                 await this.apiClient.apps.delete(this.appDefinition.name).catch((error) => {
                   this.adapter.log.warn(
-                    `[refreshCustomApp] Unable to remove app "${this.appDefinition.name}" (no state data): ${error}`
+                    `[refreshCustomApp] Unable to remove app "${this.appDefinition.name}" (empty text): ${error}`
                   );
                 });
               }
+            } else {
+              this.adapter.log.debug(
+                `[refreshCustomApp] Going to remove app "${this.appDefinition.name}" (no state data)`
+              );
+              await this.apiClient.apps.delete(this.appDefinition.name).catch((error) => {
+                this.adapter.log.warn(
+                  `[refreshCustomApp] Unable to remove app "${this.appDefinition.name}" (no state data): ${error}`
+                );
+              });
             }
           } catch (error) {
             this.adapter.log.error(
@@ -291,7 +293,7 @@ var AppType;
               );
             });
           }
-        } else if (this.isBackgroundOny) {
+        } else if (this.isBackgroundOnly) {
           await this.apiClient.apps.push(this.appDefinition.name, this.createAppRequestObj("")).catch((error) => {
             this.adapter.log.warn(
               `[refreshCustomApp] Unable to create app "${this.appDefinition.name}" with background only: ${error}`

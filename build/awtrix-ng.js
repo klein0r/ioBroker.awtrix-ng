@@ -47,6 +47,8 @@ class AwtrixNg extends utils.Adapter {
   apiClient;
   apiConnected;
   lastConnectionError;
+  lastUptimeSeconds;
+  welcomeSent;
   refreshStateTimeout;
   downloadScreenContentInterval;
   apps;
@@ -67,6 +69,8 @@ class AwtrixNg extends utils.Adapter {
     this.apiClient = null;
     this.apiConnected = false;
     this.lastConnectionError = void 0;
+    this.lastUptimeSeconds = void 0;
+    this.welcomeSent = false;
     this.refreshStateTimeout = void 0;
     this.downloadScreenContentInterval = void 0;
     this.apps = [];
@@ -126,7 +130,7 @@ class AwtrixNg extends utils.Adapter {
     try {
       this.apiClient = new import_awtrix_ng_api.AwtrixClient({
         host: this.config.awtrixIp,
-        port: 80,
+        port: this.config.awtrixPort || 80,
         timeout: this.config.httpTimeout * 1e3 || 3e3,
         auth: this.config.userName ? { username: this.config.userName, password: this.config.userPassword } : void 0
       });
@@ -388,80 +392,94 @@ class AwtrixNg extends utils.Adapter {
     }
   }
   async setApiConnected(connection) {
-    var _a;
     if (connection !== this.apiConnected) {
       await this.setStateChangedAsync("info.connection", { val: connection, ack: true });
       this.apiConnected = connection;
       if (connection) {
         this.log.debug("API is online");
-        try {
-          this.apiClient.notifications.send({
-            durationMs: 2e3,
-            draw: [
-              ["circle", 3, 4, 3, "#164477"],
-              // ["circle", cx, cy, r, color]
-              ["line", 3, 3, 3, 8, "#3399cc"],
-              // ["line", x1, y1, x2, y2, color]
-              ["pixel", 3, 1, "#3399cc"],
-              // ["pixel", x, y, color]
-              ["text", 10, 2, (_a = this.version) != null ? _a : "", "#164477"]
-              // ["text", x, y, "HI", color]
-            ]
-          }).catch((error) => {
-            this.log.warn(`(welcome notification) Unable to send: ${error}`);
-          });
-          await this.refreshSettings();
-          await this.refreshCapabilitiesLists();
-          await this.createAppObjects();
-          for (const i of [1, 2, 3]) {
-            await this.updateIndicatorByStates(i);
-          }
-          await this.updateMoodlightByStates();
-          if (this.config.downloadScreenContent && !this.downloadScreenContentInterval) {
-            this.log.debug(
-              `[setApiConnected] Downloading screen contents every ${this.config.downloadScreenContentInterval} seconds`
-            );
-            const downloadInterval = Math.min(this.config.downloadScreenContentInterval, 86400) * 1e3;
-            this.downloadScreenContentInterval = this.setInterval(() => {
-              if (this.apiClient && this.apiConnected) {
-                this.apiClient.display.getScreen().then(async (screen) => {
-                  var _a2;
-                  const { width, height, pixels } = screen;
-                  const pixelSize = 20;
-                  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width * pixelSize}" height="${height * pixelSize}" viewBox="0 0 ${width * pixelSize} ${height * pixelSize}">`;
-                  for (let y = 0; y < height; y++) {
-                    for (let x = 0; x < width; x++) {
-                      const color = (0, import_awtrix_ng_api.toHexColor)((_a2 = pixels[y * width + x]) != null ? _a2 : 0);
-                      svg += `
-  <rect style="fill: ${color}; stroke: #000000; stroke-width: 2px;" `;
-                      svg += `x="${x * pixelSize}" y="${y * pixelSize}" width="${pixelSize}" height="${pixelSize}"/>`;
-                    }
-                  }
-                  svg += "\n</svg>";
-                  await this.setState("display.content", { val: svg, ack: true });
-                }).catch((error) => {
-                  this.log.debug(`(display/screen) received error: ${error}`);
-                });
-              }
-            }, downloadInterval);
-          } else {
-            await this.setState("display.content", {
-              val: `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="160"/>`,
-              ack: true,
-              c: "Feature disabled",
-              q: 1
-            });
-          }
-        } catch (error) {
-          this.log.error(`[setApiConnected] Unable to refresh settings, apps or indicators: ${error}`);
-        }
+        await this.resyncDevice();
       } else {
         if (this.downloadScreenContentInterval) {
           this.clearInterval(this.downloadScreenContentInterval);
           this.downloadScreenContentInterval = void 0;
         }
+        this.lastUptimeSeconds = void 0;
         this.log.debug("API is offline");
       }
+    }
+  }
+  /**
+   * Transfers everything the device should know (settings, apps, app order, indicators, ...).
+   * Called when the device comes online and when a reboot was detected (pushed apps are held in RAM only).
+   */
+  async resyncDevice() {
+    var _a;
+    try {
+      if (!this.welcomeSent) {
+        this.apiClient.notifications.send({
+          durationMs: 2e3,
+          draw: [
+            ["circle", 3, 4, 3, "#164477"],
+            // ["circle", cx, cy, r, color]
+            ["line", 3, 3, 3, 8, "#3399cc"],
+            // ["line", x1, y1, x2, y2, color]
+            ["pixel", 3, 1, "#3399cc"],
+            // ["pixel", x, y, color]
+            ["text", 10, 2, (_a = this.version) != null ? _a : "", "#164477"]
+            // ["text", x, y, "HI", color]
+          ]
+        }).then(() => {
+          this.welcomeSent = true;
+        }).catch((error) => {
+          this.log.warn(`(welcome notification) Unable to send: ${error}`);
+        });
+      }
+      await this.refreshSettings();
+      await this.refreshCapabilitiesLists();
+      await this.createAppObjects();
+      for (const i of [1, 2, 3]) {
+        await this.updateIndicatorByStates(i);
+      }
+      await this.updateMoodlightByStates();
+      if (this.config.downloadScreenContent) {
+        if (!this.downloadScreenContentInterval) {
+          this.log.debug(
+            `[resyncDevice] Downloading screen contents every ${this.config.downloadScreenContentInterval} seconds`
+          );
+          const downloadInterval = Math.min(this.config.downloadScreenContentInterval, 86400) * 1e3;
+          this.downloadScreenContentInterval = this.setInterval(() => {
+            if (this.apiClient && this.apiConnected) {
+              this.apiClient.display.getScreen().then(async (screen) => {
+                var _a2;
+                const { width, height, pixels } = screen;
+                const pixelSize = 20;
+                let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width * pixelSize}" height="${height * pixelSize}" viewBox="0 0 ${width * pixelSize} ${height * pixelSize}">`;
+                for (let y = 0; y < height; y++) {
+                  for (let x = 0; x < width; x++) {
+                    const color = (0, import_awtrix_ng_api.toHexColor)((_a2 = pixels[y * width + x]) != null ? _a2 : 0);
+                    svg += `
+  <rect style="fill: ${color}; stroke: #000000; stroke-width: 2px;" `;
+                    svg += `x="${x * pixelSize}" y="${y * pixelSize}" width="${pixelSize}" height="${pixelSize}"/>`;
+                  }
+                }
+                svg += "\n</svg>";
+                await this.setState("display.content", { val: svg, ack: true });
+              }).catch((error) => {
+                this.log.debug(`(display/screen) received error: ${error}`);
+              });
+            }
+          }, downloadInterval);
+        }
+      } else {
+        await this.setState("display.content", {
+          val: `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="160"/>`,
+          ack: true,
+          c: "Feature disabled",
+          q: 1
+        });
+      }
+    } catch (error) {
+      this.log.error(`[resyncDevice] Unable to refresh settings, apps or indicators: ${error}`);
     }
   }
   refreshState() {
@@ -469,7 +487,14 @@ class AwtrixNg extends utils.Adapter {
     this.apiClient.device.get().then(async (content) => {
       var _a, _b, _c, _d;
       this.lastConnectionError = void 0;
-      await this.setApiConnected(true);
+      const rebootDetected = this.apiConnected && this.lastUptimeSeconds !== void 0 && content.uptimeSeconds < this.lastUptimeSeconds;
+      this.lastUptimeSeconds = content.uptimeSeconds;
+      if (rebootDetected) {
+        this.log.info("Device was rebooted - transferring apps and settings again");
+        await this.resyncDevice();
+      } else {
+        await this.setApiConnected(true);
+      }
       this.currentVersion = String(content.version);
       if (this.currentVersion && this.isNewerVersion(this.currentVersion, this.supportedVersion) && !this.displayedVersionWarning) {
         this.log.warn(
@@ -665,6 +690,7 @@ class AwtrixNg extends utils.Adapter {
         this.log.debug(`[createAppObjects] deleted: ${app}`);
       }
     }
+    await this.refreshAppOrder();
     return appsKeep.length;
   }
   async refreshAppOrder() {

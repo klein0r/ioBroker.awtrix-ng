@@ -91,6 +91,8 @@ export class AwtrixNg extends utils.Adapter {
     private apiClient: AwtrixClient | null;
     private apiConnected: boolean;
     private lastConnectionError: string | undefined;
+    private lastUptimeSeconds: number | undefined;
+    private welcomeSent: boolean;
     private refreshStateTimeout: ioBroker.Timeout | undefined;
     private downloadScreenContentInterval: ioBroker.Interval | undefined;
 
@@ -116,6 +118,8 @@ export class AwtrixNg extends utils.Adapter {
         this.apiClient = null;
         this.apiConnected = false;
         this.lastConnectionError = undefined;
+        this.lastUptimeSeconds = undefined;
+        this.welcomeSent = false;
 
         this.refreshStateTimeout = undefined;
         this.downloadScreenContentInterval = undefined;
@@ -538,88 +542,106 @@ export class AwtrixNg extends utils.Adapter {
                 // API was offline - refresh all states
                 this.log.debug('API is online');
 
-                try {
-                    // welcome (ioBroker icon and adapter version)
-                    this.apiClient!.notifications.send({
-                        durationMs: 2000,
-                        draw: [
-                            ['circle', 3, 4, 3, '#164477'], // ["circle", cx, cy, r, color]
-                            ['line', 3, 3, 3, 8, '#3399cc'], // ["line", x1, y1, x2, y2, color]
-                            ['pixel', 3, 1, '#3399cc'], // ["pixel", x, y, color]
-                            ['text', 10, 2, this.version ?? '', '#164477'], // ["text", x, y, "HI", color]
-                        ],
-                    }).catch(error => {
-                        this.log.warn(`(welcome notification) Unable to send: ${error}`);
-                    });
-
-                    // settings
-                    await this.refreshSettings();
-                    await this.refreshCapabilitiesLists();
-
-                    // apps
-                    await this.createAppObjects();
-
-                    // indicators
-                    for (const i of [1, 2, 3] as const) {
-                        await this.updateIndicatorByStates(i);
-                    }
-
-                    // moodlight
-                    await this.updateMoodlightByStates();
-
-                    if (this.config.downloadScreenContent && !this.downloadScreenContentInterval) {
-                        this.log.debug(
-                            `[setApiConnected] Downloading screen contents every ${this.config.downloadScreenContentInterval} seconds`,
-                        );
-
-                        const downloadInterval = Math.min(this.config.downloadScreenContentInterval, 86_400) * 1_000;
-
-                        this.downloadScreenContentInterval = this.setInterval(() => {
-                            if (this.apiClient && this.apiConnected) {
-                                this.apiClient.display
-                                    .getScreen()
-                                    .then(async screen => {
-                                        const { width, height, pixels } = screen;
-                                        const pixelSize = 20;
-
-                                        let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width * pixelSize}" height="${height * pixelSize}" viewBox="0 0 ${width * pixelSize} ${height * pixelSize}">`;
-
-                                        for (let y = 0; y < height; y++) {
-                                            for (let x = 0; x < width; x++) {
-                                                const color = toHexColor(pixels[y * width + x] ?? 0);
-                                                svg += `\n  <rect style="fill: ${color}; stroke: #000000; stroke-width: 2px;" `;
-                                                svg += `x="${x * pixelSize}" y="${y * pixelSize}" width="${pixelSize}" height="${pixelSize}"/>`;
-                                            }
-                                        }
-
-                                        svg += '\n</svg>';
-
-                                        await this.setState('display.content', { val: svg, ack: true });
-                                    })
-                                    .catch(error => {
-                                        this.log.debug(`(display/screen) received error: ${error}`);
-                                    });
-                            }
-                        }, downloadInterval);
-                    } else {
-                        await this.setState('display.content', {
-                            val: `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="160"/>`,
-                            ack: true,
-                            c: 'Feature disabled',
-                            q: 0x01,
-                        });
-                    }
-                } catch (error) {
-                    this.log.error(`[setApiConnected] Unable to refresh settings, apps or indicators: ${error}`);
-                }
+                await this.resyncDevice();
             } else {
                 if (this.downloadScreenContentInterval) {
                     this.clearInterval(this.downloadScreenContentInterval);
                     this.downloadScreenContentInterval = undefined;
                 }
 
+                this.lastUptimeSeconds = undefined;
+
                 this.log.debug('API is offline');
             }
+        }
+    }
+
+    /**
+     * Transfers everything the device should know (settings, apps, app order, indicators, ...).
+     * Called when the device comes online and when a reboot was detected (pushed apps are held in RAM only).
+     */
+    private async resyncDevice(): Promise<void> {
+        try {
+            // welcome (ioBroker icon and adapter version) - just once after adapter start
+            if (!this.welcomeSent) {
+                this.apiClient!.notifications.send({
+                    durationMs: 2000,
+                    draw: [
+                        ['circle', 3, 4, 3, '#164477'], // ["circle", cx, cy, r, color]
+                        ['line', 3, 3, 3, 8, '#3399cc'], // ["line", x1, y1, x2, y2, color]
+                        ['pixel', 3, 1, '#3399cc'], // ["pixel", x, y, color]
+                        ['text', 10, 2, this.version ?? '', '#164477'], // ["text", x, y, "HI", color]
+                    ],
+                })
+                    .then(() => {
+                        this.welcomeSent = true;
+                    })
+                    .catch(error => {
+                        this.log.warn(`(welcome notification) Unable to send: ${error}`);
+                    });
+            }
+
+            // settings
+            await this.refreshSettings();
+            await this.refreshCapabilitiesLists();
+
+            // apps
+            await this.createAppObjects();
+
+            // indicators
+            for (const i of [1, 2, 3] as const) {
+                await this.updateIndicatorByStates(i);
+            }
+
+            // moodlight
+            await this.updateMoodlightByStates();
+
+            if (this.config.downloadScreenContent) {
+                if (!this.downloadScreenContentInterval) {
+                    this.log.debug(
+                        `[resyncDevice] Downloading screen contents every ${this.config.downloadScreenContentInterval} seconds`,
+                    );
+
+                    const downloadInterval = Math.min(this.config.downloadScreenContentInterval, 86_400) * 1_000;
+
+                    this.downloadScreenContentInterval = this.setInterval(() => {
+                        if (this.apiClient && this.apiConnected) {
+                            this.apiClient.display
+                                .getScreen()
+                                .then(async screen => {
+                                    const { width, height, pixels } = screen;
+                                    const pixelSize = 20;
+
+                                    let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width * pixelSize}" height="${height * pixelSize}" viewBox="0 0 ${width * pixelSize} ${height * pixelSize}">`;
+
+                                    for (let y = 0; y < height; y++) {
+                                        for (let x = 0; x < width; x++) {
+                                            const color = toHexColor(pixels[y * width + x] ?? 0);
+                                            svg += `\n  <rect style="fill: ${color}; stroke: #000000; stroke-width: 2px;" `;
+                                            svg += `x="${x * pixelSize}" y="${y * pixelSize}" width="${pixelSize}" height="${pixelSize}"/>`;
+                                        }
+                                    }
+
+                                    svg += '\n</svg>';
+
+                                    await this.setState('display.content', { val: svg, ack: true });
+                                })
+                                .catch(error => {
+                                    this.log.debug(`(display/screen) received error: ${error}`);
+                                });
+                        }
+                    }, downloadInterval);
+                }
+            } else {
+                await this.setState('display.content', {
+                    val: `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="160"/>`,
+                    ack: true,
+                    c: 'Feature disabled',
+                    q: 0x01,
+                });
+            }
+        } catch (error) {
+            this.log.error(`[resyncDevice] Unable to refresh settings, apps or indicators: ${error}`);
         }
     }
 
@@ -629,7 +651,20 @@ export class AwtrixNg extends utils.Adapter {
         this.apiClient!.device.get()
             .then(async content => {
                 this.lastConnectionError = undefined;
-                await this.setApiConnected(true);
+
+                // uptime decreased since last request -> device was rebooted between two requests
+                const rebootDetected =
+                    this.apiConnected &&
+                    this.lastUptimeSeconds !== undefined &&
+                    content.uptimeSeconds < this.lastUptimeSeconds;
+                this.lastUptimeSeconds = content.uptimeSeconds;
+
+                if (rebootDetected) {
+                    this.log.info('Device was rebooted - transferring apps and settings again');
+                    await this.resyncDevice();
+                } else {
+                    await this.setApiConnected(true);
+                }
 
                 this.currentVersion = String(content.version);
 
@@ -884,6 +919,9 @@ export class AwtrixNg extends utils.Adapter {
                 this.log.debug(`[createAppObjects] deleted: ${app}`);
             }
         }
+
+        // Transfer enabled apps and slots (e.g. apps which have been disabled while the device was offline)
+        await this.refreshAppOrder();
 
         return appsKeep.length;
     }

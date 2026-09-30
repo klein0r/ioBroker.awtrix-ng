@@ -42,40 +42,56 @@ export namespace AppType {
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         public override async init(appInfo?: AppInfo): Promise<void> {
-            if (this.appDefinition.sourceInstance) {
-                const sourceInstanceObj = await this.adapter.getForeignObjectAsync(
-                    `system.adapter.${this.appDefinition.sourceInstance}`,
-                );
+            await this.validateSource(true);
 
-                if (sourceInstanceObj && sourceInstanceObj.common?.getHistory) {
-                    const sourceInstanceAliveState = await this.adapter.getForeignStateAsync(
-                        `system.adapter.${this.appDefinition.sourceInstance}.alive`,
+            await super.init();
+        }
+
+        /**
+         * Checks if the source instance is running and if logging is configured for objId.
+         * Warnings are just logged on init - later checks (on every refresh while invalid) log as debug.
+         */
+        private async validateSource(isInit: boolean): Promise<void> {
+            const logWarn = (msg: string): void => (isInit ? this.adapter.log.warn(msg) : this.adapter.log.debug(msg));
+            const logInfo = (msg: string): void => (isInit ? this.adapter.log.info(msg) : this.adapter.log.debug(msg));
+
+            this.isValidSourceInstance = false;
+            this.isValidObjId = false;
+
+            try {
+                if (this.appDefinition.sourceInstance) {
+                    const sourceInstanceObj = await this.adapter.getForeignObjectAsync(
+                        `system.adapter.${this.appDefinition.sourceInstance}`,
                     );
 
-                    if (sourceInstanceAliveState && sourceInstanceAliveState.val) {
-                        this.adapter.log.debug(
-                            `[initHistoryApp] Found valid source instance for history data: ${this.appDefinition.sourceInstance}`,
+                    if (sourceInstanceObj && sourceInstanceObj.common?.getHistory) {
+                        const sourceInstanceAliveState = await this.adapter.getForeignStateAsync(
+                            `system.adapter.${this.appDefinition.sourceInstance}.alive`,
                         );
 
-                        this.isValidSourceInstance = true;
+                        if (sourceInstanceAliveState && sourceInstanceAliveState.val) {
+                            this.adapter.log.debug(
+                                `[initHistoryApp] Found valid source instance for history data: ${this.appDefinition.sourceInstance}`,
+                            );
+
+                            this.isValidSourceInstance = true;
+                        } else {
+                            logWarn(
+                                `[initHistoryApp] Unable to get history data of "${this.appDefinition.sourceInstance}": instance not running (stopped)`,
+                            );
+                        }
                     } else {
-                        this.adapter.log.warn(
-                            `[initHistoryApp] Unable to get history data of "${this.appDefinition.sourceInstance}": instance not running (stopped)`,
+                        logWarn(
+                            `[initHistoryApp] Unable to get history data of "${this.appDefinition.sourceInstance}": no valid source for getHistory()`,
                         );
                     }
-                } else {
-                    this.adapter.log.warn(
-                        `[initHistoryApp] Unable to get history data of "${this.appDefinition.sourceInstance}": no valid source for getHistory()`,
-                    );
                 }
-            }
 
-            if (this.appDefinition.objId) {
-                this.adapter.log.debug(
-                    `[initHistoryApp] getting history data for app "${this.appDefinition.name}" of "${this.appDefinition.objId}" from ${this.appDefinition.sourceInstance}`,
-                );
+                if (this.appDefinition.objId) {
+                    this.adapter.log.debug(
+                        `[initHistoryApp] getting history data for app "${this.appDefinition.name}" of "${this.appDefinition.objId}" from ${this.appDefinition.sourceInstance}`,
+                    );
 
-                try {
                     if (this.isValidSourceInstance) {
                         const sourceObj = await this.adapter.getForeignObjectAsync(this.appDefinition.objId);
 
@@ -88,115 +104,44 @@ export namespace AppType {
                         ) {
                             this.isValidObjId = true;
                         } else {
-                            this.adapter.log.info(
+                            logInfo(
                                 `[initHistoryApp] Unable to get data for app "${this.appDefinition.name}" of "${this.appDefinition.objId}": logging is not configured for this object`,
                             );
                         }
                     } else {
-                        this.adapter.log.info(
+                        logInfo(
                             `[initHistoryApp] Unable to get data for app "${this.appDefinition.name}" of "${this.appDefinition.objId}": source invalid or unavailable`,
                         );
                     }
-                } catch (error) {
-                    this.adapter.log.error(
-                        `[initHistoryApp] Unable to get data for app "${this.appDefinition.name}" of "${this.appDefinition.objId}": ${error}`,
-                    );
                 }
+            } catch (error) {
+                this.adapter.log.error(
+                    `[initHistoryApp] Unable to get data for app "${this.appDefinition.name}" of "${this.appDefinition.objId}": ${error}`,
+                );
             }
-
-            await super.init();
         }
 
         public override async refresh(): Promise<boolean> {
             let refreshed = false;
 
-            if ((await super.refresh()) && this.isValidSourceInstance && this.isValidObjId) {
-                const itemCount = this.appDefinition.icon ? 11 : 16; // can display 11 values with icon or 16 values without icon
+            try {
+                if (await super.refresh()) {
+                    // e.g. history instance was stopped on init - check again
+                    if (!this.isValidSourceInstance || !this.isValidObjId) {
+                        await this.validateSource(false);
+                    }
 
-                const options: HistoryOptions = {
-                    start: 1,
-                    end: Date.now(),
-                    limit: itemCount,
-                    returnNewestEntries: true,
-                    ignoreNull: 0,
-                    removeBorderValues: true,
-                    ack: true,
-                };
-
-                if (this.appDefinition.mode == 'aggregate') {
-                    options.aggregate = this.appDefinition.aggregation;
-                    options.step = this.appDefinition.step ? this.appDefinition.step * 1_000 : 3_600_000;
-                } else {
-                    // mode = last
-                    options.aggregate = 'none';
+                    if (this.isValidSourceInstance && this.isValidObjId) {
+                        refreshed = await this.refreshHistoryData();
+                    }
                 }
-
-                this.adapter.log.debug(
-                    `[refreshHistoryApp] Getting history for app "${this.appDefinition.name}" of "${this.appDefinition.objId}" with options: ${JSON.stringify(options)}`,
+            } catch (error) {
+                this.adapter.log.warn(
+                    `[refreshHistoryApp] Unable to refresh app "${this.appDefinition.name}": ${error}`,
                 );
-
-                const historyData = await this.adapter.sendToAsync(this.appDefinition.sourceInstance, 'getHistory', {
-                    id: this.appDefinition.objId,
-                    options,
-                });
-                const graphData = (historyData as any)?.result
-                    .filter((state: ioBroker.State) => typeof state.val === 'number' && state.ack)
-                    .map((state: ioBroker.State) => Math.round(state.val as number))
-                    .slice(itemCount * -1);
-
-                this.adapter.log.debug(
-                    `[refreshHistoryApp] Data for app "${this.appDefinition.name}" of "${this.appDefinition.objId}": ${JSON.stringify(historyData)} - filtered: ${JSON.stringify(graphData)}`,
-                );
-
-                if (graphData.length > 0) {
-                    const moreOptions: ClassicAppPayload = {};
-
-                    // Duration
-                    if (this.appDefinition.durationMs > 0) {
-                        moreOptions.durationMs = this.appDefinition.durationMs;
-                    }
-
-                    // Repeat
-                    if (this.appDefinition.repeat > 0) {
-                        moreOptions.repeat = this.appDefinition.repeat;
-                    }
-
-                    // Bar or line graph
-                    if (this.appDefinition.display == 'bar') {
-                        moreOptions.barChart = graphData;
-                    } else {
-                        moreOptions.lineChart = graphData;
-                    }
-
-                    await this.apiClient.apps
-                        .push(this.appDefinition.name, {
-                            chartColor: this.appDefinition.lineColor || '#FF0000',
-                            backgroundColor: this.appDefinition.backgroundColor || '#000000',
-                            chartAutoscale: true,
-                            icon: this.appDefinition.icon,
-                            lifetimeMs: (this.adapter.config.historyAppsRefreshInterval + 60) * 1000, // Remove app if there is no update in configured interval (+ buffer)
-                            ...moreOptions,
-                        })
-                        .catch(error => {
-                            this.adapter.log.warn(
-                                `[refreshHistoryApp] Unable to create app "${this.appDefinition.name}": ${error}`,
-                            );
-                        });
-
-                    refreshed = true;
-                } else {
-                    this.adapter.log.debug(
-                        `[refreshHistoryApp] Going to remove app "${this.appDefinition.name}" (no history data)`,
-                    );
-
-                    await this.apiClient.apps.delete(this.appDefinition.name).catch(error => {
-                        this.adapter.log.warn(
-                            `[refreshHistoryApp] Unable to remove app "${this.appDefinition.name}" (no history data): ${error}`,
-                        );
-                    });
-                }
             }
 
+            // Always schedule the next refresh (even after errors)
             this.adapter.log.debug(
                 `re-creating history apps timeout (${this.adapter.config.historyAppsRefreshInterval ?? 300} seconds)`,
             );
@@ -211,6 +156,102 @@ export namespace AppType {
                 );
 
             return refreshed;
+        }
+
+        private async refreshHistoryData(): Promise<boolean> {
+            const itemCount = this.appDefinition.icon ? 11 : 16; // can display 11 values with icon or 16 values without icon
+
+            const options: HistoryOptions = {
+                start: 1,
+                end: Date.now(),
+                limit: itemCount,
+                returnNewestEntries: true,
+                ignoreNull: 0,
+                removeBorderValues: true,
+                ack: true,
+            };
+
+            if (this.appDefinition.mode == 'aggregate') {
+                options.aggregate = this.appDefinition.aggregation;
+                options.step = this.appDefinition.step ? this.appDefinition.step * 1_000 : 3_600_000;
+            } else {
+                // mode = last
+                options.aggregate = 'none';
+            }
+
+            this.adapter.log.debug(
+                `[refreshHistoryApp] Getting history for app "${this.appDefinition.name}" of "${this.appDefinition.objId}" with options: ${JSON.stringify(options)}`,
+            );
+
+            const historyData = await this.adapter.sendToAsync(
+                this.appDefinition.sourceInstance,
+                'getHistory',
+                {
+                    id: this.appDefinition.objId,
+                    options,
+                },
+                { timeout: 30_000 },
+            );
+
+            const result = (historyData as { result?: Array<ioBroker.State> } | undefined)?.result;
+            const graphData = (Array.isArray(result) ? result : [])
+                .filter(state => typeof state?.val === 'number' && state.ack)
+                .map(state => Math.round(state.val as number))
+                .slice(itemCount * -1);
+
+            this.adapter.log.debug(
+                `[refreshHistoryApp] Data for app "${this.appDefinition.name}" of "${this.appDefinition.objId}": ${JSON.stringify(historyData)} - filtered: ${JSON.stringify(graphData)}`,
+            );
+
+            if (graphData.length > 0) {
+                const moreOptions: ClassicAppPayload = {};
+
+                // Duration
+                if (this.appDefinition.durationMs > 0) {
+                    moreOptions.durationMs = this.appDefinition.durationMs;
+                }
+
+                // Repeat
+                if (this.appDefinition.repeat > 0) {
+                    moreOptions.repeat = this.appDefinition.repeat;
+                }
+
+                // Bar or line graph
+                if (this.appDefinition.display == 'bar') {
+                    moreOptions.barChart = graphData;
+                } else {
+                    moreOptions.lineChart = graphData;
+                }
+
+                await this.apiClient.apps
+                    .push(this.appDefinition.name, {
+                        chartColor: this.appDefinition.lineColor || '#FF0000',
+                        backgroundColor: this.appDefinition.backgroundColor || '#000000',
+                        chartAutoscale: true,
+                        icon: this.appDefinition.icon,
+                        lifetimeMs: (this.adapter.config.historyAppsRefreshInterval + 60) * 1000, // Remove app if there is no update in configured interval (+ buffer)
+                        ...moreOptions,
+                    })
+                    .catch(error => {
+                        this.adapter.log.warn(
+                            `[refreshHistoryApp] Unable to create app "${this.appDefinition.name}": ${error}`,
+                        );
+                    });
+
+                return true;
+            }
+
+            this.adapter.log.debug(
+                `[refreshHistoryApp] Going to remove app "${this.appDefinition.name}" (no history data)`,
+            );
+
+            await this.apiClient.apps.delete(this.appDefinition.name).catch(error => {
+                this.adapter.log.warn(
+                    `[refreshHistoryApp] Unable to remove app "${this.appDefinition.name}" (no history data): ${error}`,
+                );
+            });
+
+            return false;
         }
 
         public override async unloadAsync(): Promise<void> {
