@@ -22,7 +22,9 @@
 
 Integrate your [Awtrix NG](https://github.com/Blueforcer/awtrix-ng) device (e.g. Ulanzi TC001) via HTTP
 
-Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC001) or here: [ulanzi.de](https://haus-auto.com/p/ula/UlanziTC001) (Affiliate-Links)
+Buy TC001 here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC001) or here: [ulanzi.de](https://haus-auto.com/p/ula/UlanziTC001) (Affiliate-Links)
+
+Buy TC002 here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC002) or here: [ulanzi.de](https://haus-auto.com/p/ula/UlanziTC002) (Affiliate-Links)
 
 ## Sponsored by
 
@@ -43,6 +45,11 @@ Buy here: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), here: [Amaz
 ### **WORK IN PROGRESS**
 
 * (@klein0r) Port of the device is configurable now (default: 80)
+* (@klein0r) Apps are transferred again when a reboot of the device has been detected
+* (@klein0r) App order (enabled / slot) is transferred to the device on connect
+* (@klein0r) Custom apps are transferred even if disabled (visibility is controlled by the device)
+* (@klein0r) Fixed custom apps with invalid object ID being transferred as background-only apps
+* (@klein0r) History apps keep refreshing after errors and retry if the history instance was unavailable
 * (@klein0r) Migrated all HTTP requests to the new library [awtrix-ng-api](https://www.npmjs.com/package/awtrix-ng-api)
 * (@klein0r) Fixed screen content download (`display.content`)
 * (@klein0r) Added additional meta information (soc and board type)
