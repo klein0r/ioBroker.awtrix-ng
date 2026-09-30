@@ -152,6 +152,18 @@ Devices which can play MP3 files (e.g. Ulanzi TC002) get the channel `audio.mp3`
 
 The files are uploaded and deleted in the web interface of the device. The objects are created and deleted automatically (checked every 60 seconds). Sounds of scripts are not listed.
 
+## Melodies
+
+Devices with a buzzer get the channel `audio.melody` with all melodies (RTTTL) stored on the device.
+
+- `audio.melody.<melody>.play` - plays the melody
+- `audio.melody.<melody>.rtttl` / `audio.melody.<melody>.duration` - RTTTL and duration in ms (read only)
+- `audio.melody.stop` - stops the playback
+
+The device does not report if a melody is playing - that's why there is a button `play` instead of a switch `playing`. The melodies are maintained in the web interface of the device (invalid melodies are not listed). The objects are created and deleted automatically (checked every 60 seconds).
+
+**Note:** Stopping a melody or an MP3 file stops all sounds (melodies and MP3 files).
+
 ## Apps
 
 **App names must be unique and may contain letters (A-Z, a-z), digits (0-9), `_` and `-` (max. 32 characters). No whitespaces or other special characters.**

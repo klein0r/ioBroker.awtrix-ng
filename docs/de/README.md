@@ -152,6 +152,18 @@ Geräte, die MP3-Dateien abspielen können (z.B. Ulanzi TC002), erhalten den Kan
 
 Die Dateien werden in der Weboberfläche des Gerätes hochgeladen und gelöscht. Die Objekte werden automatisch angelegt bzw. gelöscht (Prüfung alle 60 Sekunden). Töne von Skripten werden nicht aufgelistet.
 
+## Melodien
+
+Geräte mit Summer erhalten den Kanal `audio.melody` mit allen auf dem Gerät gespeicherten Melodien (RTTTL).
+
+- `audio.melody.<Melodie>.play` - spielt die Melodie ab
+- `audio.melody.<Melodie>.rtttl` / `audio.melody.<Melodie>.duration` - RTTTL und Dauer in ms (nur lesend)
+- `audio.melody.stop` - stoppt die Wiedergabe
+
+Das Gerät meldet nicht, ob eine Melodie gerade abgespielt wird - daher gibt es einen Button `play` statt eines Schalters `playing`. Die Melodien werden in der Weboberfläche des Gerätes gepflegt (ungültige Melodien werden nicht aufgelistet). Die Objekte werden automatisch angelegt bzw. gelöscht (Prüfung alle 60 Sekunden).
+
+**Hinweis:** Das Stoppen einer Melodie oder einer MP3-Datei stoppt alle Töne (Melodien und MP3-Dateien).
+
 ## Apps
 
 **App-Namen müssen eindeutig sein und dürfen Buchstaben (A-Z, a-z), Ziffern (0-9), `_` und `-` enthalten (max. 32 Zeichen). Keine Leerzeichen oder andere Sonderzeichen.**

@@ -44,6 +44,7 @@ Buy TC002 here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC002) or here: [u
 ### **WORK IN PROGRESS**
 
 * (@klein0r) Added playback of MP3 files (`audio.mp3.*`) for devices which support it (e.g. TC002)
+* (@klein0r) Added playback of melodies (`audio.melody.*`)
 
 ### 0.2.0 (2026-09-30)
 

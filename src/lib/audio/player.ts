@@ -7,8 +7,9 @@ export type PlayerItem = {
 };
 
 /**
- * Base class for audio sources of the device (radio, mp3, ...): one channel per item under
- * <channel>.<item> with a switch "playing". The items are maintained on the device - ioBroker just plays them.
+ * Base class for audio sources of the device (radio, mp3, melodies): one channel per item under
+ * <channel>.<item> with a switch "playing" (or a button "play" if the device does not report the playback state).
+ * The items are maintained on the device - ioBroker just plays them.
  */
 export abstract class AudioPlayer<Item extends PlayerItem> {
     protected adapter: AwtrixNg;
@@ -24,8 +25,11 @@ export abstract class AudioPlayer<Item extends PlayerItem> {
     protected abstract readonly channel: string;
     protected abstract readonly channelName: ioBroker.StringOrTranslated;
 
-    /** Id (below channel) of the state with the name of the playing item, e.g. station */
-    protected abstract readonly currentStateId: string;
+    /**
+     * Id (below channel) of the state with the name of the playing item, e.g. station
+     * (null = the device does not report the playback state - items get a button "play" instead of a switch "playing")
+     */
+    protected abstract readonly currentStateId: string | null;
     protected abstract readonly currentStateName: ioBroker.StringOrTranslated;
     protected abstract readonly stopStateName: ioBroker.StringOrTranslated;
 
@@ -49,10 +53,20 @@ export abstract class AudioPlayer<Item extends PlayerItem> {
     protected abstract loadItems(audioState: AudioState): Promise<Array<Item>>;
 
     /** Name of the playing item (null = not playing) */
-    protected abstract getPlaying(audioState: AudioState): string | null;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    protected getPlaying(audioState: AudioState): string | null {
+        return null;
+    }
 
     /** Optimistic update of the playback state (until the next refresh) */
-    protected abstract setPlaying(audioState: AudioState, name: string | null): void;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    protected setPlaying(audioState: AudioState, name: string | null): void {
+        // override
+    }
+
+    private hasPlaybackState(): boolean {
+        return this.currentStateId !== null;
+    }
 
     protected abstract play(name: string): Promise<void>;
 
@@ -91,7 +105,9 @@ export abstract class AudioPlayer<Item extends PlayerItem> {
             this.itemsHash = itemsHash;
         }
 
-        await this.updatePlaybackStates(state);
+        if (this.hasPlaybackState()) {
+            await this.updatePlaybackStates(state);
+        }
 
         if (this.followPlayback && this.getPlaying(state) !== null) {
             this.scheduleRefresh();
@@ -134,17 +150,31 @@ export abstract class AudioPlayer<Item extends PlayerItem> {
             this.adapter.log.debug(`[${this.channel}] Stopped playback`);
 
             await this.adapter.setState(idNoNamespace, { val: state.val, ack: true });
-            await this.setPlayingStates(null);
-            this.scheduleRefresh();
+
+            if (this.hasPlaybackState()) {
+                await this.setPlayingStates(null);
+                this.scheduleRefresh();
+            }
 
             return;
         }
 
         const itemId = idNoNamespace.substring(this.channel.length + 1).split('.');
-        const itemName = itemId.length === 2 && itemId[1] === 'playing' ? this.items.get(itemId[0]) : undefined;
+        const itemName =
+            itemId.length === 2 && itemId[1] === this.getItemStateId() ? this.items.get(itemId[0]) : undefined;
 
         if (!itemName) {
             this.adapter.log.warn(`[${this.channel}] Unknown item for state ${idNoNamespace}`);
+            return;
+        }
+
+        // Button "play" - playback state is unknown
+        if (!this.hasPlaybackState()) {
+            await this.play(itemName);
+            this.adapter.log.debug(`[${this.channel}] Playing "${itemName}"`);
+
+            await this.adapter.setState(idNoNamespace, { val: state.val, ack: true });
+
             return;
         }
 
@@ -189,6 +219,11 @@ export abstract class AudioPlayer<Item extends PlayerItem> {
             val: name ?? '',
             ack: true,
         });
+    }
+
+    /** State of an item which starts the playback */
+    private getItemStateId(): string {
+        return this.hasPlaybackState() ? 'playing' : 'play';
     }
 
     private scheduleRefresh(): void {
@@ -236,7 +271,12 @@ export abstract class AudioPlayer<Item extends PlayerItem> {
     private async syncItemObjects(items: Array<Item>): Promise<void> {
         await this.createBaseObjects();
 
-        const reservedNames = ['playing', 'stop', this.currentStateId, ...this.extraStateIds];
+        const reservedNames = [
+            'playing',
+            'stop',
+            ...(this.currentStateId ? [this.currentStateId] : []),
+            ...this.extraStateIds,
+        ];
 
         this.items.clear();
 
@@ -267,31 +307,57 @@ export abstract class AudioPlayer<Item extends PlayerItem> {
                 },
             });
 
-            await this.adapter.extendObject(`${this.channel}.${nameClean}.playing`, {
-                type: 'state',
-                common: {
-                    name: {
-                        en: 'Play',
-                        de: 'Abspielen',
-                        ru: 'Воспроизвести',
-                        pt: 'Reproduzir',
-                        nl: 'Afspelen',
-                        fr: 'Lecture',
-                        it: 'Riproduci',
-                        es: 'Reproducir',
-                        pl: 'Odtwórz',
-                        uk: 'Відтворити',
-                        'zh-cn': '播放',
+            if (this.hasPlaybackState()) {
+                await this.adapter.extendObject(`${this.channel}.${nameClean}.playing`, {
+                    type: 'state',
+                    common: {
+                        name: {
+                            en: 'Play',
+                            de: 'Abspielen',
+                            ru: 'Воспроизвести',
+                            pt: 'Reproduzir',
+                            nl: 'Afspelen',
+                            fr: 'Lecture',
+                            it: 'Riproduci',
+                            es: 'Reproducir',
+                            pl: 'Odtwórz',
+                            uk: 'Відтворити',
+                            'zh-cn': '播放',
+                        },
+                        desc: 'true = play, false = stop',
+                        type: 'boolean',
+                        role: 'switch',
+                        read: true,
+                        write: true,
+                        def: false,
                     },
-                    desc: 'true = play, false = stop',
-                    type: 'boolean',
-                    role: 'switch',
-                    read: true,
-                    write: true,
-                    def: false,
-                },
-                native: {},
-            });
+                    native: {},
+                });
+            } else {
+                await this.adapter.extendObject(`${this.channel}.${nameClean}.play`, {
+                    type: 'state',
+                    common: {
+                        name: {
+                            en: 'Play',
+                            de: 'Abspielen',
+                            ru: 'Воспроизвести',
+                            pt: 'Reproduzir',
+                            nl: 'Afspelen',
+                            fr: 'Lecture',
+                            it: 'Riproduci',
+                            es: 'Reproducir',
+                            pl: 'Odtwórz',
+                            uk: 'Відтворити',
+                            'zh-cn': '播放',
+                        },
+                        type: 'boolean',
+                        role: 'button.play',
+                        read: false,
+                        write: true,
+                    },
+                    native: {},
+                });
+            }
 
             await this.createItemExtraObjects(nameClean, item);
         }
@@ -324,6 +390,26 @@ export abstract class AudioPlayer<Item extends PlayerItem> {
             native: {},
         });
 
+        if (this.hasPlaybackState()) {
+            await this.createPlaybackStateObjects();
+        }
+
+        await this.adapter.extendObject(`${this.channel}.stop`, {
+            type: 'state',
+            common: {
+                name: this.stopStateName,
+                type: 'boolean',
+                role: 'button.stop',
+                read: false,
+                write: true,
+            },
+            native: {},
+        });
+
+        await this.createExtraObjects();
+    }
+
+    private async createPlaybackStateObjects(): Promise<void> {
         await this.adapter.extendObject(`${this.channel}.playing`, {
             type: 'state',
             common: {
@@ -361,19 +447,5 @@ export abstract class AudioPlayer<Item extends PlayerItem> {
             },
             native: {},
         });
-
-        await this.adapter.extendObject(`${this.channel}.stop`, {
-            type: 'state',
-            common: {
-                name: this.stopStateName,
-                type: 'boolean',
-                role: 'button.stop',
-                read: false,
-                write: true,
-            },
-            native: {},
-        });
-
-        await this.createExtraObjects();
     }
 }

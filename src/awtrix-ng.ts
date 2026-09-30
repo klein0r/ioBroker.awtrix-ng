@@ -16,6 +16,7 @@ import type {
 import { AwtrixApiError, AwtrixClient, AwtrixConnectionError, isValidAppName, toHexColor } from 'awtrix-ng-api';
 
 import type { AppType as AppTypeAbstract } from './lib/app-type/abstract';
+import { Melody } from './lib/audio/melody';
 import { Mp3 } from './lib/audio/mp3';
 import { Radio } from './lib/audio/radio';
 import { AppType as AppTypeBuiltin } from './lib/app-type/builtin';
@@ -39,6 +40,8 @@ type DeviceCapabilities = {
     radio: boolean;
     /** stored mp3 files (e.g. TC002) */
     mp3: boolean;
+    /** melodies (RTTTL) via buzzer */
+    melody: boolean;
 };
 
 const DEFAULT_CAPABILITIES: DeviceCapabilities = {
@@ -86,6 +89,7 @@ const DEFAULT_CAPABILITIES: DeviceCapabilities = {
     transitions: [],
     radio: false,
     mp3: false,
+    melody: false,
 };
 
 type NestedObject = {
@@ -163,6 +167,7 @@ export class AwtrixNg extends utils.Adapter {
     private appOrderSyncTimeout: ioBroker.Timeout | undefined;
     private radio: Radio | null;
     private mp3: Mp3 | null;
+    private melody: Melody | null;
     private capabilities: DeviceCapabilities;
     private refreshStateTimeout: ioBroker.Timeout | undefined;
     private downloadScreenContentInterval: ioBroker.Interval | undefined;
@@ -192,6 +197,7 @@ export class AwtrixNg extends utils.Adapter {
         this.appOrderSyncTimeout = undefined;
         this.radio = null;
         this.mp3 = null;
+        this.melody = null;
         this.capabilities = { ...DEFAULT_CAPABILITIES };
 
         this.refreshStateTimeout = undefined;
@@ -234,6 +240,7 @@ export class AwtrixNg extends utils.Adapter {
 
         this.radio = new Radio(this, this.apiClient);
         this.mp3 = new Mp3(this, this.apiClient);
+        this.melody = new Melody(this, this.apiClient);
 
         if (this.config.foreignSettingsInstance !== '' && this.config.foreignSettingsInstance !== this.namespace) {
             this._isMainInstance = false;
@@ -356,6 +363,10 @@ export class AwtrixNg extends utils.Adapter {
                 } else if (idNoNamespace.startsWith('audio.mp3.')) {
                     this.mp3!.onStateChange(idNoNamespace, state).catch(error => {
                         this.log.warn(`(mp3) Unable to execute action: ${error}`);
+                    });
+                } else if (idNoNamespace.startsWith('audio.melody.')) {
+                    this.melody!.onStateChange(idNoNamespace, state).catch(error => {
+                        this.log.warn(`(melody) Unable to execute action: ${error}`);
                     });
                 } else if (idNoNamespace === 'device.reboot') {
                     this.apiClient.device
@@ -885,6 +896,7 @@ export class AwtrixNg extends utils.Adapter {
             transitions: capabilities.transitions ?? DEFAULT_CAPABILITIES.transitions,
             radio: capabilities.audio?.radio === true,
             mp3: capabilities.audio?.mp3 === true,
+            melody: capabilities.audio?.buzzer === true,
         };
 
         // Transistions
@@ -897,7 +909,7 @@ export class AwtrixNg extends utils.Adapter {
     }
 
     /**
-     * Radio stations, mp3 files and playback state (just if supported by the device - e.g. TC002).
+     * Radio stations, mp3 files, melodies and playback state (just if supported by the device).
      * Objects of unsupported features are deleted.
      *
      * @param forceObjectSync - create / check objects even if the lists are unchanged
@@ -907,9 +919,10 @@ export class AwtrixNg extends utils.Adapter {
             throw new Error('capabilities of device unknown');
         }
 
-        const players: Array<[Radio | Mp3, boolean]> = [
+        const players: Array<[Radio | Mp3 | Melody, boolean]> = [
             [this.radio!, this.capabilities.radio],
             [this.mp3!, this.capabilities.mp3],
+            [this.melody!, this.capabilities.melody],
         ];
 
         // one request for all players
@@ -1400,6 +1413,7 @@ export class AwtrixNg extends utils.Adapter {
 
             this.radio?.unload();
             this.mp3?.unload();
+            this.melody?.unload();
 
             callback();
         } catch (e) {

@@ -56,12 +56,12 @@ export class Radio extends AudioPlayer<RadioStation> {
         return audioState.stations;
     }
 
-    protected getPlaying(audioState: AudioState): string | null {
+    protected override getPlaying(audioState: AudioState): string | null {
         // station contains the last station (even if stopped)
         return audioState.radio.playing ? audioState.radio.station : null;
     }
 
-    protected setPlaying(audioState: AudioState, name: string | null): void {
+    protected override setPlaying(audioState: AudioState, name: string | null): void {
         audioState.radio.playing = name !== null;
         audioState.radio.station = name ?? '';
     }

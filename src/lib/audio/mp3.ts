@@ -71,12 +71,12 @@ export class Mp3 extends AudioPlayer<Mp3File> {
         }));
     }
 
-    protected getPlaying(audioState: AudioState): string | null {
+    protected override getPlaying(audioState: AudioState): string | null {
         // files of scripts are not listed
         return audioState.mp3.playing && !audioState.mp3.script ? audioState.mp3.name : null;
     }
 
-    protected setPlaying(audioState: AudioState, name: string | null): void {
+    protected override setPlaying(audioState: AudioState, name: string | null): void {
         audioState.mp3.playing = name !== null;
         audioState.mp3.name = name ?? '';
         audioState.mp3.script = '';
