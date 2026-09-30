@@ -33,7 +33,10 @@ __export(awtrix_ng_exports, {
 module.exports = __toCommonJS(awtrix_ng_exports);
 var utils = __toESM(require("@iobroker/adapter-core"));
 var import_awtrix_ng_api = require("awtrix-ng-api");
-var import_radio = require("./lib/radio");
+var import_melody = require("./lib/audio/melody");
+var import_mp3 = require("./lib/audio/mp3");
+var import_radio = require("./lib/audio/radio");
+var import_screen = require("./lib/screen");
 var import_builtin = require("./lib/app-type/builtin");
 var import_script = require("./lib/app-type/script");
 var import_custom = require("./lib/app-type/user/custom");
@@ -82,7 +85,9 @@ const DEFAULT_CAPABILITIES = {
     "TwinklingStars"
   ],
   transitions: [],
-  radio: false
+  radio: false,
+  mp3: false,
+  melody: false
 };
 class AwtrixNg extends utils.Adapter {
   _isMainInstance;
@@ -98,6 +103,8 @@ class AwtrixNg extends utils.Adapter {
   appOrderLock;
   appOrderSyncTimeout;
   radio;
+  mp3;
+  melody;
   capabilities;
   refreshStateTimeout;
   downloadScreenContentInterval;
@@ -121,6 +128,8 @@ class AwtrixNg extends utils.Adapter {
     this.appOrderLock = Promise.resolve();
     this.appOrderSyncTimeout = void 0;
     this.radio = null;
+    this.mp3 = null;
+    this.melody = null;
     this.capabilities = { ...DEFAULT_CAPABILITIES };
     this.refreshStateTimeout = void 0;
     this.downloadScreenContentInterval = void 0;
@@ -151,6 +160,8 @@ class AwtrixNg extends utils.Adapter {
     }
     this.log.info(`Starting - connecting to ${this.apiClient.baseUrl}/`);
     this.radio = new import_radio.Radio(this, this.apiClient);
+    this.mp3 = new import_mp3.Mp3(this, this.apiClient);
+    this.melody = new import_melody.Melody(this, this.apiClient);
     if (this.config.foreignSettingsInstance !== "" && this.config.foreignSettingsInstance !== this.namespace) {
       this._isMainInstance = false;
       await this.subscribeForeignObjectsAsync(`system.adapter.${this.config.foreignSettingsInstance}`);
@@ -241,6 +252,14 @@ class AwtrixNg extends utils.Adapter {
         } else if (idNoNamespace.startsWith("audio.radio.")) {
           this.radio.onStateChange(idNoNamespace, state).catch((error) => {
             this.log.warn(`(radio) Unable to execute action: ${error}`);
+          });
+        } else if (idNoNamespace.startsWith("audio.mp3.")) {
+          this.mp3.onStateChange(idNoNamespace, state).catch((error) => {
+            this.log.warn(`(mp3) Unable to execute action: ${error}`);
+          });
+        } else if (idNoNamespace.startsWith("audio.melody.")) {
+          this.melody.onStateChange(idNoNamespace, state).catch((error) => {
+            this.log.warn(`(melody) Unable to execute action: ${error}`);
           });
         } else if (idNoNamespace === "device.reboot") {
           this.apiClient.device.reboot().then(async () => {
@@ -442,7 +461,7 @@ class AwtrixNg extends utils.Adapter {
     const steps = [
       ["settings", () => this.refreshSettings()],
       ["capabilities", () => this.refreshCapabilities()],
-      ["radio", () => this.refreshRadio(true)],
+      ["audio", () => this.refreshAudio(true)],
       ["apps", () => this.createAppObjects()],
       ["indicators", () => this.updateAllIndicatorsByStates()],
       ["moodlight", () => this.updateMoodlightByStates()],
@@ -507,20 +526,10 @@ class AwtrixNg extends utils.Adapter {
         this.downloadScreenContentInterval = this.setInterval(() => {
           if (this.apiClient && this.apiConnected) {
             this.apiClient.display.getScreen().then(async (screen) => {
-              var _a;
-              const { width, height, pixels } = screen;
-              const pixelSize = 20;
-              let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width * pixelSize}" height="${height * pixelSize}" viewBox="0 0 ${width * pixelSize} ${height * pixelSize}">`;
-              for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
-                  const color = (0, import_awtrix_ng_api.toHexColor)((_a = pixels[y * width + x]) != null ? _a : 0);
-                  svg += `
-  <rect style="fill: ${color}; stroke: #000000; stroke-width: 2px;" `;
-                  svg += `x="${x * pixelSize}" y="${y * pixelSize}" width="${pixelSize}" height="${pixelSize}"/>`;
-                }
-              }
-              svg += "\n</svg>";
-              await this.setState("display.content", { val: svg, ack: true });
+              await this.setStateChangedAsync("display.content", {
+                val: (0, import_screen.screenToSvg)(screen),
+                ack: true
+              });
             }).catch((error) => {
               this.log.debug(`(display/screen) received error: ${error}`);
             });
@@ -571,9 +580,9 @@ class AwtrixNg extends utils.Adapter {
       await this.setStateChangedAsync("device.wifiSignal", { val: content.wifiRssi, ack: true });
       await this.setStateChangedAsync("device.freeRAM", { val: content.freeHeapBytes, ack: true });
       await this.setStateChangedAsync("device.uptime", { val: content.uptimeSeconds, ack: true });
-      if (this.capabilities.radio && !this.resyncFailedSteps.has("radio")) {
-        await this.radio.refresh(false).catch((error) => {
-          this.log.debug(`[refreshState] Unable to refresh radio: ${error}`);
+      if (this.capabilities.loaded && !this.resyncFailedSteps.has("audio")) {
+        await this.refreshAudio(false).catch((error) => {
+          this.log.debug(`[refreshState] Unable to refresh audio: ${error}`);
         });
       }
     }).catch((error) => {
@@ -641,7 +650,7 @@ class AwtrixNg extends utils.Adapter {
     }
   }
   async refreshCapabilities() {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     const capabilities = await this.apiClient.device.capabilities();
     this.log.debug(`[refreshCapabilities] Existing capabilities "${JSON.stringify(capabilities)}"`);
     this.capabilities = {
@@ -651,7 +660,9 @@ class AwtrixNg extends utils.Adapter {
       palettes: (_c = capabilities.palettes) != null ? _c : DEFAULT_CAPABILITIES.palettes,
       paletteEffects: (_d = capabilities.paletteEffects) != null ? _d : DEFAULT_CAPABILITIES.paletteEffects,
       transitions: (_e = capabilities.transitions) != null ? _e : DEFAULT_CAPABILITIES.transitions,
-      radio: ((_f = capabilities.audio) == null ? void 0 : _f.radio) === true
+      radio: ((_f = capabilities.audio) == null ? void 0 : _f.radio) === true,
+      mp3: ((_g = capabilities.audio) == null ? void 0 : _g.mp3) === true,
+      melody: ((_h = capabilities.audio) == null ? void 0 : _h.buzzer) === true
     };
     const states = {};
     for (const transition of this.capabilities.transitions) {
@@ -660,18 +671,35 @@ class AwtrixNg extends utils.Adapter {
     await this.extendObject("settings.apps.transitionEffect", { common: { states } });
   }
   /**
-   * Radio stations and playback state (just if supported by the device - e.g. TC002)
+   * Radio stations, mp3 files, melodies and playback state (just if supported by the device).
+   * Objects of unsupported features are deleted.
    *
-   * @param forceObjectSync - create / check objects even if the station list is unchanged
+   * @param forceObjectSync - create / check objects even if the lists are unchanged
    */
-  async refreshRadio(forceObjectSync) {
+  async refreshAudio(forceObjectSync) {
     if (!this.capabilities.loaded) {
       throw new Error("capabilities of device unknown");
     }
-    if (this.capabilities.radio) {
-      await this.radio.refresh(forceObjectSync);
-    } else {
-      await this.radio.remove();
+    const players = [
+      [this.radio, this.capabilities.radio],
+      [this.mp3, this.capabilities.mp3],
+      [this.melody, this.capabilities.melody]
+    ];
+    const audioState = players.some(([, supported]) => supported) ? await this.apiClient.audio.getState() : void 0;
+    const errors = [];
+    for (const [player, supported] of players) {
+      try {
+        if (supported) {
+          await player.refresh(forceObjectSync, audioState);
+        } else {
+          await player.remove();
+        }
+      } catch (error) {
+        errors.push(this.errorToString(error));
+      }
+    }
+    if (errors.length > 0) {
+      throw new Error(errors.join(", "));
     }
   }
   isValidUserAppName(name) {
@@ -1028,7 +1056,7 @@ class AwtrixNg extends utils.Adapter {
     return id.replace(re, "");
   }
   async onUnload(callback) {
-    var _a;
+    var _a, _b, _c;
     try {
       const removeFromDevice = this.apiConnected;
       if (!removeFromDevice && this.config.removeAppsOnStop) {
@@ -1050,6 +1078,8 @@ class AwtrixNg extends utils.Adapter {
         this.appOrderSyncTimeout = void 0;
       }
       (_a = this.radio) == null ? void 0 : _a.unload();
+      (_b = this.mp3) == null ? void 0 : _b.unload();
+      (_c = this.melody) == null ? void 0 : _c.unload();
       callback();
     } catch (e) {
       callback();

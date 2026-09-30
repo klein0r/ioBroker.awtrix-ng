@@ -1,4 +1,9 @@
 # Older changes
+## 0.0.8 (2026-08-06)
+
+* (@klein0r) Added more settings
+* (@klein0r) Fixed Blockly code generation
+
 ## 0.0.7 (2026-08-05)
 
 * (@klein0r) Removed device update state and notification

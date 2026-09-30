@@ -41,7 +41,7 @@ Buy TC002 here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC002) or here: [u
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.3.0 (2026-09-30)
 
 * (@klein0r) Added playback of MP3 files (`audio.mp3.*`) for devices which support it (e.g. TC002)
 * (@klein0r) Added playback of melodies (`audio.melody.*`)
@@ -87,11 +87,6 @@ Buy TC002 here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC002) or here: [u
 
 * (@klein0r) Removed option to automatically delete other apps
 * (@klein0r) Updated logo
-
-### 0.0.8 (2026-08-06)
-
-* (@klein0r) Added more settings
-* (@klein0r) Fixed Blockly code generation
 
 [Older changelogs can be found there](CHANGELOG_OLD.md)
 
