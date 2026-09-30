@@ -130,6 +130,17 @@ sendTo('awtrix-ng.0', 'audio', { rtttl: 'beep:d=4,o=5,b=120:c,e,g' }, (res) => {
 });
 ```
 
+## Radio
+
+Devices with internet radio (e.g. Ulanzi TC002) get the channel `audio.radio`. The feature is detected automatically (capabilities of the device) - on devices without radio (e.g. TC001), these objects are not created.
+
+- `audio.radio.<station>.playing` - `true` plays the station, `false` stops it (if this station is playing). The state also shows if the station is currently playing.
+- `audio.radio.<station>.url` - stream URL of the station (read only)
+- `audio.radio.playing` / `audio.radio.station` / `audio.radio.title` - current playback state (read only)
+- `audio.radio.stop` - stops the radio
+
+The stations are maintained in the web interface of the device. The objects are created and deleted automatically when stations are added or removed there (checked every 60 seconds). Stations cannot be added or removed in ioBroker.
+
 ## Apps
 
 **App names must be unique and may contain letters (A-Z, a-z), digits (0-9), `_` and `-` (max. 32 characters). No whitespaces or other special characters.**
