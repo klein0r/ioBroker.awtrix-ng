@@ -289,7 +289,7 @@ export namespace AppType {
                         es: 'Duración',
                         pl: 'Czas trwania',
                         uk: 'Тривалість',
-                        'zh-cn': '会期',
+                        'zh-cn': '时长',
                     },
                     type: 'number',
                     role: 'level.timer',

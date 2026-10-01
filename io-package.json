@@ -288,7 +288,7 @@
       "native": {}
     },
     {
-      "_id": "settings.brightness.value",
+      "_id": "settings.brightness.brightness",
       "type": "state",
       "common": {
         "name": {
@@ -316,7 +316,7 @@
       }
     },
     {
-      "_id": "settings.brightness.auto",
+      "_id": "settings.brightness.autoBrightness",
       "type": "state",
       "common": {
         "name": {
@@ -362,7 +362,7 @@
       "native": {}
     },
     {
-      "_id": "settings.apps.durationMs",
+      "_id": "settings.apps.appDurationMs",
       "type": "state",
       "common": {
         "name": {
@@ -416,21 +416,21 @@
       }
     },
     {
-      "_id": "settings.apps.transitionSpeed",
+      "_id": "settings.apps.transitionDurationMs",
       "type": "state",
       "common": {
         "name": {
-          "en": "Transition speed to the next app",
-          "de": "Übergangsgeschwindigkeit zur nächsten App",
-          "ru": "Скорость перехода к следующему приложению",
-          "pt": "Velocidade de transição para o próximo aplicativo",
-          "nl": "Vervoersnelheid naar de volgende app",
-          "fr": "Vitesse de transition vers la prochaine application",
-          "it": "Velocità di transizione alla prossima app",
-          "es": "Velocidad de transición a la próxima aplicación",
-          "pl": "Łączna prędkość do następnej aplikacji",
-          "uk": "Швидкість переходу на наступний додаток",
-          "zh-cn": "二. 向下一份报告过渡速度"
+          "en": "Transition duration",
+          "de": "Dauer des Übergangs",
+          "ru": "Длительность перехода",
+          "pt": "Duração da transição",
+          "nl": "Duur van de overgang",
+          "fr": "Durée de la transition",
+          "it": "Durata della transizione",
+          "es": "Duración de la transición",
+          "pl": "Czas trwania przejścia",
+          "uk": "Тривалість переходу",
+          "zh-cn": "过渡时长"
         },
         "type": "number",
         "role": "level.timer",
@@ -471,7 +471,7 @@
       }
     },
     {
-      "_id": "settings.apps.blockButtons",
+      "_id": "settings.apps.blockNavigation",
       "type": "state",
       "common": {
         "name": {
@@ -572,7 +572,7 @@
       }
     },
     {
-      "_id": "settings.datetime.showLeadingZero",
+      "_id": "settings.datetime.timeLeadingZero",
       "type": "state",
       "common": {
         "name": {
@@ -626,7 +626,27 @@
       }
     },
     {
-      "_id": "settings.datetime.weekdayColorActive",
+      "_id": "settings.datetime.weekdayBar",
+      "type": "folder",
+      "common": {
+        "name": {
+          "en": "Weekday bar",
+          "de": "Wochentagsleiste",
+          "ru": "Панель дней недели",
+          "pt": "Barra dos dias da semana",
+          "nl": "Weekdagbalk",
+          "fr": "Barre des jours de la semaine",
+          "it": "Barra dei giorni della settimana",
+          "es": "Barra de días de la semana",
+          "pl": "Pasek dni tygodnia",
+          "uk": "Панель днів тижня",
+          "zh-cn": "星期栏"
+        }
+      },
+      "native": {}
+    },
+    {
+      "_id": "settings.datetime.weekdayBar.activeColor",
       "type": "state",
       "common": {
         "name": {
@@ -652,7 +672,7 @@
       }
     },
     {
-      "_id": "settings.datetime.weekdayColorInactive",
+      "_id": "settings.datetime.weekdayBar.inactiveColor",
       "type": "state",
       "common": {
         "name": {
@@ -678,7 +698,7 @@
       }
     },
     {
-      "_id": "settings.datetime.weekendActiveColor",
+      "_id": "settings.datetime.weekdayBar.weekendActiveColor",
       "type": "state",
       "common": {
         "name": {
@@ -704,7 +724,7 @@
       }
     },
     {
-      "_id": "settings.datetime.weekendInactiveColor",
+      "_id": "settings.datetime.weekdayBar.weekendInactiveColor",
       "type": "state",
       "common": {
         "name": {
@@ -883,7 +903,7 @@
       "native": {}
     },
     {
-      "_id": "settings.text.color",
+      "_id": "settings.text.textColor",
       "type": "state",
       "common": {
         "name": {
@@ -936,7 +956,27 @@
       }
     },
     {
-      "_id": "settings.text.scrollSpeed",
+      "_id": "settings.text.scroll",
+      "type": "folder",
+      "common": {
+        "name": {
+          "en": "Scrolling",
+          "de": "Scrollen",
+          "ru": "Прокрутка",
+          "pt": "Deslocamento",
+          "nl": "Scrollen",
+          "fr": "Défilement",
+          "it": "Scorrimento",
+          "es": "Desplazamiento",
+          "pl": "Przewijanie",
+          "uk": "Прокручування",
+          "zh-cn": "滚动"
+        }
+      },
+      "native": {}
+    },
+    {
+      "_id": "settings.text.scroll.speed",
       "type": "state",
       "common": {
         "name": {
@@ -957,7 +997,7 @@
         "read": true,
         "write": true,
         "min": 1,
-        "max": 100,
+        "max": 500,
         "unit": "%"
       },
       "native": {
@@ -1342,7 +1382,7 @@
         "role": "value.timer",
         "read": true,
         "write": false,
-        "unit": "sec"
+        "unit": "s"
       },
       "native": {}
     },

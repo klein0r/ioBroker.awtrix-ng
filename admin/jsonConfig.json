@@ -281,7 +281,7 @@
                         {
                             "type": "number",
                             "attr": "duration",
-                            "label": "Duration (sec)",
+                            "label": "Duration (in seconds)",
                             "xs": 12,
                             "sm": 12,
                             "md": 2,
@@ -725,7 +725,7 @@
                         {
                             "type": "number",
                             "attr": "duration",
-                            "label": "Duration (sec)",
+                            "label": "Duration (in seconds)",
                             "xs": 12,
                             "sm": 12,
                             "md": 2,

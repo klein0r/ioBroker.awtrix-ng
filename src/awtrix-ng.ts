@@ -16,15 +16,15 @@ import type {
 import { AwtrixApiError, AwtrixClient, AwtrixConnectionError, isValidAppName } from 'awtrix-ng-api';
 
 import type { AppType as AppTypeAbstract } from './lib/app-type/abstract';
-import { Melody } from './lib/audio/melody';
-import { Mp3 } from './lib/audio/mp3';
-import { Radio } from './lib/audio/radio';
-import { screenToSvg } from './lib/screen';
 import { AppType as AppTypeBuiltin } from './lib/app-type/builtin';
 import { AppType as AppTypeScript } from './lib/app-type/script';
 import { AppType as AppTypeCustom } from './lib/app-type/user/custom';
 import { AppType as AppTypeExpert } from './lib/app-type/user/expert';
 import { AppType as AppTypeHistory } from './lib/app-type/user/history';
+import { Melody } from './lib/audio/melody';
+import { Mp3 } from './lib/audio/mp3';
+import { Radio } from './lib/audio/radio';
+import { screenToSvg } from './lib/screen';
 
 type ResyncStep = 'settings' | 'capabilities' | 'audio' | 'apps' | 'indicators' | 'moodlight' | 'screenContent';
 
@@ -43,6 +43,8 @@ type DeviceCapabilities = {
     mp3: boolean;
     /** melodies (RTTTL) via buzzer */
     melody: boolean;
+    /** timed deep sleep (ESP32 only - a TC002 would not wake up again) */
+    sleep: boolean;
 };
 
 const DEFAULT_CAPABILITIES: DeviceCapabilities = {
@@ -91,6 +93,7 @@ const DEFAULT_CAPABILITIES: DeviceCapabilities = {
     radio: false,
     mp3: false,
     melody: false,
+    sleep: false,
 };
 
 type NestedObject = {
@@ -185,7 +188,7 @@ export class AwtrixNg extends utils.Adapter {
         this._isMainInstance = true;
 
         this.currentVersion = undefined;
-        this.supportedVersion = '1.1.2';
+        this.supportedVersion = '1.1.4';
         this.displayedVersionWarning = false;
 
         this.apiClient = null;
@@ -215,6 +218,7 @@ export class AwtrixNg extends utils.Adapter {
 
     private async onReady(): Promise<void> {
         await this.setApiConnected(false);
+        await this.deleteObsoleteSettingsObjects();
 
         await this.subscribeStatesAsync('*');
 
@@ -251,6 +255,28 @@ export class AwtrixNg extends utils.Adapter {
         }
 
         this.refreshState();
+    }
+
+    /**
+     * Objects below settings.* are defined in io-package.json (instanceObjects). Objects which have
+     * been renamed or removed in a newer version are not deleted by js-controller - so delete them here.
+     */
+    private async deleteObsoleteSettingsObjects(): Promise<void> {
+        try {
+            const knownIds = new Set(this.ioPack.instanceObjects.map(o => o._id));
+
+            const settingsObjects = await this.getForeignObjectsAsync(`${this.namespace}.settings.*`);
+            for (const id of Object.keys(settingsObjects)) {
+                const idNoNamespace = this.removeNamespace(id);
+
+                if (!knownIds.has(idNoNamespace)) {
+                    this.log.info(`[deleteObsoleteSettingsObjects] Deleting obsolete object "${idNoNamespace}"`);
+                    await this.delObjectAsync(idNoNamespace);
+                }
+            }
+        } catch (error) {
+            this.log.warn(`[deleteObsoleteSettingsObjects] Unable to delete obsolete objects: ${error}`);
+        }
     }
 
     private async importForeignSettings(): Promise<void> {
@@ -338,7 +364,15 @@ export class AwtrixNg extends utils.Adapter {
                             this.log.warn(`(power) Unable to execute action: ${error}`);
                         });
                 } else if (idNoNamespace === 'device.sleep') {
-                    this.log.debug(`enable sleep mode of device for ${state.val} seconds`);
+                    if (!this.capabilities.sleep) {
+                        this.log.warn(
+                            `(device/sleep) Sleep mode is not supported by this device (it would not wake up again) - use display.power instead`,
+                        );
+                        await this.setState(idNoNamespace, { val: 0, ack: true, c: 'not supported' });
+                        return;
+                    }
+
+                    this.log.debug(`enable sleep mode of device for ${state.val} ms`);
 
                     this.apiClient.device
                         .sleep(Number(state.val))
@@ -887,6 +921,8 @@ export class AwtrixNg extends utils.Adapter {
             radio: capabilities.audio?.radio === true,
             mp3: capabilities.audio?.mp3 === true,
             melody: capabilities.audio?.buzzer === true,
+            // platform is missing on older firmware (ESP32 only)
+            sleep: !capabilities.platform || capabilities.platform.id === 'esp32',
         };
 
         // Transistions
