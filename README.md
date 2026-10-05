@@ -44,11 +44,10 @@ Buy TC002 here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC002) or here: [u
 ### **WORK IN PROGRESS**
 
 * (@klein0r) **Breaking change:** Awtrix NG firmware 1.2.0 is required now (new sound format) - updated [awtrix-ng-api](https://www.npmjs.com/package/awtrix-ng-api) to 0.4.0
-* (@klein0r) Old sound keys of `sendTo` (e.g. `sound`, `mp3`, `melody`, `soundRtttl`, `soundLoop`) and `textCenter` are converted automatically
+* (@klein0r) **Breaking change:** `sendTo` uses the sound format of firmware 1.2.0: `audio` takes `file` (instead of `sound`, `mp3`, `melody`, ...), notifications take `sound` as name or sound object (`soundRtttl` / `soundLoop` were removed), `textCenter` was replaced by `textAlign`
 * (@klein0r) **Breaking change:** Renamed settings states to the names of the device settings (e.g. `settings.brightness.value` -> `settings.brightness.brightness`, `settings.apps.transitionSpeed` -> `settings.apps.transitionDurationMs`) - old objects are deleted automatically
 * (@klein0r) Sleep mode (`device.sleep`) is blocked on devices without timed sleep (e.g. TC002 would not wake up again)
 * (@klein0r) Scroll speed setting (`settings.text.scroll.speed`) allows up to 500 % now
-* (@klein0r) Recommended Awtrix NG version is now 1.2.0
 
 ### 0.3.0 (2026-09-30)
 

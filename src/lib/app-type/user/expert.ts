@@ -1,7 +1,6 @@
 import type { AppInfo, AwtrixClient, ClassicAppPayload } from 'awtrix-ng-api';
 import type { AwtrixNg } from '../../../awtrix-ng';
 import type { ExpertApp } from '../../adapter-config';
-import { migrateAppPayload } from '../../compat';
 import { AppType as UserAppType } from '../user';
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -83,11 +82,7 @@ export namespace AppType {
 
                 const app: ClassicAppPayload = {
                     ...this.getLifetimeOptions(), // can be overwritten by base object
-                    // textCenter of firmware 1.1.x -> textAlign
-                    ...(migrateAppPayload(
-                        this.baseObject,
-                        this.adapter.deprecatedKey(`apps.${this.getName()}.baseObject`),
-                    ) as ClassicAppPayload),
+                    ...this.baseObject,
                     text: typeof this.appStates.text === 'string' ? this.appStates.text : '',
                     textCase: 'asTyped', // show as sent
                     textColor: typeof this.appStates.textColor === 'string' ? this.appStates.textColor : '#FFFFFF',

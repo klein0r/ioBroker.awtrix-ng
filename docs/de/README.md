@@ -121,8 +121,6 @@ Das Nachrichten-Objekt unterstützt dabei alle Optionen, welche in der Firmware 
 
 *Es kann ein Blockly-Block verwendet werden, um diesen Aufruf noch einfacher zu verwenden.*
 
-**Hinweis:** Seit Firmware 1.2.0 hat sich das Format der Töne geändert (z.B. `file` statt `sound`, `mp3` oder `melody`). Alte Schlüssel (sowie `soundRtttl` / `soundLoop` / `textCenter` in Benachrichtigungen) werden weiterhin automatisch umgewandelt - dazu wird einmalig ein Hinweis protokolliert.
-
 Um einen eigenen Klingelton abzuspielen:
 
 ```javascript

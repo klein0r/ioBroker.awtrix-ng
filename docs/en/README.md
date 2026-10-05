@@ -121,8 +121,6 @@ The message object supports all available options of the firmware. See [document
 
 *You can also use a Blockly block to play a sound.*
 
-**Note:** Since firmware 1.2.0 the sound format has changed (e.g. `file` instead of `sound`, `mp3` or `melody`). Old keys (and `soundRtttl` / `soundLoop` / `textCenter` in notifications) are still converted automatically - a hint is logged once.
-
 To play a custom ringtone:
 
 ```javascript
