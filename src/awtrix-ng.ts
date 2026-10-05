@@ -826,6 +826,7 @@ export class AwtrixNg extends utils.Adapter {
                 await this.setStateChangedAsync('display.brightness', { val: content.brightness, ack: true });
 
                 await this.setStateChangedAsync('device.battery', { val: content.batteryPercent ?? null, ack: true });
+                await this.setStateChangedAsync('device.usbPower', { val: content.usbPower ?? null, ack: true });
                 await this.setStateChangedAsync('device.ipAddress', { val: content.ipAddress, ack: true });
                 await this.setStateChangedAsync('device.wifiSignal', { val: content.wifiRssi, ack: true });
                 await this.setStateChangedAsync('device.freeRAM', { val: content.freeHeapBytes, ack: true });

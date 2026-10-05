@@ -1277,13 +1277,38 @@
           "es": "Batería",
           "pl": "Bateria",
           "uk": "Акумулятор",
-          "zh-cn": "包 耳"
+          "zh-cn": "电池"
         },
         "type": "number",
         "role": "value.battery",
         "read": true,
         "write": false,
         "unit": "%"
+      },
+      "native": {}
+    },
+    {
+      "_id": "device.usbPower",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "USB power",
+          "de": "USB-Stromversorgung",
+          "ru": "Питание по USB",
+          "pt": "Alimentação USB",
+          "nl": "USB-voeding",
+          "fr": "Alimentation USB",
+          "it": "Alimentazione USB",
+          "es": "Alimentación USB",
+          "pl": "Zasilanie USB",
+          "uk": "Живлення USB",
+          "zh-cn": "USB 供电"
+        },
+        "desc": "true = connected to USB power (and charging)",
+        "type": "boolean",
+        "role": "indicator",
+        "read": true,
+        "write": false
       },
       "native": {}
     },

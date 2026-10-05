@@ -43,6 +43,7 @@ Buy TC002 here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC002) or here: [u
 -->
 ### **WORK IN PROGRESS**
 
+* (@klein0r) Added state `device.usbPower` (device is connected to USB power, e.g. TC002)
 * (@klein0r) **Breaking change:** Awtrix NG firmware 1.2.0 is required now (new sound format) - updated [awtrix-ng-api](https://www.npmjs.com/package/awtrix-ng-api) to 0.4.0
 * (@klein0r) **Breaking change:** `sendTo` uses the sound format of firmware 1.2.0: `audio` takes `file` (instead of `sound`, `mp3`, `melody`, ...), notifications take `sound` as name or sound object (`soundRtttl` / `soundLoop` were removed), `textCenter` was replaced by `textAlign`
 * (@klein0r) **Breaking change:** Renamed settings states to the names of the device settings (e.g. `settings.brightness.value` -> `settings.brightness.brightness`, `settings.apps.transitionSpeed` -> `settings.apps.transitionDurationMs`) - old objects are deleted automatically
