@@ -7,7 +7,7 @@
 - nodejs 22 (oder neuer)
 - js-controller 6.0.11 (oder neuer)
 - Admin Adapter 7.6.20 (oder neuer)
-- _Awtrix NG_ Gerät mit Firmware-Version _1.1.4_ (oder neuer) - z.B. Ulanzi TC001, Ulanzi TC002
+- _Awtrix NG_ Gerät mit Firmware-Version _1.2.0_ (oder neuer) - z.B. Ulanzi TC001, Ulanzi TC002
 
 - TC001 kaufen: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), [Amazon.de](https://haus-auto.com/p/amz/UlanziTC001) oder [ulanzi.de](https://haus-auto.com/p/ula/UlanziTC001) *(Affiliate-Links)*
 - TC002 kaufen: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC002) oder [ulanzi.de](https://haus-auto.com/p/ula/UlanziTC002) *(Affiliate-Links)*
@@ -105,12 +105,12 @@ Das Nachrichten-Objekt unterstützt dabei alle Optionen, welche in der Firmware 
 
 ### Töne
 
-**Die Sound-Dateien müssen im RTTTL-Format im Ordner MELODIES abgelegt werden. Die Dateiendung für diese Sounds ist .txt. Beim Abspielen der Sounds darf die Dateiendung nicht mit übergeben werden!**
+Töne sind auf dem Gerät gespeicherte MP3-Dateien oder Melodien (RTTTL), die in der Weboberfläche des Gerätes gepflegt werden. Sie werden über ihren Namen abgespielt - ohne Dateiendung.
 
 Um einen (vorher angelegten) Ton namens `beispiel` abzuspielen:
 
 ```javascript
-sendTo('awtrix-ng.0', 'audio', { sound: 'beispiel' }, (res) => {
+sendTo('awtrix-ng.0', 'audio', { file: 'beispiel' }, (res) => {
     if (res && res.error) {
         console.error(res.error);
     }
@@ -120,6 +120,8 @@ sendTo('awtrix-ng.0', 'audio', { sound: 'beispiel' }, (res) => {
 Das Nachrichten-Objekt unterstützt dabei alle Optionen, welche in der Firmware verfügbar sind. Siehe [Dokumentation](https://blueforcer.github.io/awtrix-ng/reference/payload/) für Details.
 
 *Es kann ein Blockly-Block verwendet werden, um diesen Aufruf noch einfacher zu verwenden.*
+
+**Hinweis:** Seit Firmware 1.2.0 hat sich das Format der Töne geändert (z.B. `file` statt `sound`, `mp3` oder `melody`). Alte Schlüssel (sowie `soundRtttl` / `soundLoop` / `textCenter` in Benachrichtigungen) werden weiterhin automatisch umgewandelt - dazu wird einmalig ein Hinweis protokolliert.
 
 Um einen eigenen Klingelton abzuspielen:
 

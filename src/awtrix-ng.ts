@@ -24,6 +24,7 @@ import { AppType as AppTypeHistory } from './lib/app-type/user/history';
 import { Melody } from './lib/audio/melody';
 import { Mp3 } from './lib/audio/mp3';
 import { Radio } from './lib/audio/radio';
+import { type DeprecationCallback, migrateAudioRequest, migrateNotificationPayload } from './lib/compat';
 import { screenToSvg } from './lib/screen';
 
 type ResyncStep = 'settings' | 'capabilities' | 'audio' | 'apps' | 'indicators' | 'moodlight' | 'screenContent';
@@ -41,7 +42,7 @@ type DeviceCapabilities = {
     radio: boolean;
     /** stored mp3 files (e.g. TC002) */
     mp3: boolean;
-    /** melodies (RTTTL) via buzzer */
+    /** melodies (RTTTL) via buzzer or speaker */
     melody: boolean;
     /** timed deep sleep (ESP32 only - a TC002 would not wake up again) */
     sleep: boolean;
@@ -173,6 +174,7 @@ export class AwtrixNg extends utils.Adapter {
     private mp3: Mp3 | null;
     private melody: Melody | null;
     private capabilities: DeviceCapabilities;
+    private deprecationWarnings: Set<string>;
     private refreshStateTimeout: ioBroker.Timeout | undefined;
     private downloadScreenContentInterval: ioBroker.Interval | undefined;
 
@@ -188,7 +190,7 @@ export class AwtrixNg extends utils.Adapter {
         this._isMainInstance = true;
 
         this.currentVersion = undefined;
-        this.supportedVersion = '1.1.4';
+        this.supportedVersion = '1.2.0';
         this.displayedVersionWarning = false;
 
         this.apiClient = null;
@@ -203,6 +205,7 @@ export class AwtrixNg extends utils.Adapter {
         this.mp3 = null;
         this.melody = null;
         this.capabilities = { ...DEFAULT_CAPABILITIES };
+        this.deprecationWarnings = new Set();
 
         this.refreshStateTimeout = undefined;
         this.downloadScreenContentInterval = undefined;
@@ -533,8 +536,11 @@ export class AwtrixNg extends utils.Adapter {
                         msgFiltered.icon = String(msgFiltered.icon);
                     }
 
+                    // Sound format of firmware 1.1.x (e.g. soundRtttl)
+                    const notification = migrateNotificationPayload(msgFiltered, this.deprecatedKey('notification'));
+
                     this.apiClient.notifications
-                        .send(msgFiltered as NotificationPayload)
+                        .send(notification as NotificationPayload)
                         .then(data => {
                             this.sendTo(obj.from, obj.command, { error: null, data }, obj.callback);
                         })
@@ -549,23 +555,38 @@ export class AwtrixNg extends utils.Adapter {
                         obj.callback,
                     );
                 }
-            } else if (obj.command === 'audio' && typeof obj.message === 'object') {
-                // Audio (generic)
+            } else if (
+                obj.command === 'audio' &&
+                (typeof obj.message === 'object' || typeof obj.message === 'string')
+            ) {
+                // Audio (generic): stored name, sound object or list of alternatives
                 if (this.apiClient && this.apiConnected) {
-                    const msgFiltered: Record<string, any> = Object.fromEntries(
-                        Object.entries(obj.message).filter(([_, v]) => v !== null),
-                    );
+                    let request: AudioPlayRequest;
 
-                    const keys = Object.keys(msgFiltered);
-
-                    if (keys.length > 1) {
-                        this.log.warn(
-                            `[onMessage <audio>] Received multiple keys for audio - just use one: ${JSON.stringify(keys)}`,
+                    if (typeof obj.message === 'string' || Array.isArray(obj.message)) {
+                        request = obj.message as AudioPlayRequest;
+                    } else {
+                        const msgFiltered: Record<string, any> = Object.fromEntries(
+                            Object.entries(obj.message).filter(([_, v]) => v !== null),
                         );
+
+                        // Sound format of firmware 1.1.x (e.g. sound, mp3, melody)
+                        const sound = migrateAudioRequest(msgFiltered, this.deprecatedKey('audio'));
+
+                        const sources = Object.keys(sound).filter(k =>
+                            ['file', 'rtttl', 'song', 'speech', 'track', 'station'].includes(k),
+                        );
+                        if (sources.length > 1) {
+                            this.log.warn(
+                                `[onMessage <audio>] Received multiple sources for audio - just use one: ${JSON.stringify(sources)}`,
+                            );
+                        }
+
+                        request = sound as AudioPlayRequest;
                     }
 
                     this.apiClient.audio
-                        .play(msgFiltered as AudioPlayRequest)
+                        .play(request)
                         .then(data => {
                             this.sendTo(obj.from, obj.command, { error: null, data }, obj.callback);
                         })
@@ -920,7 +941,7 @@ export class AwtrixNg extends utils.Adapter {
             transitions: capabilities.transitions ?? DEFAULT_CAPABILITIES.transitions,
             radio: capabilities.audio?.radio === true,
             mp3: capabilities.audio?.mp3 === true,
-            melody: capabilities.audio?.buzzer === true,
+            melody: capabilities.audio?.rtttl === true,
             // platform is missing on older firmware (ESP32 only)
             sleep: !capabilities.platform || capabilities.platform.id === 'esp32',
         };
@@ -1374,6 +1395,23 @@ export class AwtrixNg extends utils.Adapter {
         }
 
         return this.apiClient!.display.disableMoodlight();
+    }
+
+    /**
+     * Logs a hint once per deprecated key of a sendTo command (sound format of firmware 1.1.x)
+     *
+     * @param command - sendTo command
+     */
+    public deprecatedKey(command: string): DeprecationCallback {
+        return (oldKey: string, replacement: string): void => {
+            const key = `${command}.${oldKey}`;
+            if (!this.deprecationWarnings.has(key)) {
+                this.deprecationWarnings.add(key);
+                this.log.info(
+                    `[onMessage <${command}>] "${oldKey}" is deprecated since Awtrix NG 1.2.0 - please use "${replacement}" (converted automatically)`,
+                );
+            }
+        };
     }
 
     private errorToString(error: unknown): string {

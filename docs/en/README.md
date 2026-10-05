@@ -7,7 +7,7 @@
 - nodejs 22 (or later)
 - js-controller 6.0.11 (or later)
 - Admin Adapter 7.6.20 (or later)
-- _Awtrix NG_ device with firmware _1.1.4_ (or later) - e.g. Ulanzi TC001, Ulanzi TC002
+- _Awtrix NG_ device with firmware _1.2.0_ (or later) - e.g. Ulanzi TC001, Ulanzi TC002
 
 - Buy TC001: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), [Amazon.de](https://haus-auto.com/p/amz/UlanziTC001) or [ulanzi.de](https://haus-auto.com/p/ula/UlanziTC001) *(Affiliate-Links)*
 - Buy TC002: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC002) or [ulanzi.de](https://haus-auto.com/p/ula/UlanziTC002) *(Affiliate-Links)*
@@ -105,12 +105,12 @@ The message object supports all available options of the firmware. See [document
 
 ### Sounds
 
-**The sound files must be saved as RTTTL fomat in the folder MELODIES. The file extension of these files is .txt. When playing those files, the file extension must not be provided.**
+Sounds are MP3 files or melodies (RTTTL) stored on the device (maintained in the web interface of the device). They are played by their name - without file extension.
 
 To play a (previously created) sound with the name `example`:
 
 ```javascript
-sendTo('awtrix-ng.0', 'audio', { sound: 'example' }, (res) => {
+sendTo('awtrix-ng.0', 'audio', { file: 'example' }, (res) => {
     if (res && res.error) {
         console.error(res.error);
     }
@@ -120,6 +120,8 @@ sendTo('awtrix-ng.0', 'audio', { sound: 'example' }, (res) => {
 The message object supports all available options of the firmware. See [documentation](https://blueforcer.github.io/awtrix-ng/reference/payload/) for details.
 
 *You can also use a Blockly block to play a sound.*
+
+**Note:** Since firmware 1.2.0 the sound format has changed (e.g. `file` instead of `sound`, `mp3` or `melody`). Old keys (and `soundRtttl` / `soundLoop` / `textCenter` in notifications) are still converted automatically - a hint is logged once.
 
 To play a custom ringtone:
 

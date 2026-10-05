@@ -52,11 +52,12 @@ export class Melody extends AudioPlayer<MelodyItem> {
     }
 
     protected async play(name: string): Promise<void> {
-        await this.apiClient.audio.play({ melody: name });
+        // stored melodies are played by name (MP3 files and melodies never share a name)
+        await this.apiClient.audio.playFile(name);
     }
 
     protected async stop(): Promise<void> {
-        await this.apiClient.audio.stop('sounds');
+        await this.apiClient.audio.stop('alert');
     }
 
     protected override async createItemExtraObjects(nameClean: string, item: MelodyItem): Promise<void> {

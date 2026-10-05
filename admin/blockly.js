@@ -375,9 +375,13 @@ Blockly.JavaScript['awtrix-ng_playsound'] = function (block) {
     const sound = Blockly.JavaScript.valueToCode(block, 'SOUND', Blockly.JavaScript.ORDER_ATOMIC);
     const rtttl = Blockly.JavaScript.valueToCode(block, 'RTTTL', Blockly.JavaScript.ORDER_ATOMIC);
 
+    // Firmware 1.2.0: exactly one source (stored name of an MP3 / melody, or RTTTL)
     const objText = [];
-    sound && objText.push('sound: ' + sound);
-    rtttl && objText.push('rtttl: ' + rtttl);
+    if (sound) {
+        objText.push('file: ' + sound);
+    } else if (rtttl) {
+        objText.push('rtttl: ' + rtttl);
+    }
 
     return `sendTo('awtrix-ng${block.getFieldValue('INSTANCE')}', 'audio', { ${objText.join(', ')} });`;
 };

@@ -72,22 +72,21 @@ export class Mp3 extends AudioPlayer<Mp3File> {
     }
 
     protected override getPlaying(audioState: AudioState): string | null {
-        // files of scripts are not listed
-        return audioState.mp3.playing && !audioState.mp3.script ? audioState.mp3.name : null;
+        // MP3 files play in the alert group (name = file as sent) - other names (e.g. melodies) do not match any item
+        return audioState.alert.playing ? audioState.alert.name : null;
     }
 
     protected override setPlaying(audioState: AudioState, name: string | null): void {
-        audioState.mp3.playing = name !== null;
-        audioState.mp3.name = name ?? '';
-        audioState.mp3.script = '';
+        audioState.alert.playing = name !== null;
+        audioState.alert.name = name ?? '';
     }
 
     protected async play(name: string): Promise<void> {
-        await this.apiClient.audio.play({ mp3: name });
+        await this.apiClient.audio.playFile(name);
     }
 
     protected async stop(): Promise<void> {
-        await this.apiClient.audio.stop('sounds');
+        await this.apiClient.audio.stop('alert');
     }
 
     protected override async createItemExtraObjects(nameClean: string, item: Mp3File): Promise<void> {

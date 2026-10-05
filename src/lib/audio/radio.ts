@@ -71,7 +71,7 @@ export class Radio extends AudioPlayer<RadioStation> {
     }
 
     protected async stop(): Promise<void> {
-        await this.apiClient.audio.stop('stream');
+        await this.apiClient.audio.stop('radio');
     }
 
     protected override async createExtraObjects(): Promise<void> {
