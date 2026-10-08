@@ -77,18 +77,17 @@ class Mp3 extends import_player.AudioPlayer {
     }));
   }
   getPlaying(audioState) {
-    return audioState.mp3.playing && !audioState.mp3.script ? audioState.mp3.name : null;
+    return audioState.alert.playing ? audioState.alert.name : null;
   }
   setPlaying(audioState, name) {
-    audioState.mp3.playing = name !== null;
-    audioState.mp3.name = name != null ? name : "";
-    audioState.mp3.script = "";
+    audioState.alert.playing = name !== null;
+    audioState.alert.name = name != null ? name : "";
   }
   async play(name) {
-    await this.apiClient.audio.play({ mp3: name });
+    await this.apiClient.audio.playFile(name);
   }
   async stop() {
-    await this.apiClient.audio.stop("sounds");
+    await this.apiClient.audio.stop("alert");
   }
   async createItemExtraObjects(nameClean, item) {
     await this.adapter.extendObject(`${this.channel}.${nameClean}.size`, {

@@ -357,27 +357,20 @@ var AppType;
         const appNameC = this.getNameClean();
         const idOwnNamespace = this.getObjIdOwnNamespace(id);
         if (id === `${this.objPrefix}.apps.${appNameC}.enabled`) {
-          if (state.val !== this.isEnabled) {
-            this.adapter.log.debug(
-              `[onStateChange] ${appName}: Enabled of app ${appName} changed to ${state.val}`
-            );
-            this.isEnabled = !!state.val;
-            await this.adapter.refreshAppOrder();
+          const enabled = !!state.val;
+          this.adapter.log.debug(`[onStateChange] ${appName}: Enabled of app changed to ${enabled}`);
+          await this.apiClient.apps.setEnabled(appName, enabled).then(async () => {
+            this.isEnabled = enabled;
             await this.adapter.setState(idOwnNamespace, {
-              val: state.val,
+              val: enabled,
               ack: true,
               c: `onStateChange ${this.objPrefix}`
             });
-          } else {
-            this.adapter.log.debug(
-              `[onStateChange] ${appName}: Enabled of app "${appName}" IGNORED (not changed): ${state.val}`
+          }).catch((error) => {
+            this.adapter.log.warn(
+              `[onStateChange] ${appName}: Unable to change enabled state of app: ${error}`
             );
-            await this.adapter.setState(idOwnNamespace, {
-              val: state.val,
-              ack: true,
-              c: `onStateChange ${this.objPrefix} (unchanged)`
-            });
-          }
+          });
         } else if (id === `${this.objPrefix}.apps.${appNameC}.slot`) {
           if (typeof state.val === "number" && Number.isFinite(state.val)) {
             this.adapter.log.debug(`[onStateChange] ${appName}: Moving app to position ${state.val}`);

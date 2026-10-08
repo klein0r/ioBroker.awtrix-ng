@@ -266,7 +266,7 @@ var AppType;
             es: "Duraci\xF3n",
             pl: "Czas trwania",
             uk: "\u0422\u0440\u0438\u0432\u0430\u043B\u0456\u0441\u0442\u044C",
-            "zh-cn": "\u4F1A\u671F"
+            "zh-cn": "\u65F6\u957F"
           },
           type: "number",
           role: "level.timer",

@@ -41,7 +41,7 @@ Buy TC002 here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC002) or here: [u
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.4.0 (2026-10-08)
 
 * (@klein0r) `apps.<name>.enabled` switches just this app on or off (firmware 1.2.2)
 * (@klein0r) Updated recommended Awtrix NG firmware version to 1.2.2
@@ -92,11 +92,6 @@ Buy TC002 here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC002) or here: [u
 * (@klein0r) Updated documentation
 * (@klein0r) Recommended Awtrix NG version is now 1.0.15
 * (@klein0r) Automatically cast icon value to string in notifications
-
-### 0.0.9 (2026-08-06)
-
-* (@klein0r) Removed option to automatically delete other apps
-* (@klein0r) Updated logo
 
 [Older changelogs can be found there](CHANGELOG_OLD.md)
 

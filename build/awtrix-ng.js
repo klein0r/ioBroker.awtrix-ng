@@ -33,15 +33,15 @@ __export(awtrix_ng_exports, {
 module.exports = __toCommonJS(awtrix_ng_exports);
 var utils = __toESM(require("@iobroker/adapter-core"));
 var import_awtrix_ng_api = require("awtrix-ng-api");
-var import_melody = require("./lib/audio/melody");
-var import_mp3 = require("./lib/audio/mp3");
-var import_radio = require("./lib/audio/radio");
-var import_screen = require("./lib/screen");
 var import_builtin = require("./lib/app-type/builtin");
 var import_script = require("./lib/app-type/script");
 var import_custom = require("./lib/app-type/user/custom");
 var import_expert = require("./lib/app-type/user/expert");
 var import_history = require("./lib/app-type/user/history");
+var import_melody = require("./lib/audio/melody");
+var import_mp3 = require("./lib/audio/mp3");
+var import_radio = require("./lib/audio/radio");
+var import_screen = require("./lib/screen");
 const DEFAULT_CAPABILITIES = {
   loaded: false,
   effects: [
@@ -87,7 +87,8 @@ const DEFAULT_CAPABILITIES = {
   transitions: [],
   radio: false,
   mp3: false,
-  melody: false
+  melody: false,
+  sleep: false
 };
 class AwtrixNg extends utils.Adapter {
   _isMainInstance;
@@ -117,7 +118,7 @@ class AwtrixNg extends utils.Adapter {
     });
     this._isMainInstance = true;
     this.currentVersion = void 0;
-    this.supportedVersion = "1.1.2";
+    this.supportedVersion = "1.2.2";
     this.displayedVersionWarning = false;
     this.apiClient = null;
     this.apiConnected = false;
@@ -142,6 +143,7 @@ class AwtrixNg extends utils.Adapter {
   }
   async onReady() {
     await this.setApiConnected(false);
+    await this.deleteObsoleteSettingsObjects();
     await this.subscribeStatesAsync("*");
     if (!this.config.awtrixIp) {
       this.log.error(`IP address not configured - please check instance configuration and restart`);
@@ -168,6 +170,25 @@ class AwtrixNg extends utils.Adapter {
       await this.importForeignSettings();
     }
     this.refreshState();
+  }
+  /**
+   * Objects below settings.* are defined in io-package.json (instanceObjects). Objects which have
+   * been renamed or removed in a newer version are not deleted by js-controller - so delete them here.
+   */
+  async deleteObsoleteSettingsObjects() {
+    try {
+      const knownIds = new Set(this.ioPack.instanceObjects.map((o) => o._id));
+      const settingsObjects = await this.getForeignObjectsAsync(`${this.namespace}.settings.*`);
+      for (const id of Object.keys(settingsObjects)) {
+        const idNoNamespace = this.removeNamespace(id);
+        if (!knownIds.has(idNoNamespace)) {
+          this.log.info(`[deleteObsoleteSettingsObjects] Deleting obsolete object "${idNoNamespace}"`);
+          await this.delObjectAsync(idNoNamespace);
+        }
+      }
+    } catch (error) {
+      this.log.warn(`[deleteObsoleteSettingsObjects] Unable to delete obsolete objects: ${error}`);
+    }
   }
   async importForeignSettings() {
     var _a, _b, _c;
@@ -236,7 +257,14 @@ class AwtrixNg extends utils.Adapter {
             this.log.warn(`(power) Unable to execute action: ${error}`);
           });
         } else if (idNoNamespace === "device.sleep") {
-          this.log.debug(`enable sleep mode of device for ${state.val} seconds`);
+          if (!this.capabilities.sleep) {
+            this.log.warn(
+              `(device/sleep) Sleep mode is not supported by this device (it would not wake up again) - use display.power instead`
+            );
+            await this.setState(idNoNamespace, { val: 0, ack: true, c: "not supported" });
+            return;
+          }
+          this.log.debug(`enable sleep mode of device for ${state.val} ms`);
           this.apiClient.device.sleep(Number(state.val)).then(async () => {
             await this.setState(idNoNamespace, { val: state.val, ack: true });
             await this.setApiConnected(false);
@@ -369,18 +397,26 @@ class AwtrixNg extends utils.Adapter {
             obj.callback
           );
         }
-      } else if (obj.command === "audio" && typeof obj.message === "object") {
+      } else if (obj.command === "audio" && (typeof obj.message === "object" || typeof obj.message === "string")) {
         if (this.apiClient && this.apiConnected) {
-          const msgFiltered = Object.fromEntries(
-            Object.entries(obj.message).filter(([_, v]) => v !== null)
-          );
-          const keys = Object.keys(msgFiltered);
-          if (keys.length > 1) {
-            this.log.warn(
-              `[onMessage <audio>] Received multiple keys for audio - just use one: ${JSON.stringify(keys)}`
+          let request;
+          if (typeof obj.message === "string" || Array.isArray(obj.message)) {
+            request = obj.message;
+          } else {
+            const msgFiltered = Object.fromEntries(
+              Object.entries(obj.message).filter(([_, v]) => v !== null)
             );
+            const sources = Object.keys(msgFiltered).filter(
+              (k) => ["file", "rtttl", "song", "speech", "track", "station"].includes(k)
+            );
+            if (sources.length > 1) {
+              this.log.warn(
+                `[onMessage <audio>] Received multiple sources for audio - just use one: ${JSON.stringify(sources)}`
+              );
+            }
+            request = msgFiltered;
           }
-          this.apiClient.audio.play(msgFiltered).then((data) => {
+          this.apiClient.audio.play(request).then((data) => {
             this.sendTo(obj.from, obj.command, { error: null, data }, obj.callback);
           }).catch((error) => {
             this.sendTo(obj.from, obj.command, { error: this.errorToString(error) }, obj.callback);
@@ -548,7 +584,7 @@ class AwtrixNg extends utils.Adapter {
   refreshState() {
     this.log.debug("refreshing device state");
     this.apiClient.device.get().then(async (content) => {
-      var _a, _b, _c, _d;
+      var _a, _b, _c, _d, _e;
       this.lastConnectionError = void 0;
       const rebootDetected = this.apiConnected && this.lastUptimeSeconds !== void 0 && content.uptimeSeconds < this.lastUptimeSeconds;
       this.lastUptimeSeconds = content.uptimeSeconds;
@@ -576,6 +612,7 @@ class AwtrixNg extends utils.Adapter {
       await this.setStateChangedAsync("sensor.humidity", { val: (_c = content.humidity) != null ? _c : null, ack: true });
       await this.setStateChangedAsync("display.brightness", { val: content.brightness, ack: true });
       await this.setStateChangedAsync("device.battery", { val: (_d = content.batteryPercent) != null ? _d : null, ack: true });
+      await this.setStateChangedAsync("device.usbPower", { val: (_e = content.usbPower) != null ? _e : null, ack: true });
       await this.setStateChangedAsync("device.ipAddress", { val: content.ipAddress, ack: true });
       await this.setStateChangedAsync("device.wifiSignal", { val: content.wifiRssi, ack: true });
       await this.setStateChangedAsync("device.freeRAM", { val: content.freeHeapBytes, ack: true });
@@ -662,7 +699,9 @@ class AwtrixNg extends utils.Adapter {
       transitions: (_e = capabilities.transitions) != null ? _e : DEFAULT_CAPABILITIES.transitions,
       radio: ((_f = capabilities.audio) == null ? void 0 : _f.radio) === true,
       mp3: ((_g = capabilities.audio) == null ? void 0 : _g.mp3) === true,
-      melody: ((_h = capabilities.audio) == null ? void 0 : _h.buzzer) === true
+      melody: ((_h = capabilities.audio) == null ? void 0 : _h.rtttl) === true,
+      // platform is missing on older firmware (ESP32 only)
+      sleep: !capabilities.platform || capabilities.platform.id === "esp32"
     };
     const states = {};
     for (const transition of this.capabilities.transitions) {
@@ -960,10 +999,14 @@ class AwtrixNg extends utils.Adapter {
       }
     }, 500);
   }
+  /**
+   * Transfers the order of all apps. Disabled apps are part of the order too (and listed in disabled),
+   * so they keep their place on the device and apps.setEnabled() switches them on at the right position.
+   * The device switches on every app which is not listed in disabled - so always send all disabled apps.
+   */
   async sendAppOrder() {
-    const appsEnabled = this.getAppsSortedBySlot().filter((a) => a.enabled());
     await this.apiClient.apps.setOrder({
-      order: appsEnabled.map((a) => a.getName()),
+      order: this.getAppsSortedBySlot().map((a) => a.getName()),
       disabled: this.apps.filter((a) => !a.enabled()).map((a) => a.getName())
     });
   }

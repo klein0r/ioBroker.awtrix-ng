@@ -80,7 +80,7 @@ class Radio extends import_player.AudioPlayer {
     await this.apiClient.audio.playStation(name);
   }
   async stop() {
-    await this.apiClient.audio.stop("stream");
+    await this.apiClient.audio.stop("radio");
   }
   async createExtraObjects() {
     await this.adapter.extendObject(`${this.channel}.title`, {

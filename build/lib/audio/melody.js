@@ -62,10 +62,10 @@ class Melody extends import_player.AudioPlayer {
     return melodyList.melodies.filter((m) => m.valid);
   }
   async play(name) {
-    await this.apiClient.audio.play({ melody: name });
+    await this.apiClient.audio.playFile(name);
   }
   async stop() {
-    await this.apiClient.audio.stop("sounds");
+    await this.apiClient.audio.stop("alert");
   }
   async createItemExtraObjects(nameClean, item) {
     await this.adapter.extendObject(`${this.channel}.${nameClean}.rtttl`, {
