@@ -410,30 +410,27 @@ export namespace AppType {
                 const idOwnNamespace = this.getObjIdOwnNamespace(id);
 
                 if (id === `${this.objPrefix}.apps.${appNameC}.enabled`) {
-                    if (state.val !== this.isEnabled) {
-                        this.adapter.log.debug(
-                            `[onStateChange] ${appName}: Enabled of app ${appName} changed to ${state.val}`,
-                        );
+                    const enabled = !!state.val;
 
-                        this.isEnabled = !!state.val;
-                        await this.adapter.refreshAppOrder();
+                    this.adapter.log.debug(`[onStateChange] ${appName}: Enabled of app changed to ${enabled}`);
 
-                        await this.adapter.setState(idOwnNamespace, {
-                            val: state.val,
-                            ack: true,
-                            c: `onStateChange ${this.objPrefix}`,
+                    // Switches just this app on or off - it keeps its place in the order
+                    await this.apiClient.apps
+                        .setEnabled(appName, enabled)
+                        .then(async () => {
+                            this.isEnabled = enabled;
+
+                            await this.adapter.setState(idOwnNamespace, {
+                                val: enabled,
+                                ack: true,
+                                c: `onStateChange ${this.objPrefix}`,
+                            });
+                        })
+                        .catch(error => {
+                            this.adapter.log.warn(
+                                `[onStateChange] ${appName}: Unable to change enabled state of app: ${error}`,
+                            );
                         });
-                    } else {
-                        this.adapter.log.debug(
-                            `[onStateChange] ${appName}: Enabled of app "${appName}" IGNORED (not changed): ${state.val}`,
-                        );
-
-                        await this.adapter.setState(idOwnNamespace, {
-                            val: state.val,
-                            ack: true,
-                            c: `onStateChange ${this.objPrefix} (unchanged)`,
-                        });
-                    }
                 } else if (id === `${this.objPrefix}.apps.${appNameC}.slot`) {
                     // Main instance: move app to the given position (other apps are shifted)
                     if (typeof state.val === 'number' && Number.isFinite(state.val)) {

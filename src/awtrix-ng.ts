@@ -1307,11 +1307,14 @@ export class AwtrixNg extends utils.Adapter {
         }, 500);
     }
 
+    /**
+     * Transfers the order of all apps. Disabled apps are part of the order too (and listed in disabled),
+     * so they keep their place on the device and apps.setEnabled() switches them on at the right position.
+     * The device switches on every app which is not listed in disabled - so always send all disabled apps.
+     */
     private async sendAppOrder(): Promise<void> {
-        const appsEnabled = this.getAppsSortedBySlot().filter(a => a.enabled());
-
         await this.apiClient!.apps.setOrder({
-            order: appsEnabled.map(a => a.getName()),
+            order: this.getAppsSortedBySlot().map(a => a.getName()),
             disabled: this.apps.filter(a => !a.enabled()).map(a => a.getName()),
         });
     }

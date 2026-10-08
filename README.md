@@ -43,6 +43,7 @@ Buy TC002 here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC002) or here: [u
 -->
 ### **WORK IN PROGRESS**
 
+* (@klein0r) `apps.<name>.enabled` switches just this app on or off (firmware 1.2.2)
 * (@klein0r) Updated recommended Awtrix NG firmware version to 1.2.2
 * (@klein0r) Added state `device.usbPower` (device is connected to USB power, e.g. TC002)
 * (@klein0r) **Breaking change:** `sendTo` uses the sound format of firmware 1.2.0: `audio` takes `file` (instead of `sound`, `mp3`, `melody`, ...), notifications take `sound` as name or sound object (`soundRtttl` / `soundLoop` were removed), `textCenter` was replaced by `textAlign`
