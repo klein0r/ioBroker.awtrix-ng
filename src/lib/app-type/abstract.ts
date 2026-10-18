@@ -402,8 +402,8 @@ export namespace AppType {
                 return;
             }
 
-            // Handle all states for user apps
-            if (id && state && !state.ack) {
+            // Followers also apply acknowledged activation changes imported by the main instance.
+            if (id && state && (!state.ack || !this.isMainInstance())) {
                 const appName = this.getName();
                 const appNameC = this.getNameClean();
 
@@ -415,9 +415,13 @@ export namespace AppType {
                     this.adapter.log.debug(`[onStateChange] ${appName}: Enabled of app changed to ${enabled}`);
 
                     // Switches just this app on or off - it keeps its place in the order
-                    await this.apiClient.apps
-                        .setEnabled(appName, enabled)
-                        .then(async () => {
+                    await this.adapter
+                        .runAppOrderExclusive(async () => {
+                            if (state.ack && this.isEnabled === enabled) {
+                                return;
+                            }
+
+                            await this.apiClient.apps.setEnabled(appName, enabled);
                             this.isEnabled = enabled;
 
                             await this.adapter.setState(idOwnNamespace, {

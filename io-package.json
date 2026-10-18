@@ -193,6 +193,7 @@
     "downloadScreenContentInterval": 10,
     "foreignSettingsInstance": "",
     "foreignSettingsInstanceActivateApps": false,
+    "syncBuiltinApps": false,
     "customApps": [],
     "ignoreNewValueForAppInTimeRange": 3,
     "historyApps": [],

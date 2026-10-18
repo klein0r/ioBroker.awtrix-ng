@@ -537,6 +537,16 @@ export class AwtrixNg extends utils.Adapter {
                         this.log.debug(`[onMessage <getIcons>] Unable to get icons: ${error}`);
                         this.sendTo(obj.from, obj.command, [], obj.callback);
                     });
+            } else if (obj.command === 'importBuiltinApps') {
+                this.runAppOrderExclusive(() => this.importBuiltinApps())
+                    .then(count => {
+                        this.log.info(`[importBuiltinApps] Imported activation of ${count} built-in apps`);
+                        this.sendTo(obj.from, obj.command, { result: 'ok', count }, obj.callback);
+                    })
+                    .catch(error => {
+                        this.log.warn(`[importBuiltinApps] Unable to import built-in apps: ${error}`);
+                        this.sendTo(obj.from, obj.command, { error: this.errorToString(error) }, obj.callback);
+                    });
             } else if (obj.command === 'notification' && typeof obj.message === 'object') {
                 // Notification
                 if (this.apiClient && this.apiConnected) {
@@ -732,7 +742,7 @@ export class AwtrixNg extends utils.Adapter {
             ['capabilities', () => this.refreshCapabilities()],
             ['display', () => this.refreshDisplay()],
             ['audio', () => this.refreshAudio(true)],
-            ['apps', () => this.createAppObjects()],
+            ['apps', () => this.runAppOrderExclusive(() => this.createAppObjects())],
             ['indicators', () => this.updateAllIndicatorsByStates()],
             ['moodlight', () => this.updateMoodlightByStates()],
             ['screenContent', () => this.initScreenContentDownload()],
@@ -884,6 +894,12 @@ export class AwtrixNg extends utils.Adapter {
                 await this.setStateChangedAsync('device.wifiSignal', { val: content.wifiRssi, ack: true });
                 await this.setStateChangedAsync('device.freeRAM', { val: content.freeHeapBytes, ack: true });
                 await this.setStateChangedAsync('device.uptime', { val: content.uptimeSeconds, ack: true });
+
+                if (this.isMainInstance() && this.config.syncBuiltinApps && !this.resyncFailedSteps.has('apps')) {
+                    await this.runAppOrderExclusive(() => this.importBuiltinApps()).catch(error => {
+                        this.log.warn(`[refreshState] Unable to import built-in apps: ${error}`);
+                    });
+                }
 
                 // Audio: playback state and radio stations / mp3 files (may be changed in the web interface)
                 if (this.capabilities.loaded && !this.resyncFailedSteps.has('audio')) {
@@ -1240,8 +1256,8 @@ export class AwtrixNg extends utils.Adapter {
         }
 
         // Assign positions to new apps, remove gaps and transfer the order (ioBroker is leading)
-        await this.runAppOrderExclusive(() => this.normalizeAppOrder());
-        await this.sendAppOrder();
+        await this.normalizeAppOrder();
+        await this.sendAppOrder(content);
 
         if (failedApps.length > 0) {
             throw new Error(`Unable to initialize apps: ${failedApps.join(', ')}`);
@@ -1253,7 +1269,7 @@ export class AwtrixNg extends utils.Adapter {
     public async refreshAppOrder(): Promise<void> {
         if (this.apiClient && this.apiConnected) {
             try {
-                await this.sendAppOrder();
+                await this.runAppOrderExclusive(() => this.sendAppOrder());
             } catch (err) {
                 this.log.error(`[refreshAppOrder] Failed to change app order: ${err}`);
             }
@@ -1261,15 +1277,49 @@ export class AwtrixNg extends utils.Adapter {
     }
 
     /**
-     * Operations on the app order are executed one after another (e.g. multiple slot changes at once)
+     * Serialize app initialization, activation changes, device imports and order updates.
      *
      * @param fn - operation
      */
-    private async runAppOrderExclusive(fn: () => Promise<void>): Promise<void> {
+    public async runAppOrderExclusive<T>(fn: () => Promise<T>): Promise<T> {
         const result = this.appOrderLock.then(fn);
-        this.appOrderLock = result.catch(() => undefined);
+        this.appOrderLock = result.then(
+            () => undefined,
+            () => undefined,
+        );
 
         return result;
+    }
+
+    private async importBuiltinApps(content?: AppInfo[]): Promise<number> {
+        if (!this.isMainInstance()) {
+            throw new Error('Import built-in apps in the main instance, not in an instance using its app settings');
+        }
+        if (!this.apiClient || !this.apiConnected) {
+            throw new Error('API is not connected (device offline?)');
+        }
+
+        const builtinApps = (content ?? (await this.apiClient.apps.list())).filter(app => app.origin === 'builtin');
+        if (builtinApps.length === 0) {
+            throw new Error('No built-in apps reported by the device');
+        }
+
+        const updates = builtinApps.map(info => {
+            const app = this.findAppWithName(info.name);
+            if (!(app instanceof AppTypeBuiltin.Builtin)) {
+                throw new Error(`Built-in app "${info.name}" is not initialized yet - retry after synchronization`);
+            }
+            if (typeof info.enabled !== 'boolean') {
+                throw new Error(`Invalid activation state for built-in app "${info.name}"`);
+            }
+            return { app, enabled: info.enabled };
+        });
+
+        for (const { app, enabled } of updates) {
+            await app.updateEnabledFromDevice(enabled);
+        }
+
+        return updates.length;
     }
 
     /**
@@ -1382,7 +1432,12 @@ export class AwtrixNg extends utils.Adapter {
      * so they keep their place on the device and apps.setEnabled() switches them on at the right position.
      * The device switches on every app which is not listed in disabled - so always send all disabled apps.
      */
-    private async sendAppOrder(): Promise<void> {
+    private async sendAppOrder(content?: AppInfo[]): Promise<void> {
+        if (this.isMainInstance() && this.config.syncBuiltinApps) {
+            // Do not undo web-interface changes when sending the order between two polls.
+            await this.importBuiltinApps(content);
+        }
+
         await this.apiClient!.apps.setOrder({
             order: this.getAppsSortedBySlot().map(a => a.getName()),
             disabled: this.apps.filter(a => !a.enabled()).map(a => a.getName()),

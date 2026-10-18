@@ -44,6 +44,7 @@ Buy TC002 here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC002) or here: [u
 ### **WORK IN PROGRESS**
 
 * (@klein0r) Added state `display.overlay` to set a global weather overlay for all apps
+* (@thiloms) Added optional automatic synchronization and a manual import button for built-in app activation from the device
 
 ### 0.5.0 (2026-10-12)
 
