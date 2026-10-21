@@ -22,7 +22,7 @@
 
 **Can I use the adapter to disable the native apps (like battery state and sensor data)?**
 
-No, this feature has been removed in the awtrix light firmware. Please use the on screen menu to hide these apps.
+Yes. Set `apps.<name>.enabled` to `false`, e.g. `apps.Battery.enabled`. If you prefer configuring built-in apps in the Awtrix web interface, you can import their activation from the device automatically or once in the instance settings. See [Apps](#apps).
 
 **Is it possible to replace boolean values with other text (not true/false)?**
 
@@ -179,7 +179,16 @@ Each app has the following states:
 - `apps.<name>.present` - `true` if the app exists on the device (read only)
 - `apps.<name>.lastError` - last error message of the device when transferring or removing the app (read only)
 
-The order and the enabled state of the apps are managed by ioBroker. Changes made on the device (e.g. via web interface) are overwritten with the next synchronization. The order of the device is just used for new apps. Instances which use the settings of another instance follow the order of that instance.
+By default, the order and the enabled state of the apps are managed by ioBroker. Changes made on the device (e.g. via web interface) are overwritten with the next synchronization. The order of the device is just used for new apps.
+
+Under **Instance settings > Apps > Built-in apps**, there are two ways to import activation from the device:
+
+- **Read built-in app activation from device automatically**: This option is off by default. When enabled, the adapter reads activation on connect (including after a restart), every 60 seconds, and before sending the app order. The device state takes precedence over the stored ioBroker values. Changes in the Awtrix web interface are reflected in `apps.<name>.enabled`. Switching apps through ioBroker remains possible while the device is connected.
+- **Import built-in app activation now**: Reads the current state once, even with automatic synchronization disabled. It updates ioBroker values without changing apps on this device. Save configuration changes first; the instance must be running and connected to the device. The button reports success or an error. Imported values are retained across instance restarts.
+
+Both functions only import `enabled` for built-in apps reported by the device (e.g. Battery and Temperature), not their order or other app settings. Custom, history, expert and script apps remain managed by ioBroker.
+
+Instances using another instance's app settings follow its order and activation states, including changes imported from its device. The checkbox and import button are therefore only available in the main instance.
 
 If the option "Delete apps when instance is stopped" is enabled, custom and expert apps are transferred with a lifetime and are transferred again every 5 minutes. So these apps will also disappear from the device if the instance is not running anymore (e.g. after a crash).
 

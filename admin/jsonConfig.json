@@ -227,6 +227,51 @@
                     "xl": 6,
                     "help": "Apps are brought to front on this device when they are activated in the main instance (no own activate states)"
                 },
+                "_headerBuiltinApps": {
+                    "hidden": "!!data.foreignSettingsInstance",
+                    "newLine": true,
+                    "type": "header",
+                    "text": "Built-in apps",
+                    "size": 2,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
+                },
+                "syncBuiltinApps": {
+                    "hidden": "!!data.foreignSettingsInstance",
+                    "newLine": true,
+                    "type": "checkbox",
+                    "label": "Read built-in app activation from device automatically",
+                    "help": "Read activation on connect and every 60 seconds. Switching apps in ioBroker remains possible; the app order is not imported.",
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12
+                },
+                "_importBuiltinApps": {
+                    "hidden": "!!data.foreignSettingsInstance",
+                    "newLine": true,
+                    "type": "sendTo",
+                    "label": "Import built-in app activation now",
+                    "help": "Read activation once without changing the device. Save configuration changes first; the instance must be running and connected.",
+                    "command": "importBuiltinApps",
+                    "data": {},
+                    "disabled": "!_alive || _changed",
+                    "showProcess": true,
+                    "timeout": 30000,
+                    "variant": "outlined",
+                    "result": {
+                        "ok": "Built-in app activation imported"
+                    },
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 6,
+                    "xl": 6
+                },
                 "_headerCustomApps": {
                     "hidden": "!!data.foreignSettingsInstance",
                     "newLine": true,

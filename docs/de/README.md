@@ -22,7 +22,7 @@
 
 **Kann ich den Adapter verwenden, um die Standard-Apps zu deaktivieren (wie den Batteriestand oder die Sensordaten)?**
 
-Nein, dieses Feature wurde in der awtrix-ng Firmware mittlerweile entfernt. Nutze das Menu auf dem Gerät selbst um diese Apps dauerhaft zu verstecken.
+Ja. Setze `apps.<name>.enabled` auf `false`, z.B. `apps.Battery.enabled`. Wenn du die Standard-Apps lieber im Awtrix-Webinterface einstellst, kannst du ihren Aktivierungszustand in den Instanz-Einstellungen automatisch oder einmalig vom Gerät übernehmen. Siehe [Apps](#apps).
 
 **Kann man Logikwerte (true/false) mit anderen Texten ersetzen?**
 
@@ -179,7 +179,16 @@ Jede App hat die folgenden Zustände:
 - `apps.<name>.present` - `true`, wenn die App auf dem Gerät vorhanden ist (nur lesend)
 - `apps.<name>.lastError` - letzte Fehlermeldung des Gerätes beim Übertragen oder Entfernen der App (nur lesend)
 
-Die Reihenfolge und der Aktiviert-Zustand der Apps werden von ioBroker verwaltet. Änderungen am Gerät (z.B. über die Weboberfläche) werden bei der nächsten Synchronisation überschrieben. Die Reihenfolge des Gerätes wird nur für neue Apps verwendet. Instanzen, welche die Einstellungen einer anderen Instanz verwenden, übernehmen deren Reihenfolge.
+Standardmäßig werden die Reihenfolge und der Aktiviert-Zustand der Apps von ioBroker verwaltet. Änderungen am Gerät (z.B. über die Weboberfläche) werden bei der nächsten Synchronisation überschrieben. Die Reihenfolge des Gerätes wird nur für neue Apps verwendet.
+
+Unter **Instanz-Einstellungen > Apps > Standard-Apps** gibt es zwei Möglichkeiten, den Aktivierungszustand vom Gerät zu übernehmen:
+
+- **Aktivierungszustand der Standard-Apps automatisch vom Gerät übernehmen**: Diese Option ist standardmäßig ausgeschaltet. Wenn sie eingeschaltet ist, liest der Adapter den Zustand beim Verbinden (auch nach einem Neustart), alle 60 Sekunden und vor dem Übertragen der App-Reihenfolge ein. Der Gerätestand hat dabei Vorrang vor den gespeicherten ioBroker-Werten. Änderungen im Awtrix-Webinterface werden so in `apps.<name>.enabled` übernommen. Das Ein- und Ausschalten über ioBroker bleibt bei verbundenem Gerät möglich.
+- **Aktivierungszustand der Standard-Apps jetzt übernehmen**: Liest den aktuellen Zustand einmalig ein, auch wenn die automatische Übernahme ausgeschaltet ist. Dabei werden die ioBroker-Werte aktualisiert, ohne die Apps auf diesem Gerät zu verändern. Konfigurationsänderungen müssen zuvor gespeichert sein; die Instanz muss laufen und mit dem Gerät verbunden sein. Der Button meldet Erfolg oder einen Fehler. Die übernommenen Werte bleiben auch nach einem Instanz-Neustart erhalten.
+
+Beide Funktionen betreffen nur `enabled` der vom Gerät gemeldeten Standard-Apps (z.B. Battery und Temperature), nicht deren Reihenfolge oder weitere App-Einstellungen. Benutzerdefinierte Apps, History-Apps, Experten-Apps und Skript-Apps werden weiterhin von ioBroker verwaltet.
+
+Instanzen, welche die App-Einstellungen einer anderen Instanz verwenden, übernehmen deren Reihenfolge und Aktivierungszustände, einschließlich der dort vom Gerät eingelesenen Änderungen. Die Checkbox und der Import-Button sind daher nur in der Hauptinstanz verfügbar.
 
 Ist die Option "Apps löschen, wenn die Instanz gestoppt wird" aktiviert, werden benutzerdefinierte Apps und Experten-Apps mit einer Lebensdauer übertragen und alle 5 Minuten erneut gesendet. So verschwinden diese Apps auch dann vom Gerät, wenn die Instanz nicht mehr läuft (z.B. nach einem Absturz).
 

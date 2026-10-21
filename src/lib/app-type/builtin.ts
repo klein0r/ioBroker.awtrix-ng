@@ -9,6 +9,15 @@ export namespace AppType {
             super(apiClient, adapter, name);
         }
 
+        public async updateEnabledFromDevice(enabled: boolean): Promise<void> {
+            await this.adapter.setStateChangedAsync(`apps.${this.getNameClean()}.enabled`, {
+                val: enabled,
+                ack: true,
+                c: 'device import',
+            });
+            this.isEnabled = enabled;
+        }
+
         public override getDescription(): string {
             return 'builtin';
         }
