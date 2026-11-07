@@ -43,6 +43,7 @@ Buy TC002 here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC002) or here: [u
 -->
 ### **WORK IN PROGRESS**
 
+* (@Voodoo2man) Added states to check for and install Awtrix NG firmware updates.
 * (@klein0r) Added state `display.overlay` to set a global weather overlay for all apps
 
 ### 0.5.0 (2026-10-12)
