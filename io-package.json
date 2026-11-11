@@ -1405,6 +1405,93 @@
       "native": {}
     },
     {
+      "_id": "device.firmware",
+      "type": "channel",
+      "common": {
+        "name": {
+          "en": "Firmware",
+          "de": "Firmware"
+        }
+      },
+      "native": {}
+    },
+    {
+      "_id": "device.firmware.checkUpdate",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Check for firmware update",
+          "de": "Nach Firmware-Update suchen"
+        },
+        "type": "boolean",
+        "role": "button",
+        "read": false,
+        "write": true
+      },
+      "native": {}
+    },
+    {
+      "_id": "device.firmware.available",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Firmware update available",
+          "de": "Firmware-Update verfügbar"
+        },
+        "type": "boolean",
+        "role": "indicator",
+        "read": true,
+        "write": false,
+        "def": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "device.firmware.status",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Firmware update status",
+          "de": "Status Firmware-Update"
+        },
+        "type": "string",
+        "role": "text",
+        "read": true,
+        "write": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "device.firmware.latestVersion",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Latest firmware version",
+          "de": "Neueste Firmware-Version"
+        },
+        "type": "string",
+        "role": "text",
+        "read": true,
+        "write": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "device.firmware.install",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Install firmware update",
+          "de": "Firmware-Update installieren"
+        },
+        "type": "boolean",
+        "role": "button",
+        "read": false,
+        "write": true
+      },
+      "native": {}
+    },
+    {
       "_id": "device.battery",
       "type": "state",
       "common": {
