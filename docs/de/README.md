@@ -18,6 +18,8 @@
 2. Installiere den awtrix-ng Adapter im ioBroker (und erstelle eine neue Instanz)
 3. Öffne die Instanz-Konfiguration und hinterlege die IP-Adresse des Gerätes im lokalen Netzwerk (und den Port, falls dieser am Gerät geändert wurde - Standard ist 80)
 
+Beim Adapterstart wird automatisch nach Firmware-Updates gesucht. Eine manuelle Prüfung lässt sich über `device.firmware.checkUpdate` auslösen. Das Ergebnis wird in `device.firmware.available` und die neueste Version in `device.firmware.latestVersion` angezeigt. `device.firmware.status` zeigt den Prüf- bzw. Installationsstatus und mögliche Fehler. Mit `device.firmware.install` wird ein verfügbares Update heruntergeladen, geprüft und auf dem Gerät installiert. Das Gerät startet anschließend neu.
+
 ## FAQ (häufig gestellte Fragen)
 
 **Kann ich den Adapter verwenden, um die Standard-Apps zu deaktivieren (wie den Batteriestand oder die Sensordaten)?**

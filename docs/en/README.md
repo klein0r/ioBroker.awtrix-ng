@@ -18,6 +18,8 @@
 2. Install the awtrix-ng adapter in ioBroker (and add a new instance)
 3. Open the instance configuration and enter the IP address of the device in your local network (and the port, if you changed it on the device - default is 80)
 
+The adapter automatically checks for firmware updates at startup. A manual check can be triggered with `device.firmware.checkUpdate`. The result is shown in `device.firmware.available`, and the latest version in `device.firmware.latestVersion`. `device.firmware.status` reports check/install progress and errors. Use `device.firmware.install` to download, verify, and install an available update. The device will reboot afterwards.
+
 ## FAQ
 
 **Can I use the adapter to disable the native apps (like battery state and sensor data)?**
