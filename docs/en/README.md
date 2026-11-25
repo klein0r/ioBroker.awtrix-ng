@@ -6,7 +6,7 @@
 
 - nodejs 22 (or later)
 - js-controller 6.0.11 (or later)
-- Admin Adapter 7.6.20 (or later)
+- Admin Adapter 7.8.23 (or later)
 - _Awtrix NG_ device with firmware _1.2.3_ (or later) - e.g. Ulanzi TC001, Ulanzi TC002
 
 - Buy TC001: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), [Amazon.de](https://haus-auto.com/p/amz/UlanziTC001) or [ulanzi.de](https://haus-auto.com/p/ula/UlanziTC001) *(Affiliate-Links)*
@@ -28,7 +28,7 @@ Just create an alias in `alias.0` of type `string` and convert your `boolean` va
 
 **Can I define a custom number format?**
 
-All states (of common.type `number`) are formatted as configured in the system settings of ioBroker. It is possible to override the system format by using an expert option. Numbers can be formatted in the following styles:
+All states (of common.type `number`) are formatted in custom apps as configured in the system settings of ioBroker. It is possible to override the system format in the instance configuration (tab Apps). Numbers can be formatted in the following styles:
 
 - System default
 - `xx.xxx,xx`
@@ -190,9 +190,8 @@ The selected state should have the data type `string` or `number`. Other tyes (l
 
 The following combinations will lead to a warning in the log:
 
-- A custom app with a selected object id of a state, but `%s` is missing in the text
+- A custom app with a selected object id of a state, but `%s` is missing in the text (state changes are ignored then)
 - A custom app with a selected object id of a state without a unit `common.unit`, but `%u` is used in the text
-- A custom app without a selected object, but `%s` has been used in the text
 
 ### History apps / graphs
 

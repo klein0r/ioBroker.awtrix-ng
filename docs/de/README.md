@@ -6,7 +6,7 @@
 
 - nodejs 22 (oder neuer)
 - js-controller 6.0.11 (oder neuer)
-- Admin Adapter 7.6.20 (oder neuer)
+- Admin Adapter 7.8.23 (oder neuer)
 - _Awtrix NG_ Gerät mit Firmware-Version _1.2.3_ (oder neuer) - z.B. Ulanzi TC001, Ulanzi TC002
 
 - TC001 kaufen: [Aliexpress.com](https://haus-auto.com/p/ali/UlanziTC001), [Amazon.de](https://haus-auto.com/p/amz/UlanziTC001) oder [ulanzi.de](https://haus-auto.com/p/ula/UlanziTC001) *(Affiliate-Links)*
@@ -28,7 +28,7 @@ Erstelle dafür einfach einen Alias in `alias.0` vom Typ `string` (Zeichenkette)
 
 **Kann ein anderes Zahlenformat hinterlegt werden?**
 
-Alle Zustände vom Typ Zahl (common.type `number`) werden so formatiert, wie es im ioBroker konfiguriert ist. Das Standard-Format des Systems kann mit einer Experten-Einstellung überschrieben werden. Zahlen können in den folgenden Formaten dargestellt werden:
+Alle Zustände vom Typ Zahl (common.type `number`) werden in benutzerdefinierten Apps so formatiert, wie es im ioBroker konfiguriert ist. Das Standard-Format des Systems kann in den Instanz-Einstellungen (Tab Apps) überschrieben werden. Zahlen können in den folgenden Formaten dargestellt werden:
 
 - System-Standard
 - `xx.xxx,xx`
@@ -44,7 +44,7 @@ Ja, der Zugriff kann auf dem Gerät mit einem Benutzernamen und Passwort geschü
 
 Wenn eine Benachrichtigung mit der Option `hold: true` gesendet wird, bleibt der Text auf dem Display so lange stehen, bis die Benachrichtigung bestätigt wird. Das kann entweder über den mittleren Taster auf dem Gerät passieren, oder indem der Zustand `notification.dismiss` auf `true` gesetzt wird.
 
-**Einige Zustandsänderungen werden nich sofort dargestellt.**
+**Einige Zustandsänderungen werden nicht sofort dargestellt.**
 
 Falls ein Zustand sehr oft geändert wird (z.B. jede Sekunde), werden einige Änderungen ignoriert und nicht übertragen, damit die Last auf dem Gerät gering gehalten wird. Dafür hat jede App eine eigene "Block-Zeit", welche global in den Instanz-Einstellungen konfiguriert werden kann. Die Standard-Zeit ist 3 Sekunden. Es ist nicht empfohlen, ein Wert kleiner als 3 zu setzen.
 
@@ -190,9 +190,8 @@ Der ausgewählte Zustand sollte vom Datentyp Zeichenkette `string` oder Zahl `nu
 
 Die folgenden Kombinationen führen zu einer Warnung im Log:
 
-- Eine benutzerdefinierte App mit einer gewählten Objekt-ID enthält nicht den Platzhalter `%s` im Text
+- Eine benutzerdefinierte App mit einer gewählten Objekt-ID enthält nicht den Platzhalter `%s` im Text (Zustandsänderungen werden dann ignoriert)
 - Eine benutzerdefinierte App wird mit einer gewählten Objekt-ID ohne Einheit in `common.unit` angelegt, aber `%u` ist im Text enthalten
-- Es wird keine Objekt-ID ausgewählt, aber `%s` im Text verwendet
 
 ### Historische Apps / Graphen
 
