@@ -22,21 +22,13 @@ Beim Adapterstart wird automatisch nach Firmware-Updates gesucht. Eine manuelle 
 
 ## FAQ (häufig gestellte Fragen)
 
-**Kann ich den Adapter verwenden, um die Standard-Apps zu deaktivieren (wie den Batteriestand oder die Sensordaten)?**
-
-Nein, dieses Feature wurde in der awtrix-ng Firmware mittlerweile entfernt. Nutze das Menu auf dem Gerät selbst um diese Apps dauerhaft zu verstecken.
-
 **Kann man Logikwerte (true/false) mit anderen Texten ersetzen?**
 
 Erstelle dafür einfach einen Alias in `alias.0` vom Typ `string` (Zeichenkette) und konvertiere den Logikwert mit einer Lesefunktion in einen beliebigen anderen Wert (beispielsweise `val ? 'offen' : 'geschlossen'`). *Das ist ein Standard-Feature vom ioBroker und hat nichts direkt mit diesem Adapter zu tun.*
 
-**Das Gerät wird heiß während es geladen wird.**
-
-Das Hardware-Design ist leider nicht optimal. Es wird empfohlen, ein möglichst schwaches Netzteil zu verwenden, welches maximal 1A liefern kann.
-
 **Kann ein anderes Zahlenformat hinterlegt werden?**
 
-Alle Zustände vom Typ Zahl (common.type `number`) werden so formatiert, wie es im ioBroker konfiguriert ist. Das Standard-Format des Systems kann mit einer Experten-Einstellung überschrieben werden (seit Adapter-Version 0.7.1). Zahlen können in den folgenden Formaten dargestellt werden:
+Alle Zustände vom Typ Zahl (common.type `number`) werden so formatiert, wie es im ioBroker konfiguriert ist. Das Standard-Format des Systems kann mit einer Experten-Einstellung überschrieben werden. Zahlen können in den folgenden Formaten dargestellt werden:
 
 - System-Standard
 - `xx.xxx,xx`
@@ -46,7 +38,7 @@ Alle Zustände vom Typ Zahl (common.type `number`) werden so formatiert, wie es 
 
 **Kann man den Zugriff auf die Weboberfläche der awtrix-ng beschränken?**
 
-Ja, seit Firware-Version 0.82 kann der Zugriff mit einem Benutzernamen und Passwort geschützt werden. Seit Adapter-Version 0.8.0 können diese Benutzerdaten ebenfalls in den Instanz-Einstellungen hinterlegt werden.
+Ja, der Zugriff kann auf dem Gerät mit einem Benutzernamen und Passwort geschützt werden. Diese Zugangsdaten müssen dann ebenfalls in den Instanz-Einstellungen hinterlegt werden.
 
 **Wie funktioniert die halten-Option bei Benachrichtigungen?**
 
@@ -66,7 +58,7 @@ Beispiel
 2. Lege eine weitere Instanz für das zweite Gerät an (`awtrix-ng.1`)
 3. Wähle `awtrix-ng.0` in den Instanz-Einstellungen von `awtrix-ng.1` um die gleichen Apps auf dem zweiten Gerät darzustellen
 
-Seit Version 0.15.0 (und neuer) wird die Sichtbarkeit von benutzerdefinierten Apps und alle Inhalte der Experten-Apps auch auf andere Geräte übertragen, welche die App-Einstellungen kopieren. Im Beispiel oben werden z.B. die Apps der Instanz `awtrix-ng.1` ebenfalls versteckt, sobald die Sichtbarkeit der App in der Hauptinstanz `awtrix-ng.0` geändert wird. Das gleiche gilt für alle Inhalte der Experten-Apps.
+Die Sichtbarkeit von benutzerdefinierten Apps und alle Inhalte der Experten-Apps werden auch auf andere Geräte übertragen, welche die App-Einstellungen kopieren. Im Beispiel oben werden z.B. die Apps der Instanz `awtrix-ng.1` ebenfalls versteckt, sobald die Sichtbarkeit der App in der Hauptinstanz `awtrix-ng.0` geändert wird. Das gleiche gilt für alle Inhalte der Experten-Apps.
 
 ## Blockly und JavaScript
 
@@ -210,7 +202,7 @@ TODO
 
 ### Experten Apps
 
-Experten-Apps sind seit Adapter-Version 0.10.0 verfügbar. Diese Apps erlauben es, alle Werte manuell über Zustände zu setzen und diese mit eigenen Logiken zu steuern. Um eine neue Experten-App zu erstellen:
+Experten-Apps erlauben es, alle Werte manuell über Zustände zu setzen und diese mit eigenen Logiken zu steuern. Um eine neue Experten-App zu erstellen:
 
 - Öffne das Tab Expertenoptionen in den Instanz-Einstellungen
 - Erstelle eine neue Experten-App mit einem frei wählbaren Namen (z.B. `test`)

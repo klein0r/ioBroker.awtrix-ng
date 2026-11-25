@@ -22,21 +22,13 @@ The adapter automatically checks for firmware updates at startup. A manual check
 
 ## FAQ
 
-**Can I use the adapter to disable the native apps (like battery state and sensor data)?**
-
-No, this feature has been removed in the awtrix light firmware. Please use the on screen menu to hide these apps.
-
 **Is it possible to replace boolean values with other text (not true/false)?**
 
 Just create an alias in `alias.0` of type `string` and convert your `boolean` value into any other text with a read function (like `val ? 'open' : 'closed'`). *This is an ioBroker feature and not related to this adapter.*
 
-**The device is getting hot while charging.**
-
-The hardware design is not the best. Please use a power supply which deliveres max. 1A.
-
 **Can I define a custom number format?**
 
-All states (of common.type `number`) are formatted as configured in the system settings of ioBroker. It is possible to override the system format (since adapter version 0.7.1) by using an expert option. Numbers can be formatted in the following styles:
+All states (of common.type `number`) are formatted as configured in the system settings of ioBroker. It is possible to override the system format by using an expert option. Numbers can be formatted in the following styles:
 
 - System default
 - `xx.xxx,xx`
@@ -46,7 +38,7 @@ All states (of common.type `number`) are formatted as configured in the system s
 
 **Is it possible to protect web ui of the device?**
 
-Yes, since firware version 0.82 it is possible to configure a user name and a password to protect the access. Since adapter version 0.8.0 it is also possible to enter these credentials in the instance configuration.
+Yes, access can be protected with a user name and a password on the device. These credentials must then also be entered in the instance configuration.
 
 **How does the hold option in notifications work?**
 
@@ -66,7 +58,7 @@ Example:
 2. Create a new instance for the second device (`awtrix-ng.1`)
 3. Choose `awtrix-ng.0` in the instance configuration of `awtrix-ng.1` to use the same apps on the second device
 
-Since version 0.15.0 (and later) the visibility of custom apps and contents of expert apps are also applied to other devices (when app settings are copied). In the example above the apps of `awtrix-ng.1` will be hidden automatically if the visibility state of an app in instance `awtrix-ng.0` changes.
+The visibility of custom apps and contents of expert apps are also applied to other devices (when app settings are copied). In the example above the apps of `awtrix-ng.1` will be hidden automatically if the visibility state of an app in instance `awtrix-ng.0` changes.
 
 ## Blockly and JavaScript
 
@@ -210,7 +202,7 @@ TODO
 
 ### Expert apps
 
-Expert apps are available since apdater version 0.10.0. They allow to set all values manually and to implement your own logic by controlling all data via states. To create a new expert app
+Expert apps allow to set all values manually and to implement your own logic by controlling all data via states. To create a new expert app
 
 - Go to expert options in instance settings
 - Create a new expert app by choosing a name (e.g. `test`)
