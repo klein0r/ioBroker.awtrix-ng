@@ -3,7 +3,6 @@
  */
 
 import * as utils from '@iobroker/adapter-core';
-import { createHash } from 'node:crypto';
 import type {
     AppInfo,
     AudioPlayRequest,
@@ -15,6 +14,7 @@ import type {
     SettingsUpdate,
 } from 'awtrix-ng-api';
 import { AwtrixApiError, AwtrixClient, AwtrixConnectionError, isValidAppName } from 'awtrix-ng-api';
+import { createHash } from 'node:crypto';
 
 import type { AppType as AppTypeAbstract } from './lib/app-type/abstract';
 import { AppType as AppTypeBuiltin } from './lib/app-type/builtin';
@@ -341,29 +341,6 @@ export class AwtrixNg extends utils.Adapter {
 
             this.log.debug(`state ${idNoNamespace} changed: ${state.val}`);
 
-            if (this.apiClient && idNoNamespace === 'device.firmware.checkUpdate') {
-                this.checkFirmwareUpdate().catch(async error => {
-                    this.log.warn(`(firmware/update-check) Unable to check for updates: ${error}`);
-                    await this.setStateAsync('device.firmware.status', {
-                        val: `Check failed: ${error instanceof Error ? error.message : String(error)}`,
-                        ack: true,
-                    });
-                    await this.setStateAsync(idNoNamespace, { val: true, ack: true });
-                });
-                return;
-            }
-            if (this.apiClient && idNoNamespace === 'device.firmware.install') {
-                this.installFirmwareUpdate().catch(async error => {
-                    this.log.warn(`(firmware/update) Unable to install update: ${error}`);
-                    await this.setStateAsync('device.firmware.status', {
-                        val: `Install failed: ${error instanceof Error ? error.message : String(error)}`,
-                        ack: true,
-                    });
-                    await this.setStateAsync(idNoNamespace, { val: true, ack: true });
-                });
-                return;
-            }
-
             if (this.apiClient && this.apiConnected) {
                 if (idNoNamespace.startsWith('settings.')) {
                     this.log.debug(`changing setting ${idNoNamespace} power to ${state.val}`);
@@ -514,6 +491,24 @@ export class AwtrixNg extends utils.Adapter {
                                 this.log.warn(`(indicator) Unable to perform action: ${error}`);
                             });
                     }
+                } else if (idNoNamespace === 'device.firmware.checkUpdate') {
+                    this.checkFirmwareUpdate().catch(async error => {
+                        this.log.warn(`(firmware/update-check) Unable to check for updates: ${error}`);
+                        await this.setState('device.firmware.status', {
+                            val: `Check failed: ${error instanceof Error ? error.message : String(error)}`,
+                            ack: true,
+                        });
+                        await this.setState(idNoNamespace, { val: true, ack: true });
+                    });
+                } else if (idNoNamespace === 'device.firmware.install') {
+                    this.installFirmwareUpdate().catch(async error => {
+                        this.log.warn(`(firmware/update) Unable to install update: ${error}`);
+                        await this.setState('device.firmware.status', {
+                            val: `Install failed: ${error instanceof Error ? error.message : String(error)}`,
+                            ack: true,
+                        });
+                        await this.setState(idNoNamespace, { val: true, ack: true });
+                    });
                 }
             } else {
                 this.log.warn(
@@ -933,18 +928,18 @@ export class AwtrixNg extends utils.Adapter {
         }
 
         this.firmwareUpdateBusy = true;
-        await this.setStateAsync('device.firmware.status', { val: 'Checking for firmware updates', ack: true });
+        await this.setState('device.firmware.status', { val: 'Checking for firmware updates', ack: true });
         try {
             const update = await this.getFirmwareUpdateInfo();
-            await this.setStateAsync('device.firmware.checkUpdate', { val: true, ack: true });
+            await this.setState('device.firmware.checkUpdate', { val: true, ack: true });
             if (update) {
-                await this.setStateAsync('device.firmware.status', {
+                await this.setState('device.firmware.status', {
                     val: `Update ${update.version} is available`,
                     ack: true,
                 });
                 this.log.info(`Firmware update ${update.version} is available`);
             } else {
-                await this.setStateAsync('device.firmware.status', {
+                await this.setState('device.firmware.status', {
                     val: 'No firmware update available',
                     ack: true,
                 });
@@ -961,11 +956,11 @@ export class AwtrixNg extends utils.Adapter {
         }
 
         this.firmwareUpdateBusy = true;
-        await this.setStateAsync('device.firmware.status', { val: 'Preparing firmware update', ack: true });
+        await this.setState('device.firmware.status', { val: 'Preparing firmware update', ack: true });
         try {
             const update = await this.getFirmwareUpdateInfo();
             if (!update) {
-                await this.setStateAsync('device.firmware.status', {
+                await this.setState('device.firmware.status', {
                     val: 'No firmware update available',
                     ack: true,
                 });
@@ -973,7 +968,7 @@ export class AwtrixNg extends utils.Adapter {
                 return;
             }
 
-            await this.setStateAsync('device.firmware.status', {
+            await this.setState('device.firmware.status', {
                 val: `Downloading firmware ${update.version}`,
                 ack: true,
             });
@@ -1014,13 +1009,13 @@ export class AwtrixNg extends utils.Adapter {
                 throw new Error('Downloaded firmware failed validation');
             }
 
-            await this.setStateAsync('device.firmware.status', {
+            await this.setState('device.firmware.status', {
                 val: `Installing firmware ${update.version}`,
                 ack: true,
             });
             await this.apiClient!.system.updateFirmware(firmware, update.image);
-            await this.setStateAsync('device.firmware.install', { val: true, ack: true });
-            await this.setStateAsync('device.firmware.status', { val: 'Device is rebooting', ack: true });
+            await this.setState('device.firmware.install', { val: true, ack: true });
+            await this.setState('device.firmware.status', { val: 'Device is rebooting', ack: true });
             this.log.info(`Installing firmware update ${update.version}`);
             await this.setApiConnected(false);
         } finally {
@@ -1057,7 +1052,7 @@ export class AwtrixNg extends utils.Adapter {
                     this.firmwareUpdateCheckedOnStartup = true;
                     this.checkFirmwareUpdate().catch(async error => {
                         this.log.warn(`(firmware/update-check) Startup check failed: ${error}`);
-                        await this.setStateAsync('device.firmware.status', {
+                        await this.setState('device.firmware.status', {
                             val: `Check failed: ${error instanceof Error ? error.message : String(error)}`,
                             ack: true,
                         });
