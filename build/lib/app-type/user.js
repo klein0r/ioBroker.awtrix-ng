@@ -79,7 +79,7 @@ var AppType;
     async unloadAsync(removeFromDevice) {
       this.clearKeepAlive();
       if (removeFromDevice && this.adapter.config.removeAppsOnStop) {
-        this.adapter.log.info(`[onUnload] Deleting app on awtrix light with name "${this.definition.name}"`);
+        this.adapter.log.info(`[onUnload] Deleting app on Awtrix NG with name "${this.definition.name}"`);
         await this.removeApp("instance stopped");
       }
       await super.unloadAsync(removeFromDevice);

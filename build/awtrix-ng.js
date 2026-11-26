@@ -109,6 +109,8 @@ class AwtrixNg extends utils.Adapter {
   capabilities;
   refreshStateTimeout;
   downloadScreenContentInterval;
+  firmwareUpdateBusy;
+  firmwareUpdateCheckedOnStartup;
   apps;
   constructor(options = {}) {
     super({
@@ -118,7 +120,7 @@ class AwtrixNg extends utils.Adapter {
     });
     this._isMainInstance = true;
     this.currentVersion = void 0;
-    this.supportedVersion = "1.2.2";
+    this.supportedVersion = "1.2.3";
     this.displayedVersionWarning = false;
     this.apiClient = null;
     this.apiConnected = false;
@@ -134,6 +136,8 @@ class AwtrixNg extends utils.Adapter {
     this.capabilities = { ...DEFAULT_CAPABILITIES };
     this.refreshStateTimeout = void 0;
     this.downloadScreenContentInterval = void 0;
+    this.firmwareUpdateBusy = false;
+    this.firmwareUpdateCheckedOnStartup = false;
     this.apps = [];
     this.on("ready", this.onReady.bind(this));
     this.on("stateChange", this.onStateChange.bind(this));
@@ -256,6 +260,14 @@ class AwtrixNg extends utils.Adapter {
           }).catch((error) => {
             this.log.warn(`(power) Unable to execute action: ${error}`);
           });
+        } else if (idNoNamespace === "display.overlay") {
+          const overlay = state.val ? String(state.val) : "none";
+          this.log.debug(`changing global weather overlay to ${overlay}`);
+          (overlay === "none" ? this.apiClient.display.clearOverlay() : this.apiClient.display.setOverlay(overlay)).then(async () => {
+            await this.setState(idNoNamespace, { val: overlay, ack: true });
+          }).catch((error) => {
+            this.log.warn(`(overlay) Unable to execute action: ${error}`);
+          });
         } else if (idNoNamespace === "device.sleep") {
           if (!this.capabilities.sleep) {
             this.log.warn(
@@ -330,6 +342,24 @@ class AwtrixNg extends utils.Adapter {
               this.log.warn(`(indicator) Unable to perform action: ${error}`);
             });
           }
+        } else if (idNoNamespace === "device.firmware.checkUpdate") {
+          this.checkFirmwareUpdate().catch(async (error) => {
+            this.log.warn(`(firmware/update-check) Unable to check for updates: ${error}`);
+            await this.setState("device.firmware.status", {
+              val: `Check failed: ${error instanceof Error ? error.message : String(error)}`,
+              ack: true
+            });
+            await this.setState(idNoNamespace, { val: true, ack: true });
+          });
+        } else if (idNoNamespace === "device.firmware.install") {
+          this.installFirmwareUpdate().catch(async (error) => {
+            this.log.warn(`(firmware/update) Unable to install update: ${error}`);
+            await this.setState("device.firmware.status", {
+              val: `Install failed: ${error instanceof Error ? error.message : String(error)}`,
+              ack: true
+            });
+            await this.setState(idNoNamespace, { val: true, ack: true });
+          });
         }
       } else {
         this.log.warn(
@@ -517,6 +547,7 @@ class AwtrixNg extends utils.Adapter {
     const steps = [
       ["settings", () => this.refreshSettings()],
       ["capabilities", () => this.refreshCapabilities()],
+      ["display", () => this.refreshDisplay()],
       ["audio", () => this.refreshAudio(true)],
       ["apps", () => this.createAppObjects()],
       ["indicators", () => this.updateAllIndicatorsByStates()],
@@ -601,6 +632,75 @@ class AwtrixNg extends utils.Adapter {
       });
     }
   }
+  async getFirmwareUpdateInfo() {
+    await this.setStateChangedAsync("device.firmware.available", { val: false, ack: true });
+    const result = await new import_awtrix_ng_api.FirmwareUpdater(this.apiClient).check({ timeout: 1e4 });
+    this.currentVersion = result.currentVersion;
+    await this.setStateChangedAsync("device.firmware.latestVersion", { val: result.latestVersion, ack: true });
+    await this.setStateChangedAsync("device.firmware.available", { val: result.available, ack: true });
+    return result.available ? result.update : null;
+  }
+  async checkFirmwareUpdate() {
+    if (this.firmwareUpdateBusy) {
+      return;
+    }
+    this.firmwareUpdateBusy = true;
+    await this.setState("device.firmware.status", { val: "Checking for firmware updates", ack: true });
+    try {
+      const update = await this.getFirmwareUpdateInfo();
+      await this.setState("device.firmware.checkUpdate", { val: true, ack: true });
+      if (update) {
+        await this.setState("device.firmware.status", {
+          val: `Update ${update.version} is available`,
+          ack: true
+        });
+        this.log.info(`Firmware update ${update.version} is available`);
+      } else {
+        await this.setState("device.firmware.status", {
+          val: "No firmware update available",
+          ack: true
+        });
+        this.log.info("No firmware update is available");
+      }
+    } finally {
+      this.firmwareUpdateBusy = false;
+    }
+  }
+  async installFirmwareUpdate() {
+    if (this.firmwareUpdateBusy) {
+      return;
+    }
+    this.firmwareUpdateBusy = true;
+    await this.setState("device.firmware.status", { val: "Preparing firmware update", ack: true });
+    try {
+      const update = await this.getFirmwareUpdateInfo();
+      if (!update) {
+        await this.setState("device.firmware.status", {
+          val: "No firmware update available",
+          ack: true
+        });
+        this.log.info("No firmware update is available to install");
+        return;
+      }
+      const updater = new import_awtrix_ng_api.FirmwareUpdater(this.apiClient);
+      await this.setState("device.firmware.status", {
+        val: `Downloading firmware ${update.version}`,
+        ack: true
+      });
+      const firmware = await updater.download(update);
+      await this.setState("device.firmware.status", {
+        val: `Installing firmware ${update.version}`,
+        ack: true
+      });
+      await this.apiClient.system.updateFirmware(firmware, update.image);
+      await this.setState("device.firmware.install", { val: true, ack: true });
+      await this.setState("device.firmware.status", { val: "Device is rebooting", ack: true });
+      this.log.info(`Installing firmware update ${update.version}`);
+      await this.setApiConnected(false);
+    } finally {
+      this.firmwareUpdateBusy = false;
+    }
+  }
   refreshState() {
     this.log.debug("refreshing device state");
     this.apiClient.device.get().then(async (content) => {
@@ -617,7 +717,17 @@ class AwtrixNg extends utils.Adapter {
         await this.setApiConnected(true);
       }
       this.currentVersion = String(content.version);
-      if (this.currentVersion && this.isNewerVersion(this.currentVersion, this.supportedVersion) && !this.displayedVersionWarning) {
+      if (!this.firmwareUpdateCheckedOnStartup) {
+        this.firmwareUpdateCheckedOnStartup = true;
+        this.checkFirmwareUpdate().catch(async (error) => {
+          this.log.warn(`(firmware/update-check) Startup check failed: ${error}`);
+          await this.setState("device.firmware.status", {
+            val: `Check failed: ${error instanceof Error ? error.message : String(error)}`,
+            ack: true
+          });
+        });
+      }
+      if (this.currentVersion && (0, import_awtrix_ng_api.compareFirmwareVersions)(this.supportedVersion, this.currentVersion) > 0 && !this.displayedVersionWarning) {
         this.log.warn(
           `You should update your Awtrix NG firmware - supported version of this adapter is ${this.supportedVersion} (or later). Your current version is ${this.currentVersion}`
         );
@@ -728,6 +838,18 @@ class AwtrixNg extends utils.Adapter {
       states[transition] = transition;
     }
     await this.extendObject("settings.apps.transitionEffect", { common: { states } });
+    const overlayStates = {};
+    for (const overlay of this.getWeatherOverlays()) {
+      overlayStates[overlay] = overlay;
+    }
+    await this.extendObject("display.overlay", { common: { states: overlayStates } });
+  }
+  /**
+   * State of the display which is not part of GET device (e.g. global weather overlay)
+   */
+  async refreshDisplay() {
+    const display = await this.apiClient.display.get();
+    await this.setStateChangedAsync("display.overlay", { val: display.overlay || "none", ack: true });
   }
   /**
    * Radio stations, mp3 files, melodies and playback state (just if supported by the device).
@@ -1147,21 +1269,6 @@ class AwtrixNg extends utils.Adapter {
     } catch (e) {
       callback();
     }
-  }
-  isNewerVersion(oldVer, newVer) {
-    const oldParts = oldVer.replace("-dev", "").split(".");
-    const newParts = newVer.replace("-dev", "").split(".");
-    for (let i = 0; i < newParts.length; i++) {
-      const a = ~~newParts[i];
-      const b = ~~oldParts[i];
-      if (a > b) {
-        return true;
-      }
-      if (a < b) {
-        return false;
-      }
-    }
-    return false;
   }
 }
 // Annotate the CommonJS export names for ESM import in node:

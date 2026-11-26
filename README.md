@@ -41,7 +41,7 @@ Buy TC002 here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC002) or here: [u
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.6.0 (2026-11-26)
 
 * (@Voodoo2man) Added states to check for and install Awtrix NG firmware updates.
 * (@klein0r) Added state `display.overlay` to set a global weather overlay for all apps
@@ -93,11 +93,6 @@ Buy TC002 here: [Amazon.de](https://haus-auto.com/p/amz/UlanziTC002) or here: [u
 * (@klein0r) Added additional meta information (soc and board type)
 * (@klein0r) Recommended Awtrix NG version is now 1.1.2
 * (ioBroker-Bot) Adapter requires admin >= 7.8.23 now.
-
-### 0.1.0 (2026-08-11)
-
-* (@klein0r) Used new audio API endpoint for all types of sounds (file, mp3, rtttl)
-* (@klein0r) Recommended Awtrix NG version is now 1.1.0
 
 [Older changelogs can be found there](CHANGELOG_OLD.md)
 

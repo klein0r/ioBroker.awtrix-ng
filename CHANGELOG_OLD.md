@@ -1,4 +1,9 @@
 # Older changes
+## 0.1.0 (2026-08-11)
+
+* (@klein0r) Used new audio API endpoint for all types of sounds (file, mp3, rtttl)
+* (@klein0r) Recommended Awtrix NG version is now 1.1.0
+
 ## 0.0.10 (2026-08-07)
 
 * (@klein0r) Updated documentation

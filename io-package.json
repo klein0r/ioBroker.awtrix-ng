@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "awtrix-ng",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "news": {
+      "0.6.0": {
+        "en": "Added states to check for and install Awtrix NG firmware updates.\nAdded state `display.overlay` to set a global weather overlay for all apps\nUpdated recommended Awtrix NG firmware version to 1.2.3",
+        "de": "Staaten zum Suchen und Installieren von Astrix NG-Firmwareupdates hinzugefügt.\nStatus `display.overlay` als globales Wetter-Overlay für alle Apps hinzugefügt\nEmpfohlene Astrix NG-Firmware auf 1.2.3 aktualisiert",
+        "ru": "Добавлены состояния для проверки и установки обновлений прошивки Awtrix NG.\nДобавлено состояние `display.overlay` для установки глобального наложения погоды для всех приложений\nОбновлена рекомендуемая версия прошивки Awtrix NG до 1.2.3",
+        "pt": "Novos estados para verificar e instalar o firmware do Awtrix NG.\nFoi adicionado o estado `display.overlay` para todos os apps\nAtualizou a versão recomendada do Astrix NG para 1.2.3",
+        "nl": "Statussen toegevoegd om te controleren op firmware-updates van Awtrix NG en deze te installeren.\nStaat `display.overlay` toegevoegd om een globale weeroverlay in te stellen voor alle apps\nDe aanbevolen firmwareversie van Awtrix NG bijgewerkt naar 1.2.3",
+        "fr": "Ajout d'états pour vérifier et installer les mises à jour d'Awtrix NG.\nAjout de l'état « display.overlay » pour superposer la météo globale à toutes les apps\nMise à jour du firmware recommandé d'Awtrix NG vers la 1.2.3",
+        "it": "Aggiunti stati per verificare e installare Awtrix NG.\nAggiunto lo stato `display.overlay` per il meteo globale per tutte le app\nFirmware Awtrix NG consigliato aggiornato alla 1.2.3",
+        "es": "Se han añadido estados para comprobar e instalar el firmware del Astrix NG.\nSe ha añadido el estado `display.overlay` para poner el clima global en todas las apps\nSe actualizó el firmware recomendado del Astrix NG a 1.2.3",
+        "pl": "Dodano stany, aby sprawdzić i zainstalować aktualizacje oprogramowania układowego Awtrix NG.\nDodano stan `display.overlay`, aby ustawić globalną nakładkę pogodową dla wszystkich aplikacji\nZaktualizowano zalecaną wersję oprogramowania układowego Awtrix NG do wersji 1.2.3",
+        "uk": "Додані стани для перевірки та встановлення оновлень прошивки Awtrix NG.\nДодано стан `display.overlay`, щоб встановити глобальне накладення погоди для всіх додатків\nОновлена рекомендована версія прошивки Awtrix NG до 1.2.3",
+        "zh-cn": "添加了检查和安装 Awtrix NG 固件更新的状态。\n添加了状态 “display.overlay” 以为所有应用程序设置全球天气叠加层\n将推荐的 Awtrix NG 固件版本更新为 1.2.3"
+      },
       "0.5.0": {
         "en": "Icons of custom and history apps can be selected from the icons of the device in the instance configuration\nAdded volume settings (`settings.audio.volume`, `.alertVolume`, `.appVolume`, `.radioVolume`)\nCustom apps: thresholds \"less than\" and \"greater than\" may now have the same value",
         "de": "In der Instanzkonfiguration können Sie unter den Gerätesymbolen eigene Apps und History Apps auswählen\nLautstärke hinzugefügt (`settings.audio.volume`, `.alertVolume`, `.appVolume`, `.radioVolume`)\nEigene Apps: Die Werte „unter“ und „über“ können nun den gleichen Wert haben",
@@ -80,19 +93,6 @@
         "pl": "Aktualizacja dokumentacji\nZalecana wersja Awtrix NG to 1.0.15\nAutomatycznie rzucona wartość ikon do łańcucha w powiadomieniach",
         "uk": "Оновлена документація\nРекомендована версія Awtrix NG тепер 1.0.15\nАвтоматично відхилити значення ікони для рядок в повідомленнях",
         "zh-cn": "最新文件\n推荐的Awtrix NG版本现在是1.0.15\n在通知中自动将图标值设定为字符串"
-      },
-      "0.0.9": {
-        "en": "Removed option to automatically delete other apps\nUpdated logo",
-        "de": "Die Option zum automatischen Löschen anderer Apps wurde entfernt.\nAktualisiertes Logo",
-        "ru": "Удалена опция автоматического удаления других приложений.\nОбновленный логотип",
-        "pt": "Removemos a opção de excluir outros aplicativos automaticamente.\nLogotipo atualizado",
-        "nl": "De optie om andere apps automatisch te verwijderen is verwijderd.\nBijgewerkt logo",
-        "fr": "Suppression de l'option permettant de supprimer automatiquement les autres applications\nLogo mis à jour",
-        "it": "Rimossa l'opzione per eliminare automaticamente le altre app\nLogo aggiornato",
-        "es": "Se eliminó la opción de eliminar automáticamente otras aplicaciones.\nLogotipo actualizado",
-        "pl": "Usunięto opcję automatycznego usuwania innych aplikacji\nZaktualizowane logo",
-        "uk": "Видалено опцію автоматичного видалення інших програм\nОновлений логотип",
-        "zh-cn": "已移除自动删除其他应用的选项\n更新后的标志"
       }
     },
     "titleLang": {
