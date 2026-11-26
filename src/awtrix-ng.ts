@@ -6,6 +6,7 @@ import * as utils from '@iobroker/adapter-core';
 import type {
     AppInfo,
     AudioPlayRequest,
+    AvailableFirmware,
     ClassicAppPayload,
     IndicatorUpdate,
     MoodlightOptions,
@@ -13,8 +14,14 @@ import type {
     OkResponse,
     SettingsUpdate,
 } from 'awtrix-ng-api';
-import { AwtrixApiError, AwtrixClient, AwtrixConnectionError, isValidAppName } from 'awtrix-ng-api';
-import { createHash } from 'node:crypto';
+import {
+    AwtrixApiError,
+    AwtrixClient,
+    AwtrixConnectionError,
+    compareFirmwareVersions,
+    FirmwareUpdater,
+    isValidAppName,
+} from 'awtrix-ng-api';
 
 import type { AppType as AppTypeAbstract } from './lib/app-type/abstract';
 import { AppType as AppTypeBuiltin } from './lib/app-type/builtin';
@@ -854,72 +861,14 @@ export class AwtrixNg extends utils.Adapter {
         }
     }
 
-    private async getFirmwareUpdateInfo(): Promise<{ version: string; image: string; url: string } | null> {
+    private async getFirmwareUpdateInfo(): Promise<AvailableFirmware | null> {
         await this.setStateChangedAsync('device.firmware.available', { val: false, ack: true });
-        const device = await this.apiClient!.device.get({ timeout: 10_000 });
-        const currentVersion = String(device.version);
-        this.currentVersion = currentVersion;
-        const image = device.updateImage;
-        const supportedImages = [
-            'firmware-awtrix-ng.bin',
-            'firmware-awtrix-ng-s3-octal.bin',
-            'firmware-awtrix-ng-s3-quad.bin',
-            'awtrix-ng-tc002.awup',
-        ];
-        if (!image || !supportedImages.includes(image)) {
-            throw new Error(`Firmware update image is not supported: ${image || 'none'}`);
-        }
+        const result = await new FirmwareUpdater(this.apiClient!).check({ timeout: 10_000 });
+        this.currentVersion = result.currentVersion;
 
-        const releaseResponse = await fetch('https://api.github.com/repos/Blueforcer/awtrix-ng/releases/latest', {
-            headers: { Accept: 'application/vnd.github+json' },
-            signal: AbortSignal.timeout(10000),
-        });
-        if (!releaseResponse.ok) {
-            throw new Error(`Unable to fetch latest release: HTTP ${releaseResponse.status}`);
-        }
-
-        const release = (await releaseResponse.json()) as { tag_name?: string; draft?: boolean; prerelease?: boolean };
-        const releaseVersion = String(release.tag_name || '').replace(/^v/, '');
-        const versionPattern = /^\d+\.\d+\.\d+$/;
-        if (release.draft || release.prerelease || !versionPattern.test(releaseVersion)) {
-            throw new Error('Latest release is not a stable firmware version');
-        }
-
-        await this.setStateChangedAsync('device.firmware.latestVersion', { val: releaseVersion, ack: true });
-        if (!this.isNewerVersion(currentVersion, releaseVersion)) {
-            await this.setStateChangedAsync('device.firmware.available', { val: false, ack: true });
-            return null;
-        }
-
-        const manifestResponse = await fetch('https://blueforcer.github.io/awtrix-ng/firmware/ota/index.json', {
-            signal: AbortSignal.timeout(10000),
-        });
-        if (!manifestResponse.ok) {
-            throw new Error(`Unable to fetch firmware manifest: HTTP ${manifestResponse.status}`);
-        }
-        const manifest = (await manifestResponse.json()) as {
-            version?: string;
-            assets?: Record<string, { size?: number; sha256?: string }>;
-        };
-        const asset = manifest.assets?.[image];
-        const maxSize = (image.endsWith('.awup') ? 8 : 16) * 1024 * 1024;
-        if (
-            manifest.version !== `v${releaseVersion}` ||
-            !asset ||
-            !Number.isSafeInteger(asset.size) ||
-            asset.size! < 256 ||
-            asset.size! > maxSize ||
-            !/^[a-f0-9]{64}$/.test(asset.sha256 || '')
-        ) {
-            throw new Error('Firmware manifest does not contain a valid image for the latest release');
-        }
-
-        await this.setStateChangedAsync('device.firmware.available', { val: true, ack: true });
-        return {
-            version: releaseVersion,
-            image,
-            url: `https://blueforcer.github.io/awtrix-ng/firmware/ota/v${releaseVersion}/${image}`,
-        };
+        await this.setStateChangedAsync('device.firmware.latestVersion', { val: result.latestVersion, ack: true });
+        await this.setStateChangedAsync('device.firmware.available', { val: result.available, ack: true });
+        return result.available ? result.update : null;
     }
 
     private async checkFirmwareUpdate(): Promise<void> {
@@ -968,46 +917,12 @@ export class AwtrixNg extends utils.Adapter {
                 return;
             }
 
+            const updater = new FirmwareUpdater(this.apiClient!);
             await this.setState('device.firmware.status', {
                 val: `Downloading firmware ${update.version}`,
                 ack: true,
             });
-            const response = await fetch(update.url, {
-                signal: AbortSignal.timeout(120000),
-            });
-            if (!response.ok) {
-                throw new Error(`Unable to download firmware: HTTP ${response.status}`);
-            }
-
-            const firmware = new Uint8Array(await response.arrayBuffer());
-            const isAwup = update.image.endsWith('.awup');
-            const maxSize = (isAwup ? 8 : 16) * 1024 * 1024;
-            const manifestResponse = await fetch('https://blueforcer.github.io/awtrix-ng/firmware/ota/index.json', {
-                signal: AbortSignal.timeout(10000),
-            });
-            if (!manifestResponse.ok) {
-                throw new Error(`Unable to verify firmware manifest: HTTP ${manifestResponse.status}`);
-            }
-            const manifest = (await manifestResponse.json()) as {
-                version?: string;
-                assets?: Record<string, { size?: number; sha256?: string }>;
-            };
-            const asset = manifest.assets?.[update.image];
-            const digest = createHash('sha256').update(firmware).digest('hex');
-            const validMagic = isAwup
-                ? Buffer.from(firmware.subarray(0, 8)).toString() === 'AWUPD003'
-                : firmware[0] === 0xe9;
-            if (
-                manifest.version !== `v${update.version}` ||
-                !asset ||
-                firmware.length !== asset.size ||
-                firmware.length < 256 ||
-                firmware.length > maxSize ||
-                digest !== asset.sha256 ||
-                !validMagic
-            ) {
-                throw new Error('Downloaded firmware failed validation');
-            }
+            const firmware = await updater.download(update);
 
             await this.setState('device.firmware.status', {
                 val: `Installing firmware ${update.version}`,
@@ -1061,7 +976,7 @@ export class AwtrixNg extends utils.Adapter {
 
                 if (
                     this.currentVersion &&
-                    this.isNewerVersion(this.currentVersion, this.supportedVersion) &&
+                    compareFirmwareVersions(this.supportedVersion, this.currentVersion) > 0 &&
                     !this.displayedVersionWarning
                 ) {
                     this.log.warn(
@@ -1734,21 +1649,5 @@ export class AwtrixNg extends utils.Adapter {
         } catch (e) {
             callback();
         }
-    }
-
-    private isNewerVersion(oldVer: string, newVer: string): boolean {
-        const oldParts = oldVer.replace('-dev', '').split('.');
-        const newParts = newVer.replace('-dev', '').split('.');
-        for (let i = 0; i < newParts.length; i++) {
-            const a = ~~newParts[i]; // parse int
-            const b = ~~oldParts[i]; // parse int
-            if (a > b) {
-                return true;
-            }
-            if (a < b) {
-                return false;
-            }
-        }
-        return false;
     }
 }
